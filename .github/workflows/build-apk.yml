@@ -1,0 +1,66 @@
+name: Build Android APK
+
+on:
+  # Allow manual trigger from GitHub Actions tab
+  workflow_dispatch:
+  
+  # Auto-build on push to main/master branch
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/build-apk.yml'
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+      
+      - name: ☕ Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      
+      - name: 🐦 Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.4'
+          channel: 'stable'
+          cache: true
+      
+      - name: 📦 Get dependencies
+        run: |
+          cd frontend
+          flutter pub get
+      
+      - name: 🔨 Build APK
+        run: |
+          cd frontend
+          flutter build apk --release
+      
+      - name: 📊 Get APK info
+        run: |
+          cd frontend
+          ls -lh build/app/outputs/flutter-apk/
+          echo "APK Size: $(du -h build/app/outputs/flutter-apk/app-release.apk | cut -f1)"
+      
+      - name: 📤 Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-apk
+          path: frontend/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+      
+      - name: 📤 Upload Split APKs (if exist)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: split-apks
+          path: frontend/build/app/outputs/flutter-apk/app-*-release.apk
+          retention-days: 30
+          if-no-files-found: ignore

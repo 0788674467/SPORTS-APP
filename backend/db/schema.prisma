@@ -1,0 +1,138 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// TEAMS
+// ─────────────────────────────────────────────
+model Team {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  logoUrl   String?  @map("logo_url")
+  coachId   String?  @map("coach_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  players        Player[]
+  homeMatches    Match[]  @relation("HomeTeam")
+  awayMatches    Match[]  @relation("AwayTeam")
+  matchEvents    MatchEvent[]
+
+  @@map("teams")
+}
+
+// ─────────────────────────────────────────────
+// PLAYERS
+// ─────────────────────────────────────────────
+model Player {
+  id            String   @id @default(uuid())
+  name          String
+  teamId        String   @map("team_id")
+  position      String
+  jerseyNumber  Int      @map("jersey_number")
+  dateOfBirth   String?  @map("date_of_birth")
+  photoUrl      String?  @map("photo_url")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  team        Team         @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  matchEvents MatchEvent[]
+
+  @@map("players")
+}
+
+// ─────────────────────────────────────────────
+// FIXTURES (seasons / competitions)
+// ─────────────────────────────────────────────
+model Fixture {
+  id        String   @id @default(uuid())
+  name      String
+  season    String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  matches Match[]
+
+  @@map("fixtures")
+}
+
+// ─────────────────────────────────────────────
+// MATCHES
+// ─────────────────────────────────────────────
+model Match {
+  id          String      @id @default(uuid())
+  fixtureId   String      @map("fixture_id")
+  homeTeamId  String      @map("home_team_id")
+  awayTeamId  String      @map("away_team_id")
+  homeScore   Int         @default(0) @map("home_score")
+  awayScore   Int         @default(0) @map("away_score")
+  status      MatchStatus @default(scheduled)
+  scheduledAt DateTime    @map("scheduled_at")
+  venue       String?
+  round       Int?
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  fixture     Fixture      @relation(fields: [fixtureId], references: [id], onDelete: Cascade)
+  homeTeam    Team         @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeam    Team         @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  matchEvents MatchEvent[]
+
+  @@map("matches")
+}
+
+enum MatchStatus {
+  scheduled
+  live
+  completed
+  cancelled
+}
+
+// ─────────────────────────────────────────────
+// MATCH EVENTS (goals, cards, subs)
+// ─────────────────────────────────────────────
+model MatchEvent {
+  id        String    @id @default(uuid())
+  matchId   String    @map("match_id")
+  playerId  String    @map("player_id")
+  teamId    String    @map("team_id")
+  eventType EventType @map("event_type")
+  minute    Int
+  notes     String?
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  match  Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id])
+  team   Team   @relation(fields: [teamId], references: [id])
+
+  @@map("match_events")
+}
+
+enum EventType {
+  goal
+  yellow_card
+  red_card
+  substitution
+}
+
+// ─────────────────────────────────────────────
+// NOTIFICATIONS
+// ─────────────────────────────────────────────
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String?  @map("user_id")   // null = broadcast
+  title     String
+  body      String
+  type      String
+  data      Json     @default("{}")
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("notifications")
+}

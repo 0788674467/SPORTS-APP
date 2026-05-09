@@ -1,0 +1,53 @@
+name: sports_app
+description: "A premium sports management application built with Flutter."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management
+  provider: ^6.1.1
+
+  # HTTP & API
+  dio: ^5.4.0
+  supabase_flutter: ^2.3.0
+  socket_io_client: ^3.0.1
+
+  # Storage & Preferences
+  flutter_secure_storage: ^9.0.0
+  shared_preferences: ^2.2.2
+  sqflite: ^2.3.0
+  path: ^1.8.3
+  connectivity_plus: ^5.0.2
+
+  # Utilities
+  intl: ^0.19.0
+  google_fonts: ^6.1.0
+  flutter_svg: ^2.0.9
+  cached_network_image: ^3.3.0
+  shimmer: ^3.0.0
+  fl_chart: ^0.70.2
+  image_picker: ^1.0.7
+
+  # Navigation & Icons
+  font_awesome_flutter: ^10.6.0
+  logger: ^2.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/
+    - assets/images/
+    - assets/icons/
