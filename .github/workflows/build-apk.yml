@@ -34,18 +34,16 @@ jobs:
           cache: true
       
       - name: 📦 Get dependencies
-        run: |
-          cd frontend
-          flutter pub get
+        working-directory: frontend
+        run: flutter pub get
       
       - name: 🔨 Build APK
-        run: |
-          cd frontend
-          flutter build apk --release
+        working-directory: frontend
+        run: flutter build apk --release
       
       - name: 📊 Get APK info
+        working-directory: frontend
         run: |
-          cd frontend
           ls -lh build/app/outputs/flutter-apk/
           echo "APK Size: $(du -h build/app/outputs/flutter-apk/app-release.apk | cut -f1)"
       

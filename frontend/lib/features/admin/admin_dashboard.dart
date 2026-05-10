@@ -1513,7 +1513,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       ),
     );
   }
-
+` Q `
   Widget _buildSquadApprovalCard(Map<String, dynamic> squad) {
     final teamId = squad['id'] as String;
     final teamName = squad['name'] ?? 'Unknown Team';
