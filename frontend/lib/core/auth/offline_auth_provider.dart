@@ -56,12 +56,29 @@ class OfflineAuthProvider extends AuthProvider {
   }
 
   /// Get approved users by role with offline support
-  Future<List<Map<String, dynamic>>> getApprovedUsers(String role, {bool forceRefresh = false}) async {
-    final allUsers = await _offlineService.getPendingUsers(forceRefresh: forceRefresh);
-    return allUsers.where((user) => 
-      user['role']?.toString().toLowerCase() == role.toLowerCase() && 
-      user['status'] == 'approved'
-    ).toList();
+  @override
+  Future<List<Map<String, dynamic>>> getApprovedUsers(String role) async {
+    // Always hit Supabase directly so avatar_url is always fresh
+    try {
+      final res = await Supabase.instance.client
+          .from('profiles')
+          .select()
+          .eq('role', role)
+          .eq('approval_status', 'approved');
+      return List<Map<String, dynamic>>.from(res);
+    } catch (e) {
+      debugPrint('OfflineAuthProvider: getApprovedUsers fallback for $role: $e');
+      // Fallback to offline cache with correct field name
+      try {
+        final allUsers = await _offlineService.getPendingUsers();
+        return allUsers.where((user) =>
+          user['role']?.toString().toLowerCase() == role.toLowerCase() &&
+          user['approval_status'] == 'approved'
+        ).toList();
+      } catch (_) {
+        return [];
+      }
+    }
   }
 
   /// Approve user with offline support

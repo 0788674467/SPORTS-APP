@@ -3023,7 +3023,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             child: CircleAvatar(
               radius: 18,
               backgroundColor: const Color(0xFF00A651).withOpacity(0.1),
-              backgroundImage: avatar != null && avatar.isNotEmpty ? NetworkImage(avatar) : null,
+              backgroundImage: avatar != null && avatar.isNotEmpty
+                  ? NetworkImage('$avatar?v=${avatar.hashCode}')
+                  : null,
               child: avatar == null || avatar.isEmpty ? Text(name[0].toUpperCase(), style: const TextStyle(color: Color(0xFF00A651), fontWeight: FontWeight.bold, fontSize: 12)) : null,
             ),
           ),
@@ -3178,7 +3180,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             child: CircleAvatar(
               radius: 18,
               backgroundColor: const Color(0xFF003087).withOpacity(0.1),
-              backgroundImage: avatar != null && avatar.isNotEmpty ? NetworkImage(avatar) : null,
+              backgroundImage: avatar != null && avatar.isNotEmpty
+                  ? NetworkImage('$avatar?v=${avatar.hashCode}')
+                  : null,
               child: avatar == null || avatar.isEmpty ? Text(name[0].toUpperCase(), style: const TextStyle(color: Color(0xFF003087), fontWeight: FontWeight.bold, fontSize: 12)) : null,
             ),
           ),
