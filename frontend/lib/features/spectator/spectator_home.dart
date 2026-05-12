@@ -42,6 +42,13 @@ class _SpectatorHomeState extends State<SpectatorHome>
   DateTime? _lastViewedChat;
   late final StreamSubscription _badgeSubscription;
 
+  // ─ Reply-to state (WhatsApp style) ────────────────────────────────
+  Map<String, dynamic>? _replyingTo; // the message being replied to
+
+  // ─ Live online count ──────────────────────────────────────────────
+  int _onlineCount = 0;
+  Timer? _onlineTimer;
+
   // ─ Realtime team branding ──────────────────────────────────────────
   List<Map<String, dynamic>> _liveTeams = [];
   StreamSubscription<List<Map<String, dynamic>>>? _teamsStreamSub;
@@ -107,6 +114,9 @@ class _SpectatorHomeState extends State<SpectatorHome>
     });
 
     _initGuestId();
+    _refreshOnlineCount();
+    // Refresh online count every 60 seconds
+    _onlineTimer = Timer.periodic(const Duration(seconds: 60), (_) => _refreshOnlineCount());
 
     // ─ Subscribe to teams table for live name/logo updates ───────────────
     _teamsStreamSub = Supabase.instance.client
@@ -133,6 +143,26 @@ class _SpectatorHomeState extends State<SpectatorHome>
     });
   }
 
+  /// Count distinct senders who posted in the last 5 minutes.
+  Future<void> _refreshOnlineCount() async {
+    try {
+      final since = DateTime.now().subtract(const Duration(minutes: 5)).toUtc().toIso8601String();
+      // Fetch recent messages and count unique senders (profile_id OR guest_id)
+      final rows = await Supabase.instance.client
+          .from('spectator_chats')
+          .select('profile_id, guest_id')
+          .gte('created_at', since);
+      final senders = <String>{};
+      for (final r in rows) {
+        final pid = r['profile_id'] as String?;
+        final gid = r['guest_id'] as String?;
+        if (pid != null) senders.add('u_$pid');
+        if (gid != null) senders.add('g_$gid');
+      }
+      if (mounted) setState(() => _onlineCount = senders.length);
+    } catch (_) {}
+  }
+
   Future<void> _initGuestId() async {
     final prefs = await SharedPreferences.getInstance();
     String? gid = prefs.getString('mmu_guest_id');
@@ -146,6 +176,7 @@ class _SpectatorHomeState extends State<SpectatorHome>
   @override
   void dispose() {
     _slideTimer?.cancel();
+    _onlineTimer?.cancel();
     _teamsStreamSub?.cancel();
     _pageCtrl.dispose();
     _pulseCtrl.dispose();
@@ -587,8 +618,24 @@ class _SpectatorHomeState extends State<SpectatorHome>
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppColors.mmwGreen.withOpacity(0.3)),
                   ),
-                  child: const Text('${8} online',
-                      style: TextStyle(color: AppColors.mmwGreen, fontSize: 11, fontWeight: FontWeight.w700)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        margin: const EdgeInsets.only(right: 5),
+                        decoration: const BoxDecoration(
+                          color: AppColors.mmwGreen,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      Text(
+                        _onlineCount == 0 ? 'Live Chat' : '$_onlineCount online',
+                        style: const TextStyle(color: AppColors.mmwGreen, fontSize: 11, fontWeight: FontWeight.w700),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -634,6 +681,52 @@ class _SpectatorHomeState extends State<SpectatorHome>
               },
             ),
           ),
+          // Reply preview bar (shown when replying)
+          if (_replyingTo != null)
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppColors.mmwNavy.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(14),
+                border: Border(
+                  left: BorderSide(color: AppColors.mmwNavy, width: 3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Replying to ${_replyingTo!['user_name'] ?? 'Fan'}',
+                          style: const TextStyle(
+                            color: AppColors.mmwNavy,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          (_replyingTo!['message'] as String? ?? '').length > 60
+                              ? '${(_replyingTo!['message'] as String).substring(0, 60)}…'
+                              : (_replyingTo!['message'] as String? ?? ''),
+                          style: const TextStyle(color: AppColors.textMid, fontSize: 12),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => setState(() => _replyingTo = null),
+                    child: const Icon(Icons.close_rounded, color: AppColors.textLight, size: 18),
+                  ),
+                ],
+              ),
+            ),
           // Functional input bar
           Container(
             margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -703,17 +796,27 @@ class _SpectatorHomeState extends State<SpectatorHome>
         : (_publicNickname ?? 'Guest Fan');
     final userId = ap.user?.id;
 
+    // Capture reply context before clearing
+    final replyId = _replyingTo?['id'] as String?;
+    final replyPreview = _replyingTo != null
+        ? '${_replyingTo!['user_name']}: ${_replyingTo!['message']}'
+        : null;
+
     try {
       _chatCtrl.clear();
+      setState(() => _replyingTo = null); // clear reply after send
       await Supabase.instance.client.from('spectator_chats').insert({
         'profile_id': userId, // NULL if not logged in
         'user_name': userName,
         'message': text,
         'guest_id': userId == null ? _guestId : null,
+        if (replyId != null) 'reply_to_id': replyId,
+        if (replyPreview != null) 'reply_to_preview': replyPreview,
       });
       // Force update last viewed when sending
       _lastViewedChat = DateTime.now();
-      
+      // Refresh online count immediately after sending
+      _refreshOnlineCount();
       // Immediate scroll to bottom
       _scrollToBottom();
     } catch (e) {
@@ -735,9 +838,6 @@ class _SpectatorHomeState extends State<SpectatorHome>
     if (m['profile_id'] != null && ap.user != null) {
       isMe = m['profile_id'] == ap.user?.id;
     } else if (m['profile_id'] == null && _guestId != null) {
-      // Comparison by guest_id (stored in 'metadata' or 'user_name' suffix or dedicated field)
-      // Since we can't change schema easily, let's use a trick or check if we added guest_id to the table.
-      // Assuming we'll use 'guest_id' column for identification.
       isMe = m['guest_id'] == _guestId;
     }
     
@@ -758,41 +858,88 @@ class _SpectatorHomeState extends State<SpectatorHome>
     } catch (_) {}
 
     final userDisp = isMe ? 'You' : (m['user_name'] ?? 'Spectator');
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isMe ? AppColors.mmwNavy.withOpacity(0.07) : Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: isMe
-            ? Border.all(color: AppColors.mmwNavy.withOpacity(0.15))
-            : Border.all(color: AppColors.divider),
-        boxShadow: isMe ? null : [
-          BoxShadow(
-            color: AppColors.mmwNavy.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(userDisp,
+    final replyPreview = m['reply_to_preview'] as String?;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return _SwipeToReplyWrapper(
+      onReply: () => setState(() => _replyingTo = m),
+      isMe: isMe,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        decoration: BoxDecoration(
+          color: isMe ? AppColors.mmwNavy.withOpacity(0.07) : Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: isMe
+              ? Border.all(color: AppColors.mmwNavy.withOpacity(0.15))
+              : Border.all(color: AppColors.divider),
+          boxShadow: isMe ? null : [
+            BoxShadow(
+              color: AppColors.mmwNavy.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Reply preview ──────────────────────────────────────
+            if (replyPreview != null)
+              Container(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.white.withOpacity(0.06)
+                      : AppColors.mmwNavy.withOpacity(0.06),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  border: Border(
+                    left: BorderSide(color: AppColors.mmwGold, width: 3),
+                  ),
+                ),
+                child: Text(
+                  replyPreview.length > 80 ? '${replyPreview.substring(0, 80)}…' : replyPreview,
                   style: TextStyle(
-                    color: isMe ? AppColors.mmwNavy : AppColors.mmwGreen,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
-                  )),
-              const Spacer(),
-              Text(timeStr, style: const TextStyle(color: AppColors.textLight, fontSize: 10)),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(m['message']!, style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? Colors.white : AppColors.textDark, fontSize: 13, height: 1.4)),
-        ],
+                    color: isDark ? Colors.white60 : AppColors.textMid,
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic,
+                    height: 1.3,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            // ── Main message body ──────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(userDisp,
+                          style: TextStyle(
+                            color: isMe ? AppColors.mmwNavy : AppColors.mmwGreen,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                          )),
+                      const Spacer(),
+                      Text(timeStr, style: const TextStyle(color: AppColors.textLight, fontSize: 10)),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    m['message']!,
+                    style: TextStyle(
+                      color: isDark ? Colors.white : AppColors.textDark,
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2342,4 +2489,125 @@ class _NavyPatternPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_) => false;
+}
+
+// ─── Swipe-To-Reply Wrapper (WhatsApp style) ─────────────────────────────────
+class _SwipeToReplyWrapper extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onReply;
+  final bool isMe;
+
+  const _SwipeToReplyWrapper({
+    required this.child,
+    required this.onReply,
+    required this.isMe,
+  });
+
+  @override
+  State<_SwipeToReplyWrapper> createState() => _SwipeToReplyWrapperState();
+}
+
+class _SwipeToReplyWrapperState extends State<_SwipeToReplyWrapper>
+    with SingleTickerProviderStateMixin {
+  double _dragOffset = 0;
+  bool _triggered = false;
+  static const double _threshold = 60.0;
+  static const double _maxDrag = 80.0;
+
+  late AnimationController _snapCtrl;
+  late Animation<double> _snapAnim;
+  double _snapFrom = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _snapCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+    );
+    _snapAnim = Tween<double>(begin: 0, end: 0).animate(
+      CurvedAnimation(parent: _snapCtrl, curve: Curves.easeOut),
+    );
+    _snapCtrl.addListener(() => setState(() => _dragOffset = _snapAnim.value));
+  }
+
+  @override
+  void dispose() {
+    _snapCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onHorizontalUpdate(DragUpdateDetails d) {
+    if (_snapCtrl.isAnimating) return;
+    setState(() {
+      _dragOffset = (_dragOffset + d.delta.dx).clamp(0.0, _maxDrag);
+      if (!_triggered && _dragOffset >= _threshold) {
+        _triggered = true;
+      }
+    });
+  }
+
+  void _onHorizontalEnd(DragEndDetails _) {
+    if (_triggered) {
+      widget.onReply();
+      _triggered = false;
+    }
+    // Snap back to 0
+    _snapFrom = _dragOffset;
+    _snapAnim = Tween<double>(begin: _snapFrom, end: 0).animate(
+      CurvedAnimation(parent: _snapCtrl, curve: Curves.easeOut),
+    );
+    _snapCtrl.forward(from: 0);
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final iconOpacity = (_dragOffset / _threshold).clamp(0.0, 1.0);
+    final iconScale = 0.6 + 0.4 * iconOpacity;
+
+    return GestureDetector(
+      onHorizontalDragUpdate: _onHorizontalUpdate,
+      onHorizontalDragEnd: _onHorizontalEnd,
+      behavior: HitTestBehavior.opaque,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Reply icon that appears behind the bubble
+          Positioned(
+            left: -28,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: AnimatedOpacity(
+                opacity: iconOpacity,
+                duration: const Duration(milliseconds: 80),
+                child: Transform.scale(
+                  scale: iconScale,
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: AppColors.mmwNavy.withOpacity(0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.reply_rounded,
+                      color: AppColors.mmwNavy,
+                      size: 17,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // The actual message bubble, shifted right by drag
+          Transform.translate(
+            offset: Offset(_dragOffset, 0),
+            child: widget.child,
+          ),
+        ],
+      ),
+    );
+  }
 }
