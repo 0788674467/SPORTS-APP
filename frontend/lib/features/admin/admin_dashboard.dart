@@ -3548,9 +3548,16 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   Widget _buildProfile() {
     final ap = Provider.of<auth.AuthProvider>(context);
     final profile = ap.profile;
-    final avatarUrl = profile?['avatar_url'];
-    final fullName = profile?['full_name'] ?? 'Admin';
-    final email = profile?['email'] ?? 'admin@mmu.ac.ke';
+    // Try profile table first, fall back to auth user metadata
+    final avatarUrl = (profile?['avatar_url'] as String?)?.isNotEmpty == true
+        ? profile!['avatar_url'] as String
+        : ap.user?.userMetadata?['avatar_url'] as String?;
+    final fullName = (profile?['full_name'] as String?)?.isNotEmpty == true
+        ? profile!['full_name'] as String
+        : ap.user?.userMetadata?['full_name'] as String? ?? 'Admin';
+    final email = (profile?['email'] as String?)?.isNotEmpty == true
+        ? profile!['email'] as String
+        : ap.user?.email ?? 'admin@mmu.ac.ke';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -3576,11 +3583,16 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                       child: CircleAvatar(
                         radius: 57,
                         backgroundColor: const Color(0xFF003087),
-                        backgroundImage: _selectedProfileImage != null 
+                        backgroundImage: _selectedProfileImage != null
                             ? MemoryImage(_selectedProfileImage!) as ImageProvider<Object>
-                            : (avatarUrl != null && avatarUrl.toString().isNotEmpty ? NetworkImage(avatarUrl) as ImageProvider<Object> : null),
-                        child: (_selectedProfileImage == null && (avatarUrl == null || avatarUrl.toString().isEmpty))
-                            ? Text(fullName[0].toUpperCase(), 
+                            : (avatarUrl != null && avatarUrl.isNotEmpty
+                                ? NetworkImage('$avatarUrl&cb=${_isUploadingProfile ? '' : ''}') as ImageProvider<Object>
+                                : null),
+                        onBackgroundImageError: _selectedProfileImage == null && avatarUrl != null
+                            ? (_, __) {} // silently fallback to child
+                            : null,
+                        child: (_selectedProfileImage == null && (avatarUrl == null || avatarUrl.isEmpty))
+                            ? Text(fullName[0].toUpperCase(),
                                   style: const TextStyle(color: Colors.white, fontSize: 48, fontWeight: FontWeight.bold))
                             : null,
                       ),
@@ -3828,29 +3840,41 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
 
   Future<void> _saveProfileChanges(auth.AuthProvider ap) async {
     setState(() => _isUploadingProfile = true);
-    
+
+    String? errorMsg;
     try {
       if (_selectedProfileImage != null) {
-        // Create a mock XFile for the upload since AuthProvider expects XFile
-        // We'll need to modify this to work with Uint8List
-        final tempFile = XFile.fromData(_selectedProfileImage!, name: 'profile.jpg', mimeType: 'image/jpeg');
-        final error = await ap.uploadAvatar(tempFile);
-        if (error != null) {
-          throw Exception(error);
-        }
+        // Upload using XFile wrapper (auth_provider.uploadAvatar reads bytes from it)
+        final tempFile = XFile.fromData(
+          _selectedProfileImage!,
+          name: 'avatar.jpg',
+          mimeType: 'image/jpeg',
+        );
+        errorMsg = await ap.uploadAvatar(tempFile);
       }
-      
+
+      if (errorMsg == null) {
+        // Force a profile refresh so sidebar + top bar avatars update immediately
+        await ap.fetchProfile();
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Row(children: [
-              Icon(Icons.check_circle_rounded, color: Colors.white),
-              SizedBox(width: 8),
-              Text('Profile updated successfully!'),
+              Icon(
+                errorMsg == null ? Icons.check_circle_rounded : Icons.error_rounded,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 8),
+              Text(errorMsg == null
+                  ? 'Profile photo updated!'
+                  : 'Upload failed: $errorMsg'),
             ]),
-            backgroundColor: Color(0xFF00A651),
+            backgroundColor: errorMsg == null ? const Color(0xFF00A651) : Colors.red,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+            shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(12))),
           ),
         );
       }
@@ -3858,7 +3882,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error updating profile: $e'),
+            content: Text('Error: $e'),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
           ),

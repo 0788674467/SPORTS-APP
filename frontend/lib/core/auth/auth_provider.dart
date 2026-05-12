@@ -53,13 +53,11 @@ class AuthProvider extends ChangeNotifier {
     if (_user != null) {
       _role = _user!.userMetadata?['role'] ?? 'spectator';
       _approvalStatus = _user!.userMetadata?['approval_status'] ?? _defaultApproval(_role);
-      
-      // Sync check: If metadata is pending, check the database profile
-      if (_approvalStatus == 'pending') {
-        await fetchProfile();
-        if (_profile != null && _profile!['approval_status'] != null) {
-          _approvalStatus = _profile!['approval_status'];
-        }
+
+      // Always fetch profile from DB so avatar_url and latest data are loaded
+      await fetchProfile();
+      if (_profile != null && _profile!['approval_status'] != null) {
+        _approvalStatus = _profile!['approval_status'];
       }
 
       final session = _supabase.auth.currentSession;
@@ -76,13 +74,11 @@ class AuthProvider extends ChangeNotifier {
       if (_user != null) {
         _role = _user!.userMetadata?['role'] ?? 'spectator';
         _approvalStatus = _user!.userMetadata?['approval_status'] ?? _defaultApproval(_role);
-        
-        // Sync check on every auth change
-        if (_approvalStatus == 'pending') {
-          await fetchProfile();
-          if (_profile != null && _profile!['approval_status'] != null) {
-            _approvalStatus = _profile!['approval_status'];
-          }
+
+        // Always fetch profile from DB on auth change to get fresh avatar_url etc.
+        await fetchProfile();
+        if (_profile != null && _profile!['approval_status'] != null) {
+          _approvalStatus = _profile!['approval_status'];
         }
 
         await _storage.write(key: 'jwt', value: data.session?.accessToken);
@@ -207,45 +203,30 @@ class AuthProvider extends ChangeNotifier {
   /// Uploads an avatar image and updates the profile.
   Future<String?> uploadAvatar(dynamic imageSource) async {
     if (_user == null) {
-      debugPrint('❌ uploadAvatar: User not logged in');
       return 'Not logged in';
     }
     
     try {
-      debugPrint('📤 uploadAvatar: Starting upload for user ${_user!.id}');
       final String fileName = '${_user!.id}/avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final bytes = await imageSource.readAsBytes();
-      debugPrint('📤 uploadAvatar: File name: $fileName, Size: ${bytes.length} bytes');
       
-      // 1. Upload to Supabase Storage
-      debugPrint('📤 uploadAvatar: Uploading to storage bucket "avatars"...');
-      final uploadResponse = await _supabase.storage.from('avatars').uploadBinary(
+      await _supabase.storage.from('avatars').uploadBinary(
         fileName,
         bytes,
         fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
       );
-      debugPrint('✅ uploadAvatar: Storage upload successful: $uploadResponse');
 
-      // 2. Get Public URL
       final String publicUrl = _supabase.storage.from('avatars').getPublicUrl(fileName);
-      debugPrint('✅ uploadAvatar: Public URL: $publicUrl');
+      final String cacheBustedUrl = '$publicUrl?t=${DateTime.now().millisecondsSinceEpoch}';
 
-      // 3. Update Profile Table
-      debugPrint('📤 uploadAvatar: Updating profiles table...');
-      await _supabase
-          .from('profiles')
-          .update({'avatar_url': publicUrl})
-          .eq('id', _user!.id);
-      debugPrint('✅ uploadAvatar: Profile table updated');
+      await _supabase.from('profiles').update({'avatar_url': cacheBustedUrl}).eq('id', _user!.id);
+      await _supabase.auth.updateUser(UserAttributes(data: {'avatar_url': cacheBustedUrl}));
 
-      // 4. Refresh Local Profile
-      debugPrint('📤 uploadAvatar: Refreshing local profile...');
       await fetchProfile();
-      debugPrint('✅ uploadAvatar: Complete! New avatar_url: ${_profile?['avatar_url']}');
       return null;
     } catch (e) {
       debugPrint('❌ uploadAvatar Error: $e');
-      return e.toString();
+      return 'Failed to upload avatar: $e';
     }
   }
 
