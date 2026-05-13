@@ -31,6 +31,10 @@ class _SpectatorHomeState extends State<SpectatorHome>
   final _scrollCtrl = ScrollController();
   late final Stream<List<Map<String, dynamic>>> _chatStream;
 
+  // Live Score Overlay
+  bool _showLiveOverlay = false;
+  bool _liveOverlayExpanded = true;
+
   // Settings state
   bool _matchAlerts = true;
   bool _darkMode = false;
@@ -319,7 +323,11 @@ class _SpectatorHomeState extends State<SpectatorHome>
     return Stack(
       children: [
         ListView(
-          padding: const EdgeInsets.only(bottom: 130),
+          // Extra top padding when overlay is expanded so content isn't hidden under it
+          padding: EdgeInsets.only(
+            top: _showLiveOverlay && _liveOverlayExpanded ? 164 : (_showLiveOverlay ? 60 : 0),
+            bottom: 130,
+          ),
           children: [
             _buildHero(ap, appState),
             const SizedBox(height: 8),
@@ -328,14 +336,298 @@ class _SpectatorHomeState extends State<SpectatorHome>
             _buildUpcomingList(ms),
           ],
         ),
-        if (liveF != null)
+        // ── Floating Live Score Overlay ─────────────────────────────────
+        if (_showLiveOverlay)
           Positioned(
-            left: 16, right: 16, bottom: 100,
-            child: _buildLivePill(liveF, ms),
+            top: 0, left: 0, right: 0,
+            child: _buildFloatingLiveScore(ms),
           ),
       ],
     );
   }
+
+  // ── Floating Live Score Panel ──────────────────────────────────────────────
+  Widget _buildFloatingLiveScore(MatchState ms) {
+    final liveF = ms.liveFixture;
+    final homeTeam = liveF?.homeTeam ?? 'Lions FC';
+    final awayTeam = liveF?.awayTeam ?? 'Eagles Utd';
+    final homeScore = liveF?.homeScore ?? 0;
+    final awayScore = liveF?.awayScore ?? 0;
+    final minute = liveF?.minute ?? 54;
+
+    return SafeArea(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+        margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF001A4D), Color(0xFF003087), Color(0xFF001A4D)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF003087).withOpacity(0.6),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
+          ],
+          border: Border.all(color: Colors.white.withOpacity(0.12)),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ── Top bar: league + controls ──
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.06),
+                  border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.1))),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 6, height: 6,
+                      margin: const EdgeInsets.only(right: 7),
+                      decoration: BoxDecoration(
+                        color: AppColors.mmwGreen,
+                        shape: BoxShape.circle,
+                        boxShadow: [BoxShadow(color: AppColors.mmwGreen.withOpacity(0.6), blurRadius: 4)],
+                      ),
+                    ),
+                    const Text('MMU SOCCER LEAGUE',
+                        style: TextStyle(color: Colors.white70, fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text('Matchday ${liveF != null ? "1" : "–"}',
+                          style: const TextStyle(color: Colors.white60, fontSize: 8)),
+                    ),
+                    const Spacer(),
+                    // Collapse/Expand toggle
+                    GestureDetector(
+                      onTap: () => setState(() => _liveOverlayExpanded = !_liveOverlayExpanded),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        child: Icon(
+                          _liveOverlayExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                          color: Colors.white70, size: 18,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    // Close button
+                    GestureDetector(
+                      onTap: () => setState(() => _showLiveOverlay = false),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        child: const Icon(Icons.close_rounded, color: Colors.white54, size: 16),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ── Score body (hidden when collapsed) ──
+              if (_liveOverlayExpanded)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // Home team
+                      Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _liveTeamLogo(homeTeam),
+                            const SizedBox(height: 8),
+                            Text(homeTeam,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                    color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
+                                maxLines: 1, overflow: TextOverflow.ellipsis),
+                          ],
+                        ),
+                      ),
+
+                      // Score block
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Minute pill
+                            AnimatedBuilder(
+                              animation: _pulseAnim,
+                              builder: (_, __) => Opacity(
+                                opacity: _pulseAnim.value,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.mmwGreen,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(liveF != null ? "$minute'" : 'FT',
+                                      style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800)),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            // Score
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text('$homeScore',
+                                    style: const TextStyle(
+                                        color: Colors.white, fontSize: 38, fontWeight: FontWeight.w900, height: 1)),
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 6),
+                                  child: Text('-', style: TextStyle(color: Colors.white60, fontSize: 28, fontWeight: FontWeight.w300)),
+                                ),
+                                Text('$awayScore',
+                                    style: const TextStyle(
+                                        color: Colors.white, fontSize: 38, fontWeight: FontWeight.w900, height: 1)),
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text('(0-0)', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 9)),
+                          ],
+                        ),
+                      ),
+
+                      // Away team
+                      Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _liveTeamLogo(awayTeam),
+                            const SizedBox(height: 8),
+                            Text(awayTeam,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                    color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14),
+                                maxLines: 1, overflow: TextOverflow.ellipsis),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              // ── Footer: venue + date (only when expanded) ──
+              if (_liveOverlayExpanded)
+                Container(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.2),
+                    border: Border(top: BorderSide(color: Colors.white.withOpacity(0.08))),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _liveInfoChip(Icons.calendar_today_rounded, 'Season 2026'),
+                      _liveInfoChip(Icons.location_on_rounded, liveF?.venue ?? 'MMU Main Ground'),
+                      _liveInfoChip(Icons.sports_soccer_rounded, 'Live'),
+                    ],
+                  ),
+                ),
+
+              // ── Compact collapsed pill ──
+              if (!_liveOverlayExpanded)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '$homeTeam  $homeScore – $awayScore  $awayTeam',
+                          style: const TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      AnimatedBuilder(
+                        animation: _pulseAnim,
+                        builder: (_, __) => Opacity(
+                          opacity: _pulseAnim.value,
+                          child: Container(
+                            margin: const EdgeInsets.only(left: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AppColors.mmwGreen,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(liveF != null ? "$minute'" : 'FT',
+                                style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _liveTeamLogo(String team) {
+    String? logoUrl;
+    try {
+      logoUrl = _liveTeams.firstWhere(
+        (t) => (t['name'] as String?)?.toLowerCase() == team.toLowerCase(),
+      )['logo_url'] as String?;
+    } catch (_) {}
+
+    if (logoUrl != null && logoUrl.isNotEmpty) {
+      return ClipOval(
+        child: Image.network(logoUrl, width: 48, height: 48, fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _liveTeamInitials(team)),
+      );
+    }
+    return _liveTeamInitials(team);
+  }
+
+  Widget _liveTeamInitials(String team) {
+    final initials = team.split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2).join();
+    return Container(
+      width: 48, height: 48,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: [Colors.white.withOpacity(0.2), Colors.white.withOpacity(0.08)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
+      ),
+      child: Center(
+        child: Text(initials.toUpperCase(),
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
+      ),
+    );
+  }
+
+  Widget _liveInfoChip(IconData icon, String label) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(icon, color: Colors.white38, size: 11),
+      const SizedBox(width: 4),
+      Text(label, style: const TextStyle(color: Colors.white54, fontSize: 10)),
+    ],
+  );
 
   Widget _buildHero(auth.AuthProvider ap, AppState appState) {
     return LayoutBuilder(
@@ -430,18 +722,47 @@ class _SpectatorHomeState extends State<SpectatorHome>
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: AppColors.mmwGreen,
-                              borderRadius: BorderRadius.circular(16),
+                          // Tappable LIVE badge — opens floating live score overlay
+                          GestureDetector(
+                            onTap: () => setState(() => _showLiveOverlay = !_showLiveOverlay),
+                            child: AnimatedBuilder(
+                              animation: _pulseAnim,
+                              builder: (_, __) => Transform.scale(
+                                scale: _pulseAnim.value,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.mmwGreen,
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.mmwGreen.withOpacity(0.5),
+                                        blurRadius: 8,
+                                        spreadRadius: 1,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 6, height: 6,
+                                        margin: const EdgeInsets.only(right: 5),
+                                        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                                      ),
+                                      Text(appState.translate('status_live'),
+                                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800)),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
-                            child: Text(appState.translate('status_live'),
-                                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800)),
                           ),
                           const SizedBox(width: 10),
                           Text(appState.translate('season_underway'),
                               style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12)),
+                          const SizedBox(width: 6),
+                          Icon(Icons.touch_app_rounded, color: Colors.white.withOpacity(0.5), size: 12),
                         ],
                       ),
                       const SizedBox(height: 16),
