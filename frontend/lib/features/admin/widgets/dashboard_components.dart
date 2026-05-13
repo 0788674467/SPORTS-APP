@@ -63,6 +63,7 @@ class DashboardSidebar extends StatelessWidget {
       'items': [
         SidebarItem('dashboard', Icons.dashboard_rounded, 'Dashboard'),
         SidebarItem('approvals', Icons.pending_actions_rounded, 'Approvals'),
+        SidebarItem('communications', Icons.forum_rounded, 'Communications'),
         SidebarItem('notifications', Icons.notifications_none_rounded, 'Notifications'),
       ],
     },

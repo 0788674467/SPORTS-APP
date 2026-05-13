@@ -8,6 +8,7 @@ import '../../core/auth/auth_provider.dart' as auth;
 import '../../core/state/match_state.dart';
 import '../../shared/pitch_background.dart';
 import '../../shared/profile_dropdown.dart';
+import '../../shared/officials_chat.dart';
 
 class RefereeDashboard extends StatefulWidget {
   const RefereeDashboard({super.key});
@@ -1055,15 +1056,9 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
     )));
   }
 
-  // ─── Chat Placeholder ───────────────────────────────────────────────────────
+  // ─── Officials Communication Center ─────────────────────────────────────────
   Widget _buildChatTab() {
-    return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-      const Icon(Icons.chat_bubble_outline_rounded, size: 52, color: Color(0xFF003087)),
-      const SizedBox(height: 16),
-      const Text('Official Chat', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-      const SizedBox(height: 8),
-      Text('Communicate with coaches and admin', style: TextStyle(color: Colors.grey.shade500)),
-    ]));
+    return const OfficialsChatWidget();
   }
 
   // ─── Settings ───────────────────────────────────────────────────────────────

@@ -7,6 +7,7 @@ import '../../core/auth/auth_provider.dart' as auth;
 import '../../core/state/match_state.dart';
 import '../../shared/pitch_background.dart';
 import '../../shared/profile_dropdown.dart';
+import '../../shared/officials_chat.dart';
 import 'lineup_builder.dart';
 import 'substitution_request.dart';
 
@@ -1149,26 +1150,9 @@ class _CoachDashboardState extends State<CoachDashboard> with TickerProviderStat
     ));
   }
 
-  // ─── Chat Placeholder ───────────────────────────────────────────────────────
+  // ─── Officials Communication Center ─────────────────────────────────────────
   Widget _buildChatPlaceholder() {
-    return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-      Container(padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(color: const Color(0xFF00A651).withOpacity(0.1), shape: BoxShape.circle),
-        child: const Icon(Icons.chat_bubble_outline_rounded, size: 48, color: Color(0xFF00A651))),
-      const SizedBox(height: 16),
-      const Text('Team Chat', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-      const SizedBox(height: 8),
-      Text('Chat with referees and officials', style: TextStyle(color: Colors.grey.shade500)),
-      const SizedBox(height: 24),
-      ElevatedButton.icon(
-        onPressed: () {},
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Start a Conversation'),
-        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00A651), foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
-      ),
-    ]));
+    return const OfficialsChatWidget();
   }
 
   // ─── Settings ──────────────────────────────────────────────────────────────

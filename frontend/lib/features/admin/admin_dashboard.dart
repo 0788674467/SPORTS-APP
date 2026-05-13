@@ -9,6 +9,7 @@ import './widgets/dashboard_components.dart';
 import './fixture_generator.dart';
 import '../../core/state/match_state.dart';
 import '../../core/auth/auth_provider.dart' as auth;
+import '../../shared/officials_chat.dart';
 
 // ─── Enhanced Data models ────────────────────────────────────────────────────
 
@@ -341,6 +342,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   String _sectionTitle(String id) {
     const map = {
       'dashboard': 'Dashboard', 'approvals': 'Pending Approvals', 'notifications': 'Notifications',
+      'communications': 'Communications',
       'fixtures': 'Fixtures', 'venues': 'Venues', 'leagues': 'Leagues', 'standings': 'Standings', 'results': 'Match Results',
       'squad_approvals': 'Squad Approvals',
       'teams': 'Teams', 'players': 'Players', 'coaches': 'Coaches', 'referees': 'Referees',
@@ -458,6 +460,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       case 'season_report': return _buildSeasonReport();
       case 'live_scores': return _buildLiveScores();
       case 'notifications': return _buildNotifications();
+      case 'communications': return const OfficialsChatWidget();
       case 'profile': return _buildProfile();
       case 'settings': return _buildSettings();
       default: return _buildDashboardHome();
