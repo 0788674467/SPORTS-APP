@@ -662,8 +662,9 @@ class _SpectatorHomeState extends State<SpectatorHome>
               ),
               // ── Content ──────────────────────────────────────
               SafeArea(
+                bottom: false,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -735,8 +736,8 @@ class _SpectatorHomeState extends State<SpectatorHome>
                       ),
                       const Spacer(),
                       Text(appState.translate('welcome_mmu'),
-                          style: const TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w900, height: 1.1)),
-                      const SizedBox(height: 8),
+                          style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w900, height: 1.1)),
+                      const SizedBox(height: 6),
                       Row(
                         children: [
                           // Tappable LIVE badge — opens floating live score overlay
@@ -782,7 +783,7 @@ class _SpectatorHomeState extends State<SpectatorHome>
                           Icon(Icons.touch_app_rounded, color: Colors.white.withOpacity(0.5), size: 12),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
                     ],
                   ),
                 ),
