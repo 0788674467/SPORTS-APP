@@ -669,10 +669,25 @@ class _SpectatorHomeState extends State<SpectatorHome>
                     children: [
                       Row(
                         children: [
-                          Image.asset(
-                            'assets/images/mmulogo.png',
-                            height: 36,
-                            fit: BoxFit.contain,
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.25),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            clipBehavior: Clip.hardEdge,
+                            child: Image.asset(
+                              'assets/images/mmulogo.png',
+                              fit: BoxFit.cover,
+                            ),
                           ),
                           const SizedBox(width: 10),
                           const Column(

@@ -147,10 +147,25 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                   // ── Top bar: ball badge + title + back ──────────────
                   Row(
                     children: [
-                      Image.asset(
-                        'assets/images/mmulogo.png',
-                        height: full ? 64 : 36, // Larger on desktop
-                        fit: BoxFit.contain,
+                      Container(
+                        width: full ? 72 : 44,
+                        height: full ? 72 : 44,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.25),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        clipBehavior: Clip.hardEdge,
+                        child: Image.asset(
+                          'assets/images/mmulogo.png',
+                          fit: BoxFit.cover,
+                        ),
                       ),
                       const SizedBox(width: 16),
                       Column(
@@ -301,11 +316,28 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
               Center(
                 child: Column(
                   children: [
-                    SizedBox(
-                      height: full ? 72 : 56, // Responsive height
+                    Container(
+                      width: full ? 80 : 64,
+                      height: full ? 80 : 64,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                        border: Border.all(
+                          color: AppColors.mmwNavy.withOpacity(0.12),
+                          width: 2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.mmwNavy.withOpacity(0.12),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      clipBehavior: Clip.hardEdge,
                       child: Image.asset(
-                        'assets/images/app_logo.png',
-                        fit: BoxFit.contain,
+                        'assets/images/mmulogo.png',
+                        fit: BoxFit.cover,
                       ),
                     ),
                     const SizedBox(height: 12),

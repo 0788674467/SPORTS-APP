@@ -146,11 +146,18 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
             onPressed: _currentStep == 0 ? () => Navigator.pop(context) : _prevStep,
           ),
           // ball.jpeg badge — matches spectator header
-          Image.asset(
-            'assets/images/mmulogo.png',
-            height: 32,
-            fit: BoxFit.contain,
-            alignment: Alignment.centerLeft,
+          Container(
+            width: 38,
+            height: 38,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+            ),
+            clipBehavior: Clip.hardEdge,
+            child: Image.asset(
+              'assets/images/mmulogo.png',
+              fit: BoxFit.cover,
+            ),
           ),
           const SizedBox(width: 10),
           const Expanded(
