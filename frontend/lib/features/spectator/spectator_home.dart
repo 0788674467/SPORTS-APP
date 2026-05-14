@@ -691,7 +691,7 @@ class _SpectatorHomeState extends State<SpectatorHome>
                             ),
                           ),
                           const SizedBox(width: 10),
-                          const Column(
+                          Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -701,8 +701,8 @@ class _SpectatorHomeState extends State<SpectatorHome>
                                       fontWeight: FontWeight.w900,
                                       fontSize: 12,
                                       letterSpacing: 1.5)),
-                              Text('2026 Season • Premier Grade',
-                                  style: TextStyle(
+                              Text(appState.seasonLabel,
+                                  style: const TextStyle(
                                       color: AppColors.mmwGold,
                                       fontWeight: FontWeight.w700,
                                       fontSize: 9,
@@ -808,7 +808,7 @@ class _SpectatorHomeState extends State<SpectatorHome>
           Text('Standings',
               style: TextStyle(color: isDark ? Colors.white : AppColors.textDark, fontSize: 26, fontWeight: FontWeight.w900)),
           const SizedBox(height: 4),
-          Text('Season 2026 Rankings',
+          Text(appState.seasonLabel,
               style: TextStyle(color: isDark ? Colors.white70 : AppColors.textMid, fontSize: 13)),
           const SizedBox(height: 20),
           Container(

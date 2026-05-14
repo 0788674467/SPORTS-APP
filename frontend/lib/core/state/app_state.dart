@@ -4,19 +4,33 @@ import 'package:flutter/material.dart';
 enum AppLanguage {
   /// English language
   english,
-  
+
   /// Kiswahili language
   kiswahili
 }
 
-/// Global application state manager for theme and localization.
+/// Global application state manager for theme, localization, and season branding.
 class AppState extends ChangeNotifier {
   bool _isDarkMode = false;
   AppLanguage _language = AppLanguage.english;
 
+  // ── Season label — admin-controlled, shown in spectator hero ─────────────
+  String _seasonLabel = 'Season 2026 underway';
+
+  /// The current season label shown in the spectator hero and standings subtitle.
+  String get seasonLabel => _seasonLabel;
+
+  /// Updates the season label (called when admin saves Season Management).
+  /// Triggers an immediate UI refresh on all listening widgets.
+  void setSeasonLabel(String label) {
+    if (label.trim().isEmpty) return;
+    _seasonLabel = label.trim();
+    notifyListeners();
+  }
+
   /// Whether dark mode is enabled
   bool get isDarkMode => _isDarkMode;
-  
+
   /// Current application language
   AppLanguage get language => _language;
 
@@ -33,7 +47,9 @@ class AppState extends ChangeNotifier {
   }
 
   /// Translates a key to the current language.
+  /// 'season_underway' returns the admin-controlled [seasonLabel].
   String translate(String key) {
+    if (key == 'season_underway') return _seasonLabel;
     final translations = _language == AppLanguage.english ? _en : _sw;
     return translations[key] ?? key;
   }
@@ -55,7 +71,7 @@ class AppState extends ChangeNotifier {
     'choose_language': 'Choose Language',
     'cancel': 'Cancel',
     'status_live': '● LIVE',
-    'season_underway': 'Season 2026 underway',
+    // season_underway is dynamic — handled by translate() override above
     'welcome_mmu': 'Welcome to\nMMU Sports',
     'upcoming_matches': 'UPCOMING MATCHES',
     'discussions': 'Discussions',
@@ -83,7 +99,7 @@ class AppState extends ChangeNotifier {
     'choose_language': 'Chagua Lugha',
     'cancel': 'Ghairi',
     'status_live': '● MUBASHARA',
-    'season_underway': 'Simu 2026 inaendelea',
+    // season_underway is dynamic — same label used regardless of language
     'welcome_mmu': 'Karibu\nMMU Sports',
     'upcoming_matches': 'MECHI ZIJAZO',
     'discussions': 'Mazungumzo',

@@ -8,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import './widgets/dashboard_components.dart';
 import './fixture_generator.dart';
 import '../../core/state/match_state.dart';
+import '../../core/state/app_state.dart';
 import '../../core/auth/auth_provider.dart' as auth;
 import '../../shared/officials_chat.dart';
 
@@ -4343,7 +4344,6 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     }
     setState(() => _settingsSaving = true);
     try {
-      // Upsert into a season_settings table (or any config store you have)
       await Supabase.instance.client.from('season_settings').upsert({
         'id': 1,
         'name': name,
@@ -4351,12 +4351,16 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         'end_date': end,
         'updated_at': DateTime.now().toIso8601String(),
       });
-      if (mounted) _showSettingsSaved('Season updated successfully!');
-    } catch (e) {
-      // Table may not exist yet — still show success for local state
-      if (mounted) _showSettingsSaved('Season settings saved locally.');
+    } catch (_) {
+      // Table may not exist yet — still update the live label
     } finally {
-      if (mounted) setState(() => _settingsSaving = false);
+      if (mounted) {
+        // ── Push the new season label to AppState so the spectator
+        //    hero text and standings subtitle update instantly ──────
+        context.read<AppState>().setSeasonLabel(name);
+        setState(() => _settingsSaving = false);
+        _showSettingsSaved('Season label updated to "$name"');
+      }
     }
   }
 
