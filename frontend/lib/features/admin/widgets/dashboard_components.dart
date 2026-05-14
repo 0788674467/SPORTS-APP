@@ -356,6 +356,7 @@ class StatCard extends StatelessWidget {
   final IconData icon;
   final Gradient gradient;
   final List<FlSpot>? spots;
+  final VoidCallback? onTap;
 
   const StatCard({
     super.key,
@@ -366,70 +367,86 @@ class StatCard extends StatelessWidget {
     required this.icon,
     required this.gradient,
     this.spots,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final bool isUp = percent.startsWith('+');
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 14, offset: const Offset(0, 5))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        splashColor: (gradient as LinearGradient).colors.first.withOpacity(0.08),
+        highlightColor: (gradient as LinearGradient).colors.first.withOpacity(0.04),
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 14, offset: const Offset(0, 5))],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(gradient: gradient, borderRadius: BorderRadius.circular(12)),
-                child: Icon(icon, color: Colors.white, size: 18),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(gradient: gradient, borderRadius: BorderRadius.circular(12)),
+                    child: Icon(icon, color: Colors.white, size: 18),
+                  ),
+                  Row(mainAxisSize: MainAxisSize.min, children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(color: isUp ? Colors.green.shade50 : Colors.red.shade50, borderRadius: BorderRadius.circular(8)),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(isUp ? Icons.trending_up_rounded : Icons.trending_down_rounded, size: 12, color: isUp ? Colors.green.shade600 : Colors.red.shade600),
+                        const SizedBox(width: 2),
+                        Text(percent, style: TextStyle(color: isUp ? Colors.green.shade700 : Colors.red.shade700, fontSize: 11, fontWeight: FontWeight.bold)),
+                      ]),
+                    ),
+                    if (onTap != null) ...[
+                      const SizedBox(width: 4),
+                      Icon(Icons.chevron_right_rounded, size: 16, color: Colors.grey.shade300),
+                    ],
+                  ]),
+                ],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: isUp ? Colors.green.shade50 : Colors.red.shade50, borderRadius: BorderRadius.circular(8)),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(isUp ? Icons.trending_up_rounded : Icons.trending_down_rounded, size: 12, color: isUp ? Colors.green.shade600 : Colors.red.shade600),
-                  const SizedBox(width: 2),
-                  Text(percent, style: TextStyle(color: isUp ? Colors.green.shade700 : Colors.red.shade700, fontSize: 11, fontWeight: FontWeight.bold)),
-                ]),
-              ),
+              const SizedBox(height: 14),
+              Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
+              const SizedBox(height: 2),
+              Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+              if (spots != null)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: LineChart(LineChartData(
+                      gridData: const FlGridData(show: false),
+                      titlesData: const FlTitlesData(show: false),
+                      borderData: FlBorderData(show: false),
+                      lineBarsData: [
+                        LineChartBarData(
+                          spots: spots!,
+                          isCurved: true,
+                          gradient: gradient,
+                          barWidth: 2.5,
+                          dotData: const FlDotData(show: false),
+                          belowBarData: BarAreaData(show: true, gradient: LinearGradient(
+                            colors: [(gradient as LinearGradient).colors.first.withOpacity(0.15), Colors.transparent],
+                            begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                          )),
+                        ),
+                      ],
+                    )),
+                  ),
+                ),
             ],
           ),
-          const SizedBox(height: 14),
-          Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
-          const SizedBox(height: 2),
-          Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-          Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
-          if (spots != null)
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: LineChart(LineChartData(
-                  gridData: const FlGridData(show: false),
-                  titlesData: const FlTitlesData(show: false),
-                  borderData: FlBorderData(show: false),
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: spots!,
-                      isCurved: true,
-                      gradient: gradient,
-                      barWidth: 2.5,
-                      dotData: const FlDotData(show: false),
-                      belowBarData: BarAreaData(show: true, gradient: LinearGradient(
-                        colors: [(gradient as LinearGradient).colors.first.withOpacity(0.15), Colors.transparent],
-                        begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                      )),
-                    ),
-                  ],
-                )),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }

@@ -1131,9 +1131,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           Text('MMU Soccer League — Season 2026 is live.', style: TextStyle(color: Colors.white.withOpacity(0.75), fontSize: 13)),
           const SizedBox(height: 16),
           Wrap(spacing: 8, runSpacing: 8, children: [
-            _pill('⚽ 3 Live Matches'),
-            _pill('🏆 2 Leagues Active'),
-            _pill('👤 ${_pending.length} Pending Approvals'),
+            _tappablePill('⚽ ${_liveMatches.length} Live Matches', 'live_scores'),
+            _tappablePill('🏆 2 Leagues Active', 'leagues'),
+            _tappablePill('👤 ${_pending.length} Pending Approvals', 'approvals'),
           ]),
         ])),
         const SizedBox(width: 16),
@@ -1142,31 +1142,45 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     );
   }
 
-  Widget _pill(String text) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-    decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(20)),
-    child: Text(text, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+  Widget _tappablePill(String text, String route) => GestureDetector(
+    onTap: () => _navigate(route),
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Text(text, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+        const SizedBox(width: 4),
+        const Icon(Icons.arrow_forward_ios_rounded, size: 9, color: Colors.white70),
+      ]),
+    ),
   );
 
   Widget _buildStatsGrid() {
-    final teamCount = _dynamicTeams.isEmpty ? _teams.length : _dynamicTeams.length;
-    final coachCount = _dynamicCoaches.isEmpty ? _coaches.length : _dynamicCoaches.length;
-    final refereeCount = _dynamicReferees.isEmpty ? _referees.length : _dynamicReferees.length;
+    final teamCount   = _dynamicTeams.isEmpty   ? _teams.length   : _dynamicTeams.length;
     final playerCount = _dynamicPlayers.isNotEmpty ? _dynamicPlayers.length : (_players.length * 11);
 
     final cards = [
-      _statCardData('Total Teams', '$teamCount', 'Registered this season', teamCount > 0 ? '+$teamCount' : '0', Icons.shield_rounded,
-        const LinearGradient(colors: [Color(0xFF003087), Color(0xFF1A4FA0)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-        [1.0, 2, 3, 4, 6, 7, 8]),
-      _statCardData('Live Matches', '${_liveMatches.length}', 'Currently in progress', _liveMatches.isNotEmpty ? '+${_liveMatches.length}' : '0', Icons.sports_soccer_rounded,
-        const LinearGradient(colors: [Color(0xFF006B35), Color(0xFF00A651)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-        [0.0, 1, 1, 2, 2, _liveMatches.length.toDouble(), _liveMatches.length.toDouble()]),
-      _statCardData('Registered Players', '$playerCount', '${_dynamicPlayers.isNotEmpty ? "Live from database" : "No players yet"}', playerCount > 0 ? '+$playerCount' : '0', Icons.group_rounded,
-        const LinearGradient(colors: [Color(0xFFC47A00), Color(0xFFF5A500)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-        [1.0, 2, 4, 5, 6, 7, 8]),
-      _statCardData('Pending Squads', '${_submittedSquads.length}', 'Awaiting your review', _submittedSquads.isNotEmpty ? '+${_submittedSquads.length}' : '0', Icons.fact_check_rounded,
-        const LinearGradient(colors: [Color(0xFF001A4D), Color(0xFF003087)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-        [0.0, 0, 1, 1, 1, _submittedSquads.length.toDouble(), _submittedSquads.length.toDouble()]),
+      _statCardData('Total Teams', '$teamCount', 'Registered this season',
+          teamCount > 0 ? '+$teamCount' : '0', Icons.shield_rounded,
+          const LinearGradient(colors: [Color(0xFF003087), Color(0xFF1A4FA0)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+          [1.0, 2, 3, 4, 6, 7, 8], onTap: () => _navigate('teams')),
+      _statCardData('Live Matches', '${_liveMatches.length}', 'Currently in progress',
+          _liveMatches.isNotEmpty ? '+${_liveMatches.length}' : '0', Icons.sports_soccer_rounded,
+          const LinearGradient(colors: [Color(0xFF006B35), Color(0xFF00A651)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+          [0.0, 1, 1, 2, 2, _liveMatches.length.toDouble(), _liveMatches.length.toDouble()], onTap: () => _navigate('live_scores')),
+      _statCardData('Registered Players', '$playerCount',
+          _dynamicPlayers.isNotEmpty ? 'Live from database' : 'No players yet',
+          playerCount > 0 ? '+$playerCount' : '0', Icons.group_rounded,
+          const LinearGradient(colors: [Color(0xFFC47A00), Color(0xFFF5A500)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+          [1.0, 2, 4, 5, 6, 7, 8], onTap: () => _navigate('players')),
+      _statCardData('Pending Squads', '${_submittedSquads.length}', 'Awaiting your review',
+          _submittedSquads.isNotEmpty ? '+${_submittedSquads.length}' : '0', Icons.fact_check_rounded,
+          const LinearGradient(colors: [Color(0xFF001A4D), Color(0xFF003087)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+          [0.0, 0, 1, 1, 1, _submittedSquads.length.toDouble(), _submittedSquads.length.toDouble()], onTap: () => _navigate('squad_approvals')),
     ];
     return GridView.builder(
       shrinkWrap: true,
@@ -1177,10 +1191,11 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     );
   }
 
-  StatCard _statCardData(String title, String value, String subtitle, String pct, IconData icon, Gradient grad, List<double> ys) {
+  StatCard _statCardData(String title, String value, String subtitle, String pct, IconData icon, Gradient grad, List<double> ys, {VoidCallback? onTap}) {
     return StatCard(
       title: title, value: value, subtitle: subtitle, percent: pct, icon: icon, gradient: grad,
       spots: ys.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value)).toList(),
+      onTap: onTap,
     );
   }
 
