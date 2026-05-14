@@ -797,9 +797,10 @@ class _SpectatorHomeState extends State<SpectatorHome>
 
   // ─── Tab 1: Standings ────────────────────────────────────────────────────────
   Widget _buildStandingsPage() {
-    final ms = context.watch<MatchState>();
-    final entries = ms.standings.isNotEmpty ? ms.standings : _demoStandings();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final ms       = context.watch<MatchState>();
+    final appState = context.watch<AppState>();
+    final entries  = ms.standings.isNotEmpty ? ms.standings : _demoStandings();
+    final isDark   = Theme.of(context).brightness == Brightness.dark;
 
     return SafeArea(
       child: ListView(
