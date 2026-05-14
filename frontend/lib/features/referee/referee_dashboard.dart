@@ -119,11 +119,14 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
       child: SafeArea(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const SizedBox(height: 16),
         Padding(padding: const EdgeInsets.symmetric(horizontal: 18), child: Row(children: [
-          Container(width: 36, height: 36,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Image.asset('assets/images/app_logo.png', fit: BoxFit.cover),
-            )),
+          Container(width: 40, height: 40,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+            ),
+            clipBehavior: Clip.hardEdge,
+            child: Image.asset('assets/images/mmulogo.png', fit: BoxFit.cover),
+          ),
           const SizedBox(width: 10),
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Text('UniLeague', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
