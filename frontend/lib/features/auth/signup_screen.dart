@@ -147,7 +147,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
           ),
           // ball.jpeg badge — matches spectator header
           Image.asset(
-            'assets/images/logo.png',
+            'assets/images/mmulogo.png',
             height: 32,
             fit: BoxFit.contain,
             alignment: Alignment.centerLeft,

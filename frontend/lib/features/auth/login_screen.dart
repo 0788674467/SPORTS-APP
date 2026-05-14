@@ -148,7 +148,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                   Row(
                     children: [
                       Image.asset(
-                        'assets/images/logo.png',
+                        'assets/images/mmulogo.png',
                         height: full ? 64 : 36, // Larger on desktop
                         fit: BoxFit.contain,
                       ),

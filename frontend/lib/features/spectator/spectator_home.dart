@@ -668,7 +668,7 @@ class _SpectatorHomeState extends State<SpectatorHome>
                       Row(
                         children: [
                           Image.asset(
-                            'assets/images/logo.png',
+                            'assets/images/mmulogo.png',
                             height: 36,
                             fit: BoxFit.contain,
                           ),
