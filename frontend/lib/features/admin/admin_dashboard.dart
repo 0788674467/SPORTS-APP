@@ -2282,63 +2282,173 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   // ─── Standings ──────────────────────────────────────────────────────────────
   Widget _buildStandings() {
     if (_isLoadingManagement) return const Center(child: CircularProgressIndicator(color: Color(0xFF00A651)));
-    // We'll eventually pull this from a dedicated 'standings' table, 
-    // but for now we use the dynamic teams list.
-    final teamsToRank = _dynamicTeams.isEmpty ? [] : _dynamicTeams;
-    final sorted = List<Map<String, dynamic>>.from(teamsToRank)
-      ..sort((a, b) => (b['points'] ?? 0).compareTo(a['points'] ?? 0));
+    final ms = context.read<MatchState>();
+    // Prefer MatchState standings (from real fixtures); fallback to dynamic teams
+    final List<Map<String, dynamic>> rows;
+    if (ms.standings.isNotEmpty) {
+      rows = ms.standings.map((s) => {
+        'name': s.team,
+        'played': s.played,
+        'wins': s.wins,
+        'draws': s.draws,
+        'losses': s.losses,
+        'gf': s.goalsFor,
+        'ga': s.goalsAgainst,
+        'gd': s.goalDifference,
+        'pts': s.points,
+      }).toList();
+    } else {
+      final sorted = List<Map<String, dynamic>>.from(_dynamicTeams)
+        ..sort((a, b) => ((b['points'] ?? 0) as int).compareTo((a['points'] ?? 0) as int));
+      rows = sorted.map((t) {
+        final w = (t['wins'] ?? 0) as int;
+        final d = (t['draws'] ?? 0) as int;
+        final l = (t['losses'] ?? 0) as int;
+        return {
+          'name': t['name'] ?? 'Unknown',
+          'played': w + d + l,
+          'wins': w, 'draws': d, 'losses': l,
+          'gf': 0, 'ga': 0, 'gd': 0,
+          'pts': (t['points'] ?? 0) as int,
+        };
+      }).toList();
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
-      child: _card(title: '🏆 League Standings', subtitle: 'MMU Soccer League — Season 2026', child: Column(children: [
-        // Header
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-          color: const Color(0xFF003087),
-          child: Row(children: [
-            const SizedBox(width: 28),
-            const Expanded(child: Text('Club', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12))),
-            ...['P', 'W', 'D', 'L', 'Pts'].map((h) => SizedBox(width: 32, child: Text(h, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)))),
-          ]),
-        ),
-        ...sorted.asMap().entries.map((e) {
-          final t = e.value;
-          final pos = e.key + 1;
-          final isTop4 = pos <= 4;
-          final isRelegation = pos > sorted.length - 2;
-          final name = t['name'] ?? 'Unknown';
-          final wins = t['wins'] ?? 0;
-          final draws = t['draws'] ?? 0;
-          final losses = t['losses'] ?? 0;
-          final points = t['points'] ?? 0;
-          final played = wins + draws + losses;
-
-          return Container(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-            decoration: BoxDecoration(
-              color: e.key % 2 == 0 ? Colors.grey.shade50 : Colors.white,
-              border: Border(left: BorderSide(
-                color: isTop4 ? const Color(0xFF003087) : (isRelegation ? Colors.red.shade400 : Colors.transparent),
-                width: 3,
-              )),
-            ),
+      child: _card(
+        title: '🏆 League Standings',
+        subtitle: 'MMU Soccer League — Season 2026',
+        child: Column(children: [
+          // ── Header ─────────────────────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 0),
+            decoration: const BoxDecoration(color: Color(0xFF003087)),
             child: Row(children: [
-              SizedBox(width: 28, child: Text('$pos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: isTop4 ? const Color(0xFF003087) : Colors.black87))),
-              Expanded(child: Row(children: [
-                CircleAvatar(radius: 12, backgroundColor: const Color(0xFF003087).withOpacity(0.15), child: Text(name[0], style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF003087)))),
-                const SizedBox(width: 8),
-                Expanded(child: Text(name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis)),
-              ])),
-              ...[played, wins, draws, losses, points].map((v) =>
-                SizedBox(width: 32, child: Text('$v', textAlign: TextAlign.center, style: TextStyle(fontSize: 13, fontWeight: v == points ? FontWeight.bold : FontWeight.normal, color: v == points ? const Color(0xFF00A651) : Colors.black87)))),
+              const SizedBox(width: 3), // left-bar placeholder
+              const SizedBox(width: 28,
+                child: Text('#', textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1))),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text('CLUB',
+                    style: TextStyle(color: Colors.white70, fontSize: 10,
+                        fontWeight: FontWeight.w800, letterSpacing: 1)),
+              ),
+              ...[('P', 28), ('W', 28), ('D', 28), ('L', 28), ('GF', 28), ('GA', 28), ('GD', 28), ('PTS', 36)].map(
+                (e) => SizedBox(
+                  width: e.$2.toDouble(),
+                  child: Text(e.$1,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: e.$1 == 'PTS' ? const Color(0xFFFFC107) : Colors.white54,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                      )),
+                ),
+              ),
             ]),
-          );
-        }),
-        const SizedBox(height: 12),
-        Row(children: [
-          _legendDot(const Color(0xFF003087)), const SizedBox(width: 6), const Text('UEFA / Promotion Zone', style: TextStyle(fontSize: 11)), const SizedBox(width: 16),
-          _legendDot(Colors.red.shade400), const SizedBox(width: 6), const Text('Relegation Zone', style: TextStyle(fontSize: 11)),
+          ),
+          // ── Rows ───────────────────────────────────────────────────────
+          if (rows.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 32),
+              child: Center(child: Text('No standings data yet', style: TextStyle(color: Colors.grey))),
+            )
+          else
+            ...rows.asMap().entries.map((e) {
+              final pos    = e.key + 1;
+              final t      = e.value;
+              final total  = rows.length;
+              final isTop4 = pos <= 4;
+              final isRel  = pos > total - 2;
+              final zoneC  = isTop4 ? const Color(0xFF003087) : (isRel ? Colors.red.shade400 : Colors.transparent);
+              final name   = (t['name'] as String?) ?? 'Unknown';
+              final gd     = (t['gd'] as int?) ?? 0;
+              final gdStr  = gd > 0 ? '+$gd' : '$gd';
+              final initials = name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : '?';
+
+              return Container(
+                decoration: BoxDecoration(
+                  color: pos.isEven ? Colors.grey.shade50 : Colors.white,
+                  border: Border(
+                    bottom: BorderSide(color: Colors.grey.shade100, width: 0.8),
+                    left:  BorderSide(color: zoneC, width: 3),
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                  child: Row(children: [
+                    // Pos
+                    SizedBox(width: 28,
+                      child: Text('$pos',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 13,
+                            color: isTop4 ? const Color(0xFF003087) : (isRel ? Colors.red.shade500 : Colors.black87),
+                          ))),
+                    const SizedBox(width: 8),
+                    // Club
+                    Expanded(child: Row(children: [
+                      CircleAvatar(
+                        radius: 13,
+                        backgroundColor: const Color(0xFF003087).withOpacity(0.12),
+                        child: Text(initials,
+                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF003087))),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(name,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+                    ])),
+                    // Stat columns
+                    ...[
+                      (t['played'] as int? ?? 0, 28),
+                      (t['wins']   as int? ?? 0, 28),
+                      (t['draws']  as int? ?? 0, 28),
+                      (t['losses'] as int? ?? 0, 28),
+                      (t['gf']     as int? ?? 0, 28),
+                      (t['ga']     as int? ?? 0, 28),
+                    ].map((s) => SizedBox(
+                      width: s.$2.toDouble(),
+                      child: Text('${s.$1}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                    )),
+                    // GD
+                    SizedBox(width: 28,
+                      child: Text(gdStr,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: gd > 0 ? Colors.green.shade700 : (gd < 0 ? Colors.red.shade600 : Colors.black54),
+                          ))),
+                    // PTS — gold bold
+                    SizedBox(width: 36,
+                      child: Text('${t['pts'] ?? 0}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFFFFC107),
+                          ))),
+                  ]),
+                ),
+              );
+            }),
+          const SizedBox(height: 12),
+          // ── Legend ─────────────────────────────────────────────────────
+          Row(children: [
+            _legendDot(const Color(0xFF003087)), const SizedBox(width: 6),
+            const Text('Top 4 — Playoffs', style: TextStyle(fontSize: 11)),
+            const SizedBox(width: 16),
+            _legendDot(Colors.red.shade400), const SizedBox(width: 6),
+            const Text('Relegation Zone', style: TextStyle(fontSize: 11)),
+          ]),
         ]),
-      ])),
+      ),
     );
   }
 

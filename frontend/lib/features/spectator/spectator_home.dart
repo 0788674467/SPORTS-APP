@@ -853,23 +853,33 @@ class _SpectatorHomeState extends State<SpectatorHome>
   );
 
   Widget _standingHeader() => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
     decoration: const BoxDecoration(
       color: AppColors.mmwNavy,
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
     child: Row(
       children: [
-        const SizedBox(width: 28),
+        const SizedBox(width: 4), // left border placeholder
+        const SizedBox(width: 24,
+          child: Text('#', textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1))),
+        const SizedBox(width: 8),
         const Expanded(
-          child: Text('CLUB', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1)),
+          child: Text('CLUB', style: TextStyle(color: Colors.white70, fontSize: 10,
+              fontWeight: FontWeight.w800, letterSpacing: 1)),
         ),
-        ...['P', 'W', 'GD', 'PTS'].map(
+        ...['P', 'W', 'D', 'L', 'GF', 'GA', 'GD', 'PTS'].map(
           (h) => SizedBox(
-            width: 34,
+            width: h == 'PTS' ? 36 : 28,
             child: Text(h,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white60, fontSize: 10, fontWeight: FontWeight.w700)),
+                style: TextStyle(
+                  color: h == 'PTS' ? AppColors.mmwGold : Colors.white54,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                )),
           ),
         ),
       ],
@@ -877,48 +887,107 @@ class _SpectatorHomeState extends State<SpectatorHome>
   );
 
   Widget _standingRow(int pos, StandingEntry s) {
-    final isTop = pos <= 4;
-    final isBottom = pos >= 7;
-    Color posColor = isTop ? AppColors.mmwNavy : (isBottom ? Colors.redAccent : AppColors.textLight);
+    final isTop4    = pos <= 4;
+    final isBottom  = pos >= 7;
+    final zoneColor = isTop4 ? AppColors.mmwNavy : (isBottom ? Colors.redAccent : Colors.transparent);
+    final gd        = s.goalDifference;
+    final gdLabel   = gd > 0 ? '+$gd' : '$gd';
+    final initials  = s.team.trim().isNotEmpty ? s.team.trim()[0].toUpperCase() : '?';
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.divider)),
-        color: isTop ? AppColors.mmwNavy.withOpacity(0.04) : Colors.transparent,
+        color: pos.isEven
+            ? AppColors.mmwNavy.withOpacity(0.03)
+            : Colors.transparent,
+        border: Border(
+          bottom: BorderSide(color: AppColors.divider, width: 0.6),
+          left:   BorderSide(color: zoneColor, width: 3),
+        ),
       ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 28,
-            child: Text('$pos',
-                style: TextStyle(color: posColor, fontWeight: FontWeight.w700, fontSize: 12)),
-          ),
-          Expanded(
-            child: Text(s.team,
-                style: const TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w600, fontSize: 13)),
-          ),
-          ...['${s.played}', '${s.wins}', '${s.goalDifference}', '${s.points}']
-              .asMap()
-              .entries
-              .map(
-                (v) => SizedBox(
-                  width: 34,
-                  child: Text(
-                    v.value,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: v.key == 3 ? AppColors.mmwGold : AppColors.textMid,
-                      fontWeight: v.key == 3 ? FontWeight.w800 : FontWeight.normal,
-                      fontSize: 12,
-                    ),
-                  ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            // Position number
+            SizedBox(
+              width: 24,
+              child: Text(
+                '$pos',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: isTop4 ? AppColors.mmwNavy : (isBottom ? Colors.redAccent : AppColors.textMid),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
                 ),
               ),
-        ],
+            ),
+            const SizedBox(width: 8),
+            // Club avatar + name
+            Expanded(
+              child: Row(
+                children: [
+                  Container(
+                    width: 26, height: 26,
+                    decoration: BoxDecoration(
+                      color: AppColors.mmwNavy.withOpacity(0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(initials,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.mmwNavy,
+                          )),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(s.team,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.textDark,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        )),
+                  ),
+                ],
+              ),
+            ),
+            // Stats columns: P W D L GF GA GD PTS
+            _statCell('${s.played}'),
+            _statCell('${s.wins}'),
+            _statCell('${s.draws}'),
+            _statCell('${s.losses}'),
+            _statCell('${s.goalsFor}'),
+            _statCell('${s.goalsAgainst}'),
+            _statCell(gdLabel),
+            // PTS — gold + bold
+            SizedBox(
+              width: 36,
+              child: Text(
+                '${s.points}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: AppColors.mmwGold,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+
+  Widget _statCell(String val) => SizedBox(
+    width: 28,
+    child: Text(val,
+        textAlign: TextAlign.center,
+        style: const TextStyle(color: AppColors.textMid, fontSize: 12)),
+  );
 
   // ─── Tab 2: Discussions (functional) ─────────────────────────────────────────
   Widget _buildDiscussionPage() {
