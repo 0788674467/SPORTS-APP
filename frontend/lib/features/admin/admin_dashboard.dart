@@ -1198,71 +1198,226 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   }
 
   Widget _buildTeamRegistrationChart() {
-    return _card(title: 'Team Registrations', subtitle: 'By league & division', child: SizedBox(
-      height: 200,
-      child: BarChart(BarChartData(
-        gridData: FlGridData(show: true, drawVerticalLine: false, getDrawingHorizontalLine: (_) => FlLine(color: Colors.grey.shade100, strokeWidth: 1)),
-        titlesData: FlTitlesData(
-          bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (v, _) {
-            const labels = ['Lions', 'Sharks', 'Eagles', 'Wolves', 'Foxes', 'Panthers', 'Stars', 'Knights'];
-            final i = v.toInt();
-            if (i < 0 || i >= labels.length) return const SizedBox.shrink();
-            return Padding(padding: const EdgeInsets.only(top: 4), child: Text(labels[i], style: const TextStyle(fontSize: 8)));
-          }, reservedSize: 22)),
-          leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 24, getTitlesWidget: (v, _) => Text('${v.toInt()}', style: const TextStyle(fontSize: 9, color: Colors.grey)))),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        ),
-        borderData: FlBorderData(show: false),
-        barGroups: _teams.asMap().entries.map((e) => BarChartGroupData(x: e.key, barRods: [
-          BarChartRodData(
-            toY: (e.value.wins + e.value.draws + e.value.losses).toDouble(),
-            gradient: const LinearGradient(colors: [Color(0xFF001A4D), Color(0xFF003087)], begin: Alignment.bottomCenter, end: Alignment.topCenter),
-            width: 20,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(5)),
-          ),
-        ])).toList(),
-      )),
-    ));
+    // Use real teams; fall back to dummy only if DB is empty
+    final teams = _dynamicTeams.isNotEmpty ? _dynamicTeams : _teams.map((t) => {
+      'name': t.name,
+      'player_count': t.wins + t.draws + t.losses,
+      'status': t.status,
+    }).toList();
+
+    // Max player count for progress bar scaling
+    final maxVal = teams.fold<int>(1, (m, t) {
+      final v = ((t['player_count'] ?? t['wins']) as int? ?? 1);
+      return v > m ? v : m;
+    });
+
+    return _card(
+      title: 'Team Registrations',
+      subtitle: teams.isEmpty ? 'No teams yet' : '${teams.length} team${teams.length == 1 ? '' : 's'} registered',
+      child: teams.isEmpty
+          ? const SizedBox(
+              height: 160,
+              child: Center(
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.shield_outlined, size: 40, color: Color(0xFFD0D8E8)),
+                  SizedBox(height: 8),
+                  Text('No teams registered yet', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                ]),
+              ),
+            )
+          : Column(
+              children: teams.take(8).toList().asMap().entries.map((e) {
+                final t = e.value;
+                final name   = (t['name'] as String?) ?? 'Unknown';
+                final count  = ((t['player_count'] ?? t['wins']) as int? ?? 0);
+                final status = (t['status'] as String?) ?? 'Active';
+                final isActive = status.toLowerCase() == 'active';
+                final ratio  = maxVal > 0 ? (count / maxVal).clamp(0.0, 1.0) : 0.0;
+                final initials = name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : '?';
+                // Cycle through a set of accent colours
+                final accent = const [
+                  Color(0xFF003087), Color(0xFF00A651), Color(0xFFC47A00),
+                  Color(0xFF8B0000), Color(0xFF006B6B), Color(0xFF4A0072),
+                  Color(0xFF004D40), Color(0xFF37474F),
+                ][e.key % 8];
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 7),
+                  child: Row(children: [
+                    // Avatar
+                    Container(
+                      width: 32, height: 32,
+                      decoration: BoxDecoration(
+                        color: accent.withOpacity(0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(initials,
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: accent)),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // Name + bar
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(name,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: isActive ? Colors.green.shade50 : Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(status,
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w700,
+                                      color: isActive ? Colors.green.shade700 : Colors.grey,
+                                      letterSpacing: 0.5,
+                                    )),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 5),
+                          LayoutBuilder(builder: (_, bc) => Stack(
+                            children: [
+                              Container(
+                                height: 6, width: bc.maxWidth,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 600),
+                                height: 6,
+                                width: bc.maxWidth * ratio,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [accent, accent.withOpacity(0.6)],
+                                    begin: Alignment.centerLeft,
+                                    end: Alignment.centerRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            ],
+                          )),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    // Player count badge
+                    Text('$count',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: accent,
+                        )),
+                  ]),
+                );
+              }).toList(),
+            ),
+    );
   }
 
   Widget _buildResultsChart() {
     return _card(
-      title: 'Recent Match Scores', 
-      subtitle: _recentResults.isEmpty ? 'No match data' : 'Goals scored per result', 
-      child: _recentResults.isEmpty 
-        ? const SizedBox(
-            height: 200,
-            child: Center(child: Text('No match data available', style: TextStyle(color: Colors.grey, fontSize: 14))),
-          )
-        : SizedBox(
-            height: 200,
-            child: BarChart(BarChartData(
-              gridData: FlGridData(show: true, drawVerticalLine: false, getDrawingHorizontalLine: (_) => FlLine(color: Colors.grey.shade100, strokeWidth: 1)),
-              titlesData: FlTitlesData(
-                bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (v, _) {
-                  final labels = _recentResults.map((r) => (r['home_team'] as String).split(' ').first).toList();
-                  final i = v.toInt();
-                  if (i < 0 || i >= labels.length) return const SizedBox.shrink();
-                  return Padding(padding: const EdgeInsets.only(top: 4), child: Text(labels[i], style: const TextStyle(fontSize: 8)));
-                }, reservedSize: 22)),
-                leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 24, getTitlesWidget: (v, _) => Text('${v.toInt()}', style: const TextStyle(fontSize: 9, color: Colors.grey)))),
-                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      title: 'Recent Match Scores',
+      subtitle: _recentResults.isEmpty ? 'No match data' : '${_recentResults.length} result${_recentResults.length == 1 ? '' : 's'} this season',
+      child: _recentResults.isEmpty
+          ? const SizedBox(
+              height: 160,
+              child: Center(
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.sports_score_outlined, size: 40, color: Color(0xFFD0D8E8)),
+                  SizedBox(height: 8),
+                  Text('No results yet — matches underway', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                ]),
               ),
-              borderData: FlBorderData(show: false),
-              barGroups: _recentResults.asMap().entries.map((e) => BarChartGroupData(x: e.key, barRods: [
-                BarChartRodData(
-                  toY: (e.value['home_score'] as int? ?? 0).toDouble(),
-                  gradient: const LinearGradient(colors: [Color(0xFF001A4D), Color(0xFF003087)], begin: Alignment.bottomCenter, end: Alignment.topCenter),
-                  width: 16, borderRadius: const BorderRadius.vertical(top: Radius.circular(5))),
-                BarChartRodData(
-                  toY: (e.value['away_score'] as int? ?? 0).toDouble(),
-                  gradient: const LinearGradient(colors: [Color(0xFFC47A00), Color(0xFFF5A500)], begin: Alignment.bottomCenter, end: Alignment.topCenter),
-                  width: 16, borderRadius: const BorderRadius.vertical(top: Radius.circular(5))),
-              ])).toList(),
-            )),
-          )
+            )
+          : Column(
+              children: _recentResults.take(5).map((r) {
+                final home     = (r['home_team'] as String?) ?? 'Home';
+                final away     = (r['away_team'] as String?) ?? 'Away';
+                final hs       = (r['home_score'] as int?) ?? 0;
+                final as_      = (r['away_score'] as int?) ?? 0;
+                final homeWon  = hs > as_;
+                final awayWon  = as_ > hs;
+                final isDraw   = hs == as_;
+
+                return Container(
+                  margin: const EdgeInsets.symmetric(vertical: 5),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade100),
+                  ),
+                  child: Row(children: [
+                    // Home team
+                    Expanded(
+                      child: Text(home.split(' ').first,
+                          textAlign: TextAlign.right,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: homeWon ? FontWeight.w800 : FontWeight.w500,
+                            color: homeWon ? const Color(0xFF003087) : Colors.black87,
+                          )),
+                    ),
+                    const SizedBox(width: 8),
+                    // Score pill
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: isDraw
+                              ? [const Color(0xFF555555), const Color(0xFF888888)]
+                              : [const Color(0xFF003087), const Color(0xFF1A4FA0)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF003087).withOpacity(0.25),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          )
+                        ],
+                      ),
+                      child: Text('$hs – $as_',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 13,
+                            letterSpacing: 1,
+                          )),
+                    ),
+                    const SizedBox(width: 8),
+                    // Away team
+                    Expanded(
+                      child: Text(away.split(' ').first,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: awayWon ? FontWeight.w800 : FontWeight.w500,
+                            color: awayWon ? const Color(0xFF003087) : Colors.black87,
+                          )),
+                    ),
+                  ]),
+                );
+              }).toList(),
+            ),
     );
   }
 
