@@ -675,7 +675,7 @@ class _SpectatorHomeState extends State<SpectatorHome>
                             height: 44,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: Colors.white,
+                              color: AppColors.mmwNavy,
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withOpacity(0.25),
@@ -685,9 +685,12 @@ class _SpectatorHomeState extends State<SpectatorHome>
                               ],
                             ),
                             clipBehavior: Clip.hardEdge,
-                            child: Image.asset(
-                              'assets/images/mmulogo.png',
-                              fit: BoxFit.cover,
+                            child: Padding(
+                              padding: const EdgeInsets.all(5),
+                              child: Image.asset(
+                                'assets/images/mmulogo.png',
+                                fit: BoxFit.contain,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 10),

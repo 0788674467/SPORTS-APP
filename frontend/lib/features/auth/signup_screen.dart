@@ -287,12 +287,15 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
             height: 38,
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white,
+              color: AppColors.mmwNavy,
             ),
             clipBehavior: Clip.hardEdge,
-            child: Image.asset(
-              'assets/images/mmulogo.png',
-              fit: BoxFit.cover,
+            child: Padding(
+              padding: const EdgeInsets.all(5),
+              child: Image.asset(
+                'assets/images/mmulogo.png',
+                fit: BoxFit.contain,
+              ),
             ),
           ),
           const SizedBox(width: 10),
