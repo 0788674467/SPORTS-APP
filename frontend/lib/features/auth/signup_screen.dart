@@ -30,20 +30,18 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
   bool _obscureConfirm = true;
 
   // Step 3
-  String _selectedRole = 'spectator';
+  String _selectedRole = 'coach';
   // shown when coach is selected
 
   bool _loading = false;
   String? _errorMsg;
-  bool _success = false;
 
   final _step1Key = GlobalKey<FormState>();
   final _step2Key = GlobalKey<FormState>();
 
   static const _roles = [
-    {'value': 'coach', 'label': 'Coach', 'icon': Icons.sports, 'desc': 'Manage team & lineups', 'color': 0xFF1B5E20},
-    {'value': 'referee', 'label': 'Referee', 'icon': Icons.sports_handball, 'desc': 'Officiate matches', 'color': 0xFF1A237E},
-    {'value': 'spectator', 'label': 'Spectator / Fan', 'icon': Icons.people_outline, 'desc': 'Follow the action', 'color': 0xFF4A148C},
+    {'value': 'coach',   'label': 'Coach',   'icon': Icons.sports,          'desc': 'Manage your team & lineups',   'color': 0xFF1B5E20},
+    {'value': 'referee', 'label': 'Referee', 'icon': Icons.sports_handball, 'desc': 'Officiate official matches',    'color': 0xFF1A237E},
   ];
 
   @override
@@ -100,11 +98,151 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
     );
 
     if (!mounted) return;
-    setState(() {
-      _loading = false;
-      if (error != null) _errorMsg = error;
-      else _success = true;
-    });
+    if (error != null) {
+      setState(() { _loading = false; _errorMsg = error; });
+    } else {
+      setState(() => _loading = false);
+      _showSuccessDialog();
+    }
+  }
+
+  void _showSuccessDialog() {
+    final role = _selectedRole;
+    final isPending = role == 'coach' || role == 'referee';
+    final roleLabel = role == 'coach' ? 'Coach' : 'Referee';
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+        child: Padding(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Success icon
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF003087), Color(0xFF1A4FA0)],
+                    begin: Alignment.topLeft, end: Alignment.bottomRight,
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isPending ? Icons.pending_actions_rounded : Icons.check_circle_rounded,
+                  size: 48, color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Title
+              Text(
+                isPending ? 'Application Submitted! ✅' : 'Account Created! ⚽',
+                style: const TextStyle(
+                  color: AppColors.mmwNavy,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+
+              // Directives
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF003087).withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFF003087).withOpacity(0.12)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _directiveItem(
+                      Icons.mark_email_read_rounded,
+                      'Verify your email',
+                      'Check your inbox and confirm your email address.',
+                    ),
+                    const SizedBox(height: 12),
+                    if (isPending) _directiveItem(
+                      Icons.admin_panel_settings_rounded,
+                      'Awaiting admin approval',
+                      'Your $roleLabel account will be reviewed by the MMU Soccer admin. You will be notified once approved.',
+                    )
+                    else _directiveItem(
+                      Icons.login_rounded,
+                      'Sign in to continue',
+                      'Once verified, use your email & password to sign in.',
+                    ),
+                    if (isPending) ...[
+                      const SizedBox(height: 12),
+                      _directiveItem(
+                        Icons.timer_rounded,
+                        'Be patient',
+                        'Approval may take up to 24 hours. You will receive access once confirmed.',
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // CTA
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context); // close dialog
+                    Navigator.pop(context); // go back to Sign In
+                  },
+                  icon: const Icon(Icons.login_rounded, size: 18),
+                  label: const Text('Go to Sign In', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.mmwNavy,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _directiveItem(IconData icon, String title, String body) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          margin: const EdgeInsets.only(top: 2),
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: AppColors.mmwNavy.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, size: 14, color: AppColors.mmwNavy),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.mmwNavy)),
+              const SizedBox(height: 2),
+              Text(body, style: TextStyle(fontSize: 12, color: Colors.grey.shade600, height: 1.4)),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -112,25 +250,23 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: _success
-            ? _buildSuccess()
-            : Column(
+        child: Column(
+          children: [
+            _buildTopBar(),
+            _buildStepIndicator(),
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                physics: const NeverScrollableScrollPhysics(),
                 children: [
-                  _buildTopBar(),
-                  _buildStepIndicator(),
-                  Expanded(
-                    child: PageView(
-                      controller: _pageController,
-                      physics: const NeverScrollableScrollPhysics(),
-                      children: [
-                        _buildStep1(),
-                        _buildStep2(),
-                        _buildStep3(),
-                      ],
-                    ),
-                  ),
+                  _buildStep1(),
+                  _buildStep2(),
+                  _buildStep3(),
                 ],
               ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -486,7 +622,10 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
               child: Row(children: [
                 Icon(Icons.info_outline, color: Colors.amber.shade700, size: 18),
                 const SizedBox(width: 8),
-                Expanded(child: Text('Coach & Referee accounts require admin approval before access is granted.', style: TextStyle(color: Colors.amber.shade800, fontSize: 12))),
+                Expanded(child: Text(
+                  'Coach & Referee accounts require admin approval before access is granted.',
+                  style: TextStyle(color: Colors.amber.shade800, fontSize: 12),
+                )),
               ]),
             ),
 
@@ -513,58 +652,6 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildSuccess() {
-    final isPending = _selectedRole == 'coach' || _selectedRole == 'referee';
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(color: AppColors.mmwNavy.withOpacity(0.08), shape: BoxShape.circle),
-              child: Icon(isPending ? Icons.pending_actions_rounded : Icons.check_circle_outline_rounded,
-                  size: 72, color: AppColors.mmwNavy),
-            ),
-            const SizedBox(height: 28),
-            Text(
-              isPending ? 'Application Submitted! ✅' : 'Welcome to MMU Soccer! ⚽',
-              style: const TextStyle(color: AppColors.mmwNavy, fontSize: 24, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(color: AppColors.mmwNavy.withOpacity(0.06), borderRadius: BorderRadius.circular(16)),
-              child: Text(
-                isPending
-                    ? 'Your account is pending admin approval. You\'ll receive access once the MMU Soccer admin reviews your registration.'
-                    : 'Your account has been created. Please verify your email then sign in.',
-                style: const TextStyle(color: AppColors.textDark, fontSize: 14, height: 1.6),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.mmwNavy,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                ),
-                child: const Text('Back to Sign In', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
