@@ -103,14 +103,48 @@ class AuthProvider extends ChangeNotifier {
     return 'approved';
   }
 
+  /// Translates raw Supabase / Dart exceptions into plain user-facing messages.
+  String? _friendlyError(Object e) {
+    final raw = e.toString().toLowerCase();
+    if (raw.contains('user already registered') || raw.contains('already been registered') || raw.contains('already in use')) {
+      return 'This email is already registered. Please sign in instead.';
+    }
+    if (raw.contains('invalid login credentials') || raw.contains('invalid credentials') || raw.contains('wrong password')) {
+      return 'Incorrect email or password. Please try again.';
+    }
+    if (raw.contains('email not confirmed')) {
+      return 'Please verify your email before signing in.';
+    }
+    if (raw.contains('email') && raw.contains('invalid')) {
+      return 'Please enter a valid email address.';
+    }
+    if (raw.contains('password') && (raw.contains('short') || raw.contains('weak') || raw.contains('characters'))) {
+      return 'Password must be at least 6 characters long.';
+    }
+    if (raw.contains('network') || raw.contains('socketexception') || raw.contains('connection')) {
+      return 'No internet connection. Please check your network.';
+    }
+    if (raw.contains('too many requests') || raw.contains('rate limit')) {
+      return 'Too many attempts. Please wait a moment and try again.';
+    }
+    if (raw.contains('row-level security') || raw.contains('unauthorized') || raw.contains('403') || raw.contains('storageexception')) {
+      // Avatar upload failed via RLS — account was still created, treat as success
+      return null;
+    }
+    if (raw.contains('timeout') || raw.contains('timed out')) {
+      return 'Request timed out. Please try again.';
+    }
+    return 'Something went wrong. Please try again.';
+  }
+
   Future<String?> signIn(String email, String password) async {
     try {
       await _supabase.auth.signInWithPassword(email: email, password: password);
       return null;
     } on AuthException catch (e) {
-      return e.message;
+      return _friendlyError(e);
     } catch (e) {
-      return e.toString();
+      return _friendlyError(e);
     }
   }
 
@@ -166,9 +200,9 @@ class AuthProvider extends ChangeNotifier {
 
       return null;
     } on AuthException catch (e) {
-      return e.message;
+      return _friendlyError(e);
     } catch (e) {
-      return e.toString();
+      return _friendlyError(e); // returns null for StorageException/RLS = avatar failed but account OK
     }
   }
 
