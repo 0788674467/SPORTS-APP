@@ -100,6 +100,20 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
     if (!mounted) return;
     if (error != null) {
       setState(() { _loading = false; _errorMsg = error; });
+      // Also show a snackbar so the error is unmissable
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(children: [
+            const Icon(Icons.error_outline, color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            Expanded(child: Text(error, style: const TextStyle(color: Colors.white))),
+          ]),
+          backgroundColor: Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          duration: const Duration(seconds: 5),
+        ),
+      );
     } else {
       setState(() => _loading = false);
       _showSuccessDialog();
@@ -546,12 +560,34 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
             children: [
               Icon(Icons.sports_soccer, size: 28, color: AppColors.mmwNavy),
               SizedBox(width: 10),
-              const Text('Your Role', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.mmwNavy)),
+              Text('Your Role', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.mmwNavy)),
             ],
           ),
           const SizedBox(height: 4),
           Text('Select how you participate in MMU Soccer', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
+
+          // ── Error banner (visible if sign-up fails on this step) ──────
+          if (_errorMsg != null) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: Row(children: [
+                Icon(Icons.error_outline, color: Colors.red.shade600, size: 18),
+                const SizedBox(width: 8),
+                Expanded(child: Text(_errorMsg!, style: TextStyle(color: Colors.red.shade700, fontSize: 13))),
+                GestureDetector(
+                  onTap: () => setState(() => _errorMsg = null),
+                  child: Icon(Icons.close, size: 16, color: Colors.red.shade400),
+                ),
+              ]),
+            ),
+            const SizedBox(height: 14),
+          ],
 
           ...(_roles.map((role) {
             final isSelected = _selectedRole == role['value'];
