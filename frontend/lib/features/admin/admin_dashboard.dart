@@ -173,6 +173,44 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         _pending = users;
         _isLoadingPending = false;
       });
+      // Sync pending users as notifications so the bell & notification centre reflect them
+      await _syncPendingAsNotifications(users);
+    }
+  }
+
+  /// Inserts a notification row for each pending user that doesn't yet have one,
+  /// ensuring the notification centre always reflects the Approvals sidebar badge.
+  Future<void> _syncPendingAsNotifications(List<Map<String, dynamic>> pending) async {
+    if (pending.isEmpty) return;
+    try {
+      final db = Supabase.instance.client;
+      for (final user in pending) {
+        final uid  = user['id'] as String? ?? '';
+        final name = (user['full_name'] as String?) ?? 'Unknown';
+        final role = (user['role'] as String?) ?? 'user';
+
+        // Check if a notification for this user already exists
+        final existing = await db
+            .from('notifications')
+            .select('id')
+            .eq('type', 'approval')
+            .ilike('title', '%$uid%')
+            .limit(1);
+
+        if ((existing as List).isEmpty) {
+          await db.from('notifications').insert({
+            'recipient_id': null, // admin-only broadcast
+            'title': '[$uid] New ${role[0].toUpperCase()}${role.substring(1)} Registration',
+            'body': '$name has registered as a $role and is awaiting your approval.',
+            'type': 'approval',
+            'is_read': false,
+          });
+        }
+      }
+      // Reload notifications so the bell badge and panel update
+      await _loadNotifications();
+    } catch (e) {
+      debugPrint('_syncPendingAsNotifications error: $e');
     }
   }
 
