@@ -56,8 +56,60 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
   }
 
   Future<void> _pickImage() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              width: 40, height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+            ),
+            const Text('Add Profile Photo',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.mmwNavy)),
+            const SizedBox(height: 20),
+            // Camera option
+            ListTile(
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(color: AppColors.mmwNavy.withOpacity(0.1), shape: BoxShape.circle),
+                child: const Icon(Icons.camera_alt_rounded, color: AppColors.mmwNavy),
+              ),
+              title: const Text('Take Photo', style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: const Text('Use your camera'),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            const SizedBox(height: 8),
+            // Gallery option
+            ListTile(
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), shape: BoxShape.circle),
+                child: const Icon(Icons.photo_library_rounded, color: Colors.green),
+              ),
+              title: const Text('Choose from Gallery', style: TextStyle(fontWeight: FontWeight.w600)),
+              subtitle: const Text('Pick from your photos'),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (source == null) return;
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, maxWidth: 512, imageQuality: 80);
+    final picked = await picker.pickImage(source: source, maxWidth: 512, imageQuality: 80);
     if (picked != null) {
       final bytes = await picked.readAsBytes();
       setState(() => _profileImage = bytes);
