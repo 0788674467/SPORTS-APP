@@ -1206,25 +1206,27 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   Widget _buildStatsGrid() {
     final teamCount   = _dynamicTeams.isEmpty   ? _teams.length   : _dynamicTeams.length;
     final playerCount = _dynamicPlayers.isNotEmpty ? _dynamicPlayers.length : (_players.length * 11);
+    final liveCount   = _liveMatches.length;
+    final squadCount  = _submittedSquads.length;
 
     final cards = [
       _statCardData('Total Teams', '$teamCount', 'Registered this season',
           teamCount > 0 ? '+$teamCount' : '0', Icons.shield_rounded,
           const LinearGradient(colors: [Color(0xFF003087), Color(0xFF1A4FA0)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-          [1.0, 2, 3, 4, 6, 7, 8], onTap: () => _navigate('teams')),
-      _statCardData('Live Matches', '${_liveMatches.length}', 'Currently in progress',
-          _liveMatches.isNotEmpty ? '+${_liveMatches.length}' : '0', Icons.sports_soccer_rounded,
+          (teamCount / 8).clamp(0.0, 1.0), onTap: () => _navigate('teams')),
+      _statCardData('Live Matches', '$liveCount', 'Currently in progress',
+          liveCount > 0 ? '+$liveCount' : '0', Icons.sports_soccer_rounded,
           const LinearGradient(colors: [Color(0xFF006B35), Color(0xFF00A651)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-          [0.0, 1, 1, 2, 2, _liveMatches.length.toDouble(), _liveMatches.length.toDouble()], onTap: () => _navigate('live_scores')),
+          (liveCount / 20).clamp(0.0, 1.0), onTap: () => _navigate('live_scores')),
       _statCardData('Registered Players', '$playerCount',
           _dynamicPlayers.isNotEmpty ? 'Live from database' : 'No players yet',
           playerCount > 0 ? '+$playerCount' : '0', Icons.group_rounded,
           const LinearGradient(colors: [Color(0xFFC47A00), Color(0xFFF5A500)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-          [1.0, 2, 4, 5, 6, 7, 8], onTap: () => _navigate('players')),
-      _statCardData('Pending Squads', '${_submittedSquads.length}', 'Awaiting your review',
-          _submittedSquads.isNotEmpty ? '+${_submittedSquads.length}' : '0', Icons.fact_check_rounded,
+          (playerCount / 100).clamp(0.0, 1.0), onTap: () => _navigate('players')),
+      _statCardData('Pending Squads', '$squadCount', 'Awaiting your review',
+          squadCount > 0 ? '+$squadCount' : '0', Icons.fact_check_rounded,
           const LinearGradient(colors: [Color(0xFF001A4D), Color(0xFF003087)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-          [0.0, 0, 1, 1, 1, _submittedSquads.length.toDouble(), _submittedSquads.length.toDouble()], onTap: () => _navigate('squad_approvals')),
+          (squadCount / 10).clamp(0.0, 1.0), onTap: () => _navigate('squad_approvals')),
     ];
     return GridView.builder(
       shrinkWrap: true,
@@ -1235,10 +1237,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     );
   }
 
-  StatCard _statCardData(String title, String value, String subtitle, String pct, IconData icon, Gradient grad, List<double> ys, {VoidCallback? onTap}) {
+  StatCard _statCardData(String title, String value, String subtitle, String pct, IconData icon, Gradient grad, double progress, {VoidCallback? onTap}) {
     return StatCard(
       title: title, value: value, subtitle: subtitle, percent: pct, icon: icon, gradient: grad,
-      spots: ys.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value)).toList(),
+      progress: progress,
       onTap: onTap,
     );
   }
