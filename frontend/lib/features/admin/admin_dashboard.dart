@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -1153,6 +1154,8 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         const SizedBox(height: 24),
         _buildStatsGrid(),
         const SizedBox(height: 24),
+        _buildSeasonGauge(),
+        const SizedBox(height: 24),
         _buildChartsRow(),
         const SizedBox(height: 24),
         _buildBottomRow(),
@@ -1244,6 +1247,95 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       onTap: onTap,
     );
   }
+
+  // ─── Season Progress Gauge ───────────────────────────────────────────────────
+  Widget _buildSeasonGauge() {
+    final ms = context.watch<MatchState>();
+    final total     = ms.generatedFixtures.length;
+    final completed = ms.generatedFixtures.where((f) => f.status == 'completed').length;
+    final live      = ms.generatedFixtures.where((f) => f.status == 'live').length;
+    final pending   = total - completed - live;
+    final pct       = total == 0 ? 0.0 : (completed / total).clamp(0.0, 1.0);
+    final pctInt    = (pct * 100).round();
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 14, offset: const Offset(0, 5))],
+      ),
+      child: LayoutBuilder(builder: (_, box) {
+        final isWide = box.maxWidth > 500;
+        return isWide
+            ? Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+                // Gauge
+                SizedBox(
+                  width: 200, height: 130,
+                  child: CustomPaint(painter: _SeasonGaugePainter(progress: pct)),
+                ),
+                const SizedBox(width: 28),
+                Expanded(child: _gaugeInfo(pctInt, completed, live, pending, total)),
+              ])
+            : Column(children: [
+                SizedBox(
+                  width: double.infinity, height: 130,
+                  child: CustomPaint(painter: _SeasonGaugePainter(progress: pct)),
+                ),
+                const SizedBox(height: 16),
+                _gaugeInfo(pctInt, completed, live, pending, total),
+              ]);
+      }),
+    );
+  }
+
+  Widget _gaugeInfo(int pctInt, int completed, int live, int pending, int total) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        const Text('Season Progress', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        const Spacer(),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFF003087).withOpacity(0.08),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text('Season 2026', style: TextStyle(fontSize: 11, color: const Color(0xFF003087), fontWeight: FontWeight.bold)),
+        ),
+      ]),
+      const SizedBox(height: 4),
+      Text(total == 0 ? 'Generate fixtures to track progress' : '$completed of $total matches played',
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+      const SizedBox(height: 16),
+      // Legend row
+      Wrap(spacing: 20, runSpacing: 8, children: [
+        _gaugeLegend(const Color(0xFF00A651), 'Completed', '$completed'),
+        _gaugeLegend(const Color(0xFFF9A825), 'In Progress', '$live'),
+        _gaugeLegend(Colors.grey.shade300, 'Pending', '$pending'),
+      ]),
+      if (total > 0) ...[ 
+        const SizedBox(height: 14),
+        // Mini breakdown bar
+        ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: Row(children: [
+            if (completed > 0) Expanded(flex: completed, child: Container(height: 8, color: const Color(0xFF00A651))),
+            if (live > 0) Expanded(flex: live, child: Container(height: 8, color: const Color(0xFFF9A825))),
+            if (pending > 0) Expanded(flex: pending > 0 ? pending : 1, child: Container(height: 8, color: Colors.grey.shade200)),
+          ]),
+        ),
+        const SizedBox(height: 6),
+        Text('$pctInt% of season completed', style: TextStyle(fontSize: 11, color: Colors.grey.shade400, fontWeight: FontWeight.w600)),
+      ],
+    ]);
+  }
+
+  Widget _gaugeLegend(Color color, String label, String count) => Row(mainAxisSize: MainAxisSize.min, children: [
+    Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+    const SizedBox(width: 6),
+    Text('$label ', style: const TextStyle(fontSize: 12)),
+    Text(count, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+  ]);
 
   Widget _buildChartsRow() {
     return LayoutBuilder(builder: (_, c) {
@@ -4978,4 +5070,90 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       ),
     );
   }
+}
+
+// ─── Season Gauge CustomPainter ───────────────────────────────────────────────
+
+class _SeasonGaugePainter extends CustomPainter {
+  final double progress; // 0.0 → 1.0
+  const _SeasonGaugePainter({required this.progress});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx     = size.width / 2;
+    final cy     = size.height * 0.92;
+    final radius = size.width * 0.44;
+
+    const startAngle = math.pi;       // 180° — left side
+    const sweepFull  = math.pi;       // 180° sweep — full semicircle
+
+    // ── Grey track ───────────────────────────────────────────────────────────
+    canvas.drawArc(
+      Rect.fromCircle(center: Offset(cx, cy), radius: radius),
+      startAngle, sweepFull, false,
+      Paint()
+        ..color = const Color(0xFFF0F2F5)
+        ..strokeWidth = 18
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round,
+    );
+
+    // ── Green completed arc ───────────────────────────────────────────────────
+    if (progress > 0.01) {
+      canvas.drawArc(
+        Rect.fromCircle(center: Offset(cx, cy), radius: radius),
+        startAngle,
+        sweepFull * progress.clamp(0.0, 1.0),
+        false,
+        Paint()
+          ..shader = const LinearGradient(
+            colors: [Color(0xFF006B35), Color(0xFF00C853)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
+          ..strokeWidth = 18
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round,
+      );
+    }
+
+    // ── Needle dot at arc tip ─────────────────────────────────────────────────
+    final angle = startAngle + sweepFull * progress.clamp(0.0, 1.0);
+    final tipX  = cx + radius * math.cos(angle);
+    final tipY  = cy + radius * math.sin(angle);
+
+    canvas.drawCircle(Offset(tipX, tipY), 12,
+        Paint()..color = Colors.white..style = PaintingStyle.fill);
+    canvas.drawCircle(Offset(tipX, tipY), 7,
+        Paint()..color = const Color(0xFF00A651)..style = PaintingStyle.fill);
+    canvas.drawCircle(Offset(tipX, tipY), 12,
+        Paint()
+          ..color = const Color(0xFF00A651).withOpacity(0.25)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.5);
+
+    // ── Centre percentage text ────────────────────────────────────────────────
+    final pct = (progress * 100).round();
+
+    final bigTp = TextPainter(
+      text: TextSpan(
+        text: '$pct%',
+        style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFF1A1A2E)),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    bigTp.paint(canvas, Offset(cx - bigTp.width / 2, cy - 52));
+
+    final subTp = TextPainter(
+      text: const TextSpan(
+        text: 'Season Ended',
+        style: TextStyle(fontSize: 11, color: Color(0xFF9BA3B4)),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    subTp.paint(canvas, Offset(cx - subTp.width / 2, cy - 14));
+  }
+
+  @override
+  bool shouldRepaint(_SeasonGaugePainter old) => old.progress != progress;
 }
