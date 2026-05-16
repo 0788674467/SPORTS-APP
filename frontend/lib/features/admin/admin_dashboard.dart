@@ -6,6 +6,10 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'package:share_plus/share_plus.dart';
 import './widgets/dashboard_components.dart';
 import './fixture_generator.dart';
 import '../../core/state/match_state.dart';
@@ -4638,7 +4642,6 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       const SizedBox(height: 4),
       Text(name, style: const TextStyle(color: Colors.white70, fontSize: 11)),
       Text(score, style: const TextStyle(color: Colors.white, fontSize: 48, fontWeight: FontWeight.w900)),
-      _buildFooter(),
     ]);
   }
 
@@ -5774,23 +5777,35 @@ class _ReportCentreState extends State<_ReportCentre> {
   }
 
   Widget _buildSeason() {
-    final total = widget.recentResults.length + widget.liveMatches.length;
-    final goals = widget.recentResults.fold(0, (s, r) => s + ((r['home_score'] as int? ?? 0) + (r['away_score'] as int? ?? 0)));
-    final yellow = widget.dynamicPlayers.fold(0, (s, p) => s + ((p['yellow_cards'] as int?) ?? 0));
-    final red = widget.dynamicPlayers.fold(0, (s, p) => s + ((p['red_cards'] as int?) ?? 0));
+    final fp = _filteredPlayers;
+    final fc = _filteredCoaches;
+    final fr = _filteredReferees;
+    final fx = _filteredFixtures;
+    final rs = _filteredResults;
+    final total = rs.length + widget.liveMatches.length;
+    final goals  = rs.fold(0, (s, r) => s + ((r['home_score'] as int? ?? 0) + (r['away_score'] as int? ?? 0)));
+    final yellow = fp.fold(0, (s, p) => s + ((p['yellow_cards'] as int?) ?? 0));
+    final red    = fp.fold(0, (s, p) => s + ((p['red_cards']    as int?) ?? 0));
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _header('MMU Soccer League 2026 — Full Season Report', 'Comprehensive overview of all league activities, statistics and outcomes for the current academic season.'),
+      _header('MMU Soccer League 2026 — Full Season Report',
+          'Period: $_periodLabel  •  Comprehensive overview of all league activities, statistics and outcomes.'),
       _intro('This report provides an authoritative summary of the MMU University Sports Department soccer league activities. It covers all registered teams, player performances, match results, and administrative statistics for the 2026 season, compiled from data entered by appointed referees and team officials.'),
-      _statRow([(
-        'Total Matches', '$total', Icons.sports_soccer_rounded, navy), ('Total Goals', '$goals', Icons.emoji_events_rounded, green),
-        ('Yellow Cards', '$yellow', Icons.rectangle_rounded, const Color(0xFFF9A825)), ('Red Cards', '$red', Icons.rectangle_rounded, const Color(0xFFC62828)),
-        ('Teams', '${widget.dynamicTeams.length}', Icons.shield_rounded, const Color(0xFF7B1FA2)), ('Players', '${widget.dynamicPlayers.length}', Icons.people_rounded, const Color(0xFF0288D1)),
-        ('Coaches', '${widget.dynamicCoaches.length}', Icons.sports_rounded, const Color(0xFF00796B)), ('Referees', '${widget.dynamicReferees.length}', Icons.gavel_rounded, const Color(0xFF5D4037)),
+      _statRow([
+        ('Total Matches', '$total',         Icons.sports_soccer_rounded,  navy),
+        ('Total Goals',   '$goals',         Icons.emoji_events_rounded,   green),
+        ('Yellow Cards',  '$yellow',        Icons.rectangle_rounded,      const Color(0xFFF9A825)),
+        ('Red Cards',     '$red',           Icons.rectangle_rounded,      const Color(0xFFC62828)),
+        ('Teams',         '${widget.dynamicTeams.length}', Icons.shield_rounded, const Color(0xFF7B1FA2)),
+        ('Players',       '${fp.length}',   Icons.people_rounded,         const Color(0xFF0288D1)),
+        ('Coaches',       '${fc.length}',   Icons.sports_rounded,         const Color(0xFF00796B)),
+        ('Referees',      '${fr.length}',   Icons.gavel_rounded,          const Color(0xFF5D4037)),
       ]),
       const SizedBox(height: 16),
       _card('League Standings', _table(
         ['#', 'Team', 'P', 'W', 'D', 'L', 'GF', 'GA', 'Pts'],
-        widget.standings.asMap().entries.map((e) => [(e.key + 1).toString(), e.value.team, '${e.value.played}', '${e.value.wins}', '${e.value.draws}', '${e.value.losses}', '${e.value.goalsFor}', '${e.value.goalsAgainst}', '${e.value.points}']).toList(),
+        widget.standings.asMap().entries.map((e) => [(e.key+1).toString(), e.value.team, '${e.value.played}',
+            '${e.value.wins}', '${e.value.draws}', '${e.value.losses}',
+            '${e.value.goalsFor}', '${e.value.goalsAgainst}', '${e.value.points}']).toList(),
         flex: [1,3,1,1,1,1,1,1,1],
       )),
       _card('Goals Per Team', _barChart(
@@ -5808,14 +5823,18 @@ class _ReportCentreState extends State<_ReportCentre> {
   }
 
   Widget _buildPlayers() {
-    final sorted = List.from(widget.dynamicPlayers)..sort((a,b) => ((b['goals'] as int? ?? 0)).compareTo((a['goals'] as int? ?? 0)));
+    final fp = _filteredPlayers;
+    final sorted = List<Map<String, dynamic>>.from(fp)
+      ..sort((a, b) => ((b['goals'] as int? ?? 0)).compareTo((a['goals'] as int? ?? 0)));
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _header('Player Performance Report', 'Individual player statistics including goals, assists, cards, and appearances.'),
+      _header('Player Performance Report',
+          'Period: $_periodLabel  •  Individual player statistics including goals, assists, cards, and appearances.'),
       _intro('This section details the performance of all registered players across the season. Data is automatically aggregated from referee match reports submitted after each official fixture.'),
-      _statRow([('Players Registered', '${widget.dynamicPlayers.length}', Icons.people_rounded, navy),
-        ('Total Goals', '${widget.dynamicPlayers.fold(0,(s,p) => s + (p['goals'] as int? ?? 0))}', Icons.sports_soccer_rounded, green),
-        ('Total Assists', '${widget.dynamicPlayers.fold(0,(s,p) => s + (p['assists'] as int? ?? 0))}', Icons.assistant_rounded, const Color(0xFF0288D1)),
-        ('Yellow Cards', '${widget.dynamicPlayers.fold(0,(s,p) => s + (p['yellow_cards'] as int? ?? 0))}', Icons.rectangle_rounded, const Color(0xFFF9A825)),
+      _statRow([
+        ('Players Registered', '${fp.length}', Icons.people_rounded, navy),
+        ('Total Goals',   '${fp.fold(0, (s,p) => s + (p['goals']        as int? ?? 0))}', Icons.sports_soccer_rounded,  green),
+        ('Total Assists', '${fp.fold(0, (s,p) => s + (p['assists']      as int? ?? 0))}', Icons.assistant_rounded,       const Color(0xFF0288D1)),
+        ('Yellow Cards',  '${fp.fold(0, (s,p) => s + (p['yellow_cards'] as int? ?? 0))}', Icons.rectangle_rounded, const Color(0xFFF9A825)),
       ]),
       const SizedBox(height: 16),
       _card('Top Scorers Chart', _barChart(
@@ -5825,60 +5844,99 @@ class _ReportCentreState extends State<_ReportCentre> {
       )),
       _card('Full Player Statistics', _table(
         ['Player', 'Team', 'Pos', 'G', 'A', 'YC', 'RC'],
-        sorted.map((p) => [p['full_name'] ?? '—', (p['teams'] as Map?)?['name'] ?? '—', p['position'] ?? '—', '${p['goals'] ?? 0}', '${p['assists'] ?? 0}', '${p['yellow_cards'] ?? 0}', '${p['red_cards'] ?? 0}']).toList(),
+        sorted.map((p) => <String>[p['full_name'] ?? '—', (p['teams'] as Map?)?['name'] ?? '—',
+            p['position'] ?? '—', '${p['goals'] ?? 0}', '${p['assists'] ?? 0}',
+            '${p['yellow_cards'] ?? 0}', '${p['red_cards'] ?? 0}']).toList(),
         flex: [3,3,1,1,1,1,1],
       )),
     ]);
   }
 
-  Widget _buildCoaches() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    _header('Coaching Staff Report', 'Registered coaches, team assignments, and contact information.'),
-    _intro('This section lists all coaches registered with the MMU Sports Department. Coaches are responsible for player squad management and lineup submissions for each fixture.'),
-    _statRow([('Total Coaches', '${widget.dynamicCoaches.length}', Icons.sports_rounded, navy), ('Active Teams', '${widget.dynamicTeams.length}', Icons.shield_rounded, green), ('', '', Icons.circle, Colors.transparent), ('', '', Icons.circle, Colors.transparent)]),
-    const SizedBox(height: 16),
-    _card('Registered Coaches', _table(
-      ['Name', 'Email', 'Team', 'Status'],
-      widget.dynamicCoaches.map((c) => [c['full_name'] ?? '—', c['email'] ?? '—', c['team_name'] ?? (c['teams'] as Map?)?['name'] ?? '—', 'Active']).toList(),
-      flex: [3,3,2,1],
-    )),
-    _buildFooter(),
-  ]);
+  Widget _buildCoaches() {
+    final fc = _filteredCoaches;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _header('Coaching Staff Report',
+          'Period: $_periodLabel  •  Registered coaches, team assignments, and contact information.'),
+      _intro('This section lists all coaches registered with the MMU Sports Department. Coaches are responsible for player squad management and lineup submissions for each fixture.'),
+      _statRow([
+        ('Total Coaches', '${fc.length}',                Icons.sports_rounded, navy),
+        ('Active Teams',  '${widget.dynamicTeams.length}', Icons.shield_rounded, green),
+        ('', '', Icons.circle, Colors.transparent),
+        ('', '', Icons.circle, Colors.transparent),
+      ]),
+      const SizedBox(height: 16),
+      _card('Registered Coaches', _table(
+        ['Name', 'Email', 'Team', 'Status'],
+        fc.map((c) => <String>[c['full_name'] ?? '—', c['email'] ?? '—',
+            c['team_name'] ?? (c['teams'] as Map?)?['name'] ?? '—', 'Active']).toList(),
+        flex: [3,3,2,1],
+      )),
+      _buildFooter(),
+    ]);
+  }
 
-  Widget _buildReferees() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    _header('Referee Report', 'Registered officials and fixture assignments for the season.'),
-    _intro('This section covers all referees approved by the Sports Department. Referees are responsible for officiating fixtures, recording match events, and submitting official match reports.'),
-    _statRow([('Total Referees', '${widget.dynamicReferees.length}', Icons.gavel_rounded, navy), ('Fixtures', '${widget.generatedFixtures.length}', Icons.calendar_month_rounded, green), ('', '', Icons.circle, Colors.transparent), ('', '', Icons.circle, Colors.transparent)]),
-    const SizedBox(height: 16),
-    _card('Registered Referees', _table(
-      ['Name', 'Email', 'Phone', 'Status'],
-      widget.dynamicReferees.map((r) => [r['full_name'] ?? '—', r['email'] ?? '—', r['phone'] ?? '—', 'Active']).toList(),
-      flex: [3,3,2,1],
-    )),
-    _buildFooter(),
-  ]);
+  Widget _buildReferees() {
+    final fr = _filteredReferees;
+    final fx = _filteredFixtures;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _header('Referee Report',
+          'Period: $_periodLabel  •  Registered officials and fixture assignments for the season.'),
+      _intro('This section covers all referees approved by the Sports Department. Referees are responsible for officiating fixtures, recording match events, and submitting official match reports.'),
+      _statRow([
+        ('Total Referees', '${fr.length}',  Icons.gavel_rounded,          navy),
+        ('Fixtures',       '${fx.length}',  Icons.calendar_month_rounded, green),
+        ('', '', Icons.circle, Colors.transparent),
+        ('', '', Icons.circle, Colors.transparent),
+      ]),
+      const SizedBox(height: 16),
+      _card('Registered Referees', _table(
+        ['Name', 'Email', 'Phone', 'Status'],
+        fr.map((r) => <String>[r['full_name'] ?? '—', r['email'] ?? '—', r['phone'] ?? '—', 'Active']).toList(),
+        flex: [3,3,2,1],
+      )),
+      _buildFooter(),
+    ]);
+  }
 
-  Widget _buildTeams() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    _header('Team Performance Report', 'Team standings, wins/losses, goals, and squad sizes for the season.'),
-    _intro('This section provides a comparative analysis of all registered teams in the MMU Soccer League. Data reflects cumulative performance across all completed fixtures.'),
-    _statRow([('Total Teams', '${widget.dynamicTeams.length}', Icons.shield_rounded, navy), ('Completed Matches', '${widget.recentResults.length}', Icons.check_circle_rounded, green), ('', '', Icons.circle, Colors.transparent), ('', '', Icons.circle, Colors.transparent)]),
-    const SizedBox(height: 16),
-    _card('Team Standings', _table(
-      ['Team', 'P', 'W', 'D', 'L', 'GF', 'GA', 'GD', 'Pts'],
-      widget.standings.map((s) => [s.team, '${s.played}', '${s.wins}', '${s.draws}', '${s.losses}', '${s.goalsFor}', '${s.goalsAgainst}', '${s.goalDifference}', '${s.points}']).toList(),
-      flex: [3,1,1,1,1,1,1,1,1],
-    )),
-    _card('Goals Scored Per Team', _barChart(widget.standings.map((s) => s.team).toList(), widget.standings.map((s) => s.goalsFor.toDouble()).toList(), green)),
-    _card('Points Per Team', _barChart(widget.standings.map((s) => s.team).toList(), widget.standings.map((s) => s.points.toDouble()).toList(), navy)),
-    _buildFooter(),
-  ]);
+  Widget _buildTeams() {
+    final rs = _filteredResults;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _header('Team Performance Report',
+          'Period: $_periodLabel  •  Team standings, wins/losses, goals, and squad sizes for the season.'),
+      _intro('This section provides a comparative analysis of all registered teams in the MMU Soccer League. Data reflects cumulative performance across all completed fixtures.'),
+      _statRow([
+        ('Total Teams',       '${widget.dynamicTeams.length}', Icons.shield_rounded,        navy),
+        ('Completed Matches', '${rs.length}',                  Icons.check_circle_rounded,  green),
+        ('', '', Icons.circle, Colors.transparent),
+        ('', '', Icons.circle, Colors.transparent),
+      ]),
+      const SizedBox(height: 16),
+      _card('Team Standings', _table(
+        ['Team', 'P', 'W', 'D', 'L', 'GF', 'GA', 'GD', 'Pts'],
+        widget.standings.map((s) => [s.team, '${s.played}', '${s.wins}', '${s.draws}', '${s.losses}',
+            '${s.goalsFor}', '${s.goalsAgainst}', '${s.goalDifference}', '${s.points}']).toList(),
+        flex: [3,1,1,1,1,1,1,1,1],
+      )),
+      _card('Goals Scored Per Team', _barChart(widget.standings.map((s) => s.team).toList(), widget.standings.map((s) => s.goalsFor.toDouble()).toList(), green)),
+      _card('Points Per Team',       _barChart(widget.standings.map((s) => s.team).toList(), widget.standings.map((s) => s.points.toDouble()).toList(), navy)),
+      _buildFooter(),
+    ]);
+  }
 
   Widget _buildFixtures() {
-    final completed = widget.generatedFixtures.where((f) => f.status == 'completed').toList();
-    final upcoming = widget.generatedFixtures.where((f) => f.status == 'scheduled').toList();
+    final fx        = _filteredFixtures;
+    final completed = fx.where((f) => f.status == 'completed').toList();
+    final upcoming  = fx.where((f) => f.status == 'scheduled').toList();
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _header('Fixtures & Results Report', 'All scheduled and completed fixtures for the current season.'),
+      _header('Fixtures & Results Report',
+          'Period: $_periodLabel  •  All scheduled and completed fixtures for the current season.'),
       _intro('This section presents the full fixture list for the MMU Soccer League 2026 season including scheduled matches, results, venues, and assigned referees.'),
-      _statRow([('Total Fixtures', '${widget.generatedFixtures.length}', Icons.calendar_month_rounded, navy), ('Completed', '${completed.length}', Icons.check_circle_rounded, green), ('Upcoming', '${upcoming.length}', Icons.schedule_rounded, const Color(0xFF0288D1)), ('Live', '${widget.liveMatches.length}', Icons.circle, Colors.red)]),
+      _statRow([
+        ('Total Fixtures', '${fx.length}',              Icons.calendar_month_rounded, navy),
+        ('Completed',      '${completed.length}',       Icons.check_circle_rounded,   green),
+        ('Upcoming',       '${upcoming.length}',        Icons.schedule_rounded,       const Color(0xFF0288D1)),
+        ('Live',           '${widget.liveMatches.length}', Icons.circle,             Colors.red),
+      ]),
       const SizedBox(height: 16),
       _card('Completed Results', _table(
         ['Home', 'Score', 'Away', 'Venue', 'Ref'],
@@ -5926,7 +5984,7 @@ class _ReportCentreState extends State<_ReportCentre> {
       const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
         Icon(Icons.email_outlined, size: 14, color: Colors.grey),
         SizedBox(width: 4),
-        Text('sports@mmu.ac.ke', style: TextStyle(fontSize: 11, color: Colors.grey)),
+        Text('mmusport@mmu.ac.ug', style: TextStyle(fontSize: 11, color: Colors.grey)),
         SizedBox(width: 20),
         Icon(Icons.language_rounded, size: 14, color: Colors.grey),
         SizedBox(width: 4),
@@ -5934,6 +5992,354 @@ class _ReportCentreState extends State<_ReportCentre> {
       ]),
     ]),
   );
+
+  // ── PDF generation ────────────────────────────────────────────────────────
+  bool _generatingPdf = false;
+
+  // ── Date range filter ─────────────────────────────────────────────────────
+  DateTime? _fromDate;
+  DateTime? _toDate;
+
+  bool _inRange(DateTime? dt) {
+    if (dt == null) return true; // no date field → always include
+    final from = _fromDate;
+    final to   = _toDate != null
+        ? DateTime(_toDate!.year, _toDate!.month, _toDate!.day, 23, 59, 59)
+        : null;
+    if (from != null && dt.isBefore(from)) return false;
+    if (to   != null && dt.isAfter(to))   return false;
+    return true;
+  }
+
+  DateTime? _parseDate(dynamic val) {
+    if (val == null) return null;
+    try { return DateTime.parse(val.toString()); } catch (_) { return null; }
+  }
+
+  List<Map<String, dynamic>> get _filteredPlayers => (_fromDate == null && _toDate == null)
+      ? widget.dynamicPlayers
+      : widget.dynamicPlayers.where((p) => _inRange(_parseDate(p['created_at']))).toList();
+
+  List<Map<String, dynamic>> get _filteredCoaches => (_fromDate == null && _toDate == null)
+      ? widget.dynamicCoaches
+      : widget.dynamicCoaches.where((c) => _inRange(_parseDate(c['created_at']))).toList();
+
+  List<Map<String, dynamic>> get _filteredReferees => (_fromDate == null && _toDate == null)
+      ? widget.dynamicReferees
+      : widget.dynamicReferees.where((r) => _inRange(_parseDate(r['created_at']))).toList();
+
+  List<Map<String, dynamic>> get _filteredResults => (_fromDate == null && _toDate == null)
+      ? widget.recentResults
+      : widget.recentResults.where((r) => _inRange(_parseDate(r['date_time'] ?? r['created_at']))).toList();
+
+  List<GeneratedFixture> get _filteredFixtures => (_fromDate == null && _toDate == null)
+      ? widget.generatedFixtures
+      : widget.generatedFixtures.where((f) => _inRange(f.dateTime)).toList();
+
+  String _fmtDate(DateTime d) => '${d.day.toString().padLeft(2,'0')}/${d.month.toString().padLeft(2,'0')}/${d.year}';
+
+  String get _periodLabel {
+    if (_fromDate == null && _toDate == null) return 'Full Season';
+    if (_fromDate != null && _toDate != null) return '${_fmtDate(_fromDate!)} – ${_fmtDate(_toDate!)}';
+    if (_fromDate != null) return 'From ${_fmtDate(_fromDate!)}';
+    return 'Until ${_fmtDate(_toDate!)}';
+  }
+
+  Future<void> _pickFrom(BuildContext ctx) async {
+    final picked = await showDatePicker(
+      context: ctx,
+      initialDate: _fromDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: _toDate ?? DateTime(2030),
+      helpText: 'Report From Date',
+    );
+    if (picked != null) setState(() => _fromDate = DateTime(picked.year, picked.month, picked.day));
+  }
+
+  Future<void> _pickTo(BuildContext ctx) async {
+    final picked = await showDatePicker(
+      context: ctx,
+      initialDate: _toDate ?? DateTime.now(),
+      firstDate: _fromDate ?? DateTime(2020),
+      lastDate: DateTime(2030),
+      helpText: 'Report To Date',
+    );
+    if (picked != null) setState(() => _toDate = DateTime(picked.year, picked.month, picked.day));
+  }
+
+  void _clearDates() => setState(() { _fromDate = null; _toDate = null; });
+
+  Widget _dateFilterBar() {
+    final bool active = _fromDate != null || _toDate != null;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: active ? const Color(0xFF003087).withOpacity(0.05) : Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: active ? const Color(0xFF003087).withOpacity(0.2) : Colors.grey.shade200),
+      ),
+      child: Row(children: [
+        const Icon(Icons.date_range_rounded, size: 16, color: Color(0xFF003087)),
+        const SizedBox(width: 8),
+        const Text('Period:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey)),
+        const SizedBox(width: 8),
+        // FROM chip
+        GestureDetector(
+          onTap: () => _pickFrom(context),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: _fromDate != null ? const Color(0xFF003087) : Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: _fromDate != null ? const Color(0xFF003087) : Colors.grey.shade300),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.calendar_today_rounded, size: 12, color: _fromDate != null ? Colors.white : Colors.grey),
+              const SizedBox(width: 4),
+              Text(
+                _fromDate != null ? _fmtDate(_fromDate!) : 'From',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _fromDate != null ? Colors.white : Colors.grey.shade600),
+              ),
+            ]),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          child: Text('→', style: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.bold)),
+        ),
+        // TO chip
+        GestureDetector(
+          onTap: () => _pickTo(context),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: _toDate != null ? const Color(0xFF003087) : Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: _toDate != null ? const Color(0xFF003087) : Colors.grey.shade300),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.event_rounded, size: 12, color: _toDate != null ? Colors.white : Colors.grey),
+              const SizedBox(width: 4),
+              Text(
+                _toDate != null ? _fmtDate(_toDate!) : 'To',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _toDate != null ? Colors.white : Colors.grey.shade600),
+              ),
+            ]),
+          ),
+        ),
+        if (active) ...[
+          const SizedBox(width: 8),
+          // Active badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF00A651).withOpacity(0.12),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text('Filtered', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.green.shade700)),
+          ),
+          const SizedBox(width: 6),
+          // Clear button
+          GestureDetector(
+            onTap: _clearDates,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: Icon(Icons.close_rounded, size: 14, color: Colors.red.shade600),
+            ),
+          ),
+        ],
+        const Spacer(),
+        if (active)
+          Text(_periodLabel, style: TextStyle(fontSize: 10, color: Colors.grey.shade500, fontStyle: FontStyle.italic)),
+      ]),
+    );
+  }
+
+  Future<void> _generateAndDownloadPdf() async {
+    if (_generatingPdf) return;
+    setState(() => _generatingPdf = true);
+    try {
+      final bytes = await _buildPdfBytes();
+      await Printing.layoutPdf(onLayout: (_) async => bytes);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('PDF error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _generatingPdf = false);
+    }
+  }
+
+  Future<void> _generateAndSharePdf() async {
+    if (_generatingPdf) return;
+    setState(() => _generatingPdf = true);
+    try {
+      final bytes = await _buildPdfBytes();
+      final label = _reportLabel();
+      await Printing.sharePdf(bytes: bytes, filename: 'MMU_${label}_Report.pdf');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Share error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _generatingPdf = false);
+    }
+  }
+
+  String _reportLabel() {
+    switch (widget.reportType) {
+      case 'players':  return 'Players';
+      case 'coaches':  return 'Coaches';
+      case 'referees': return 'Referees';
+      case 'teams':    return 'Teams';
+      case 'fixtures': return 'Fixtures';
+      default:         return 'Season';
+    }
+  }
+
+  Future<Uint8List> _buildPdfBytes() async {
+    final doc = pw.Document();
+    final now = DateTime.now();
+    final dateStr = '${now.day}/${now.month}/${now.year} ${now.hour}:${now.minute.toString().padLeft(2, '0')}';
+    final label = _reportLabel();
+    final navy = PdfColors.blue900;
+    final green = PdfColor.fromInt(0xFF00A651);
+
+    // ── build rows ─────────────────────────────────────────────────────────
+    List<String> headers = [];
+    List<List<String>> rows = [];
+
+    switch (widget.reportType) {
+      case 'players':
+        headers = ['Player', 'Team', 'Pos', 'Goals', 'Assists', 'YC', 'RC'];
+        final sorted = List<Map<String, dynamic>>.from(_filteredPlayers)
+          ..sort((a, b) => ((b['goals'] as num? ?? 0).compareTo(a['goals'] as num? ?? 0)));
+        rows = sorted.map((p) => <String>[
+          p['full_name'] ?? '—',
+          (p['teams'] as Map?)?['name'] ?? '—',
+          p['position'] ?? '—',
+          '${p['goals'] ?? 0}',
+          '${p['assists'] ?? 0}',
+          '${p['yellow_cards'] ?? 0}',
+          '${p['red_cards'] ?? 0}',
+        ]).toList();
+        break;
+      case 'coaches':
+        headers = ['Name', 'Email', 'Team', 'Status'];
+        rows = _filteredCoaches.map((c) => <String>[
+          c['full_name'] ?? '—',
+          c['email'] ?? '—',
+          c['team_name'] ?? (c['teams'] as Map?)?['name'] ?? '—',
+          'Active',
+        ]).toList();
+        break;
+      case 'referees':
+        headers = ['Name', 'Email', 'Phone', 'Status'];
+        rows = _filteredReferees.map((r) => <String>[
+          r['full_name'] ?? '—',
+          r['email'] ?? '—',
+          r['phone'] ?? '—',
+          'Active',
+        ]).toList();
+        break;
+      case 'teams':
+        headers = ['Team', 'P', 'W', 'D', 'L', 'GF', 'GA', 'GD', 'Pts'];
+        rows = widget.standings.map((s) => <String>[
+          s.team, '${s.played}', '${s.wins}', '${s.draws}', '${s.losses}',
+          '${s.goalsFor}', '${s.goalsAgainst}', '${s.goalDifference}', '${s.points}',
+        ]).toList();
+        break;
+      case 'fixtures':
+        headers = ['Home Team', 'Away Team', 'Date', 'Venue', 'Status'];
+        rows = _filteredFixtures.map((f) => <String>[
+          f.homeTeam, f.awayTeam,
+          '${f.dateTime.day}/${f.dateTime.month}/${f.dateTime.year}',
+          f.venue,
+          f.status,
+        ]).toList();
+        break;
+      default:
+        headers = ['Metric', 'Value'];
+        rows = [
+          ['Total Players',  '${_filteredPlayers.length}'],
+          ['Total Coaches',  '${_filteredCoaches.length}'],
+          ['Total Referees', '${_filteredReferees.length}'],
+          ['Total Teams',    '${widget.dynamicTeams.length}'],
+          ['Fixtures',       '${_filteredFixtures.length}'],
+          ['Completed',      '${_filteredResults.length}'],
+        ];
+    }
+
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(32),
+        header: (_) => pw.Column(children: [
+          pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+            pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+              pw.Text('OFFICIAL REPORT', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey, letterSpacing: 1.5)),
+              pw.SizedBox(height: 2),
+              pw.Text('MMU Department of Sports', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: navy)),
+              pw.Text('$label Report', style: pw.TextStyle(fontSize: 11, color: PdfColors.grey600)),
+            ]),
+            pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.end, children: [
+              pw.Text('Generated: $dateStr', style: pw.TextStyle(fontSize: 9, color: PdfColors.grey)),
+              pw.Text('Period: $_periodLabel', style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600, fontStyle: pw.FontStyle.italic)),
+              pw.Text('mmusport@mmu.ac.ug', style: pw.TextStyle(fontSize: 9, color: PdfColors.grey)),
+              pw.Text('www.mmu.ac.ke/sports', style: pw.TextStyle(fontSize: 9, color: PdfColors.grey)),
+            ]),
+          ]),
+          pw.SizedBox(height: 6),
+          pw.Divider(color: navy, thickness: 2),
+          pw.SizedBox(height: 8),
+        ]),
+        footer: (ctx) => pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+          pw.Text('MMU UniLeague — Confidential', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey)),
+          pw.Text('Page ${ctx.pageNumber} of ${ctx.pagesCount}', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey)),
+        ]),
+        build: (_) => [
+          if (rows.isEmpty)
+            pw.Center(child: pw.Text('No data available for this report.', style: pw.TextStyle(color: PdfColors.grey)))
+          else
+            pw.TableHelper.fromTextArray(
+              headers: headers,
+              data: rows,
+              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white, fontSize: 9),
+              headerDecoration: pw.BoxDecoration(color: navy),
+              cellStyle: const pw.TextStyle(fontSize: 9),
+              rowDecoration: pw.BoxDecoration(color: PdfColors.grey100),
+              border: null,
+              cellAlignments: {0: pw.Alignment.centerLeft},
+            ),
+          pw.SizedBox(height: 24),
+          pw.Container(
+            padding: const pw.EdgeInsets.all(12),
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: PdfColors.grey300),
+              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+            ),
+            child: pw.Text(
+              'This document is an electronically generated official record of the Multi-Media University Sports Department. All data is verified against referee match reports and official league records as of the timestamp provided above.',
+              style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey),
+              textAlign: pw.TextAlign.center,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return doc.save();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -5972,6 +6378,59 @@ class _ReportCentreState extends State<_ReportCentre> {
               );
             }).toList(),
           )),
+          // ── Date Range Filter Bar ───────────────────────────────────────
+          _dateFilterBar(),
+          // ── PDF Action Bar ──────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+              _generatingPdf
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF003087)))
+                : Row(children: [
+                    // Download / Print
+                    Tooltip(
+                      message: 'Download / Print PDF',
+                      child: InkWell(
+                        onTap: _generateAndDownloadPdf,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF003087),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(Icons.picture_as_pdf_rounded, color: Colors.white, size: 15),
+                            SizedBox(width: 6),
+                            Text('Export PDF', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                          ]),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Share
+                    Tooltip(
+                      message: 'Share PDF',
+                      child: InkWell(
+                        onTap: _generateAndSharePdf,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00A651),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(Icons.share_rounded, color: Colors.white, size: 15),
+                            SizedBox(width: 6),
+                            Text('Share', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                          ]),
+                        ),
+                      ),
+                    ),
+                  ]),
+            ]),
+          ),
         ]),
       ),
       // ── Report body ───────────────────────────────────────────────────────
