@@ -433,14 +433,13 @@ class StatCard extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               // ── Value + labels ────────────────────────────────────────────
-              Text(value, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
+              Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
               const SizedBox(height: 2),
               Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
               Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
-              const Spacer(),
-              // ── Progress bar (replaces confusing sparkline) ───────────────
-              if (progress != null) ...[ 
-                const SizedBox(height: 10),
+              const SizedBox(height: 8),
+              // ── Progress bar ──────────────────────────────────────────────────
+              if (progress != null) ...[
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(

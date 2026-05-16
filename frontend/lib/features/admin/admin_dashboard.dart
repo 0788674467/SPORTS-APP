@@ -1244,7 +1244,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 280, childAspectRatio: 1.15, crossAxisSpacing: 18, mainAxisSpacing: 18),
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 280, childAspectRatio: 1.0, crossAxisSpacing: 18, mainAxisSpacing: 18),
       itemCount: cards.length,
       itemBuilder: (_, i) => cards[i],
     );
