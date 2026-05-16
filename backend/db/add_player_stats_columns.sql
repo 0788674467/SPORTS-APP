@@ -9,7 +9,8 @@ ALTER TABLE players
   ADD COLUMN IF NOT EXISTS matches_played INTEGER NOT NULL DEFAULT 0;
 
 -- Allow coaches to update their own players' stats
-CREATE POLICY IF NOT EXISTS "Coaches can update player stats"
+DROP POLICY IF EXISTS "Coaches can update player stats" ON players;
+CREATE POLICY "Coaches can update player stats"
   ON players FOR UPDATE
   USING (
     EXISTS (
@@ -20,7 +21,8 @@ CREATE POLICY IF NOT EXISTS "Coaches can update player stats"
   );
 
 -- Allow referees to update stats (goals/assists during match)
-CREATE POLICY IF NOT EXISTS "Referees can update player stats"
+DROP POLICY IF EXISTS "Referees can update player stats" ON players;
+CREATE POLICY "Referees can update player stats"
   ON players FOR UPDATE
   USING (
     EXISTS (
@@ -31,7 +33,8 @@ CREATE POLICY IF NOT EXISTS "Referees can update player stats"
   );
 
 -- Allow admins full access
-CREATE POLICY IF NOT EXISTS "Admins can update player stats"
+DROP POLICY IF EXISTS "Admins can update player stats" ON players;
+CREATE POLICY "Admins can update player stats"
   ON players FOR UPDATE
   USING (
     EXISTS (

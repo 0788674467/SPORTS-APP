@@ -24,7 +24,8 @@ CREATE INDEX IF NOT EXISTS match_reports_fixture_idx ON match_reports (fixture_i
 ALTER TABLE match_reports ENABLE ROW LEVEL SECURITY;
 
 -- Referees can insert their own reports
-CREATE POLICY IF NOT EXISTS "Referees can insert match reports"
+DROP POLICY IF EXISTS "Referees can insert match reports" ON match_reports;
+CREATE POLICY "Referees can insert match reports"
   ON match_reports FOR INSERT
   WITH CHECK (
     EXISTS (
@@ -35,7 +36,8 @@ CREATE POLICY IF NOT EXISTS "Referees can insert match reports"
   );
 
 -- Admins and referees can read all reports
-CREATE POLICY IF NOT EXISTS "Admins and referees can read match reports"
+DROP POLICY IF EXISTS "Admins and referees can read match reports" ON match_reports;
+CREATE POLICY "Admins and referees can read match reports"
   ON match_reports FOR SELECT
   USING (
     EXISTS (
@@ -46,7 +48,8 @@ CREATE POLICY IF NOT EXISTS "Admins and referees can read match reports"
   );
 
 -- Admins can update report status (mark as reviewed)
-CREATE POLICY IF NOT EXISTS "Admins can update match report status"
+DROP POLICY IF EXISTS "Admins can update match report status" ON match_reports;
+CREATE POLICY "Admins can update match report status"
   ON match_reports FOR UPDATE
   USING (
     EXISTS (
