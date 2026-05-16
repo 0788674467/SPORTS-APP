@@ -152,7 +152,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                         height: full ? 72 : 44,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: AppColors.mmwNavy,
+                          color: Colors.white,
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.25),
@@ -162,12 +162,9 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                           ],
                         ),
                         child: ClipOval(
-                          child: Padding(
-                            padding: const EdgeInsets.all(6),
-                            child: Image.asset(
-                              'assets/images/mmulogo.png',
-                              fit: BoxFit.contain,
-                            ),
+                          child: Image.asset(
+                            'assets/images/mmulogo.png',
+                            fit: BoxFit.cover,
                           ),
                         ),
                       ),
@@ -321,30 +318,27 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                 child: Column(
                   children: [
                     Container(
-                      width: full ? 80 : 64,
-                      height: full ? 80 : 64,
+                      width: full ? 88 : 72,
+                      height: full ? 88 : 72,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: AppColors.mmwNavy,
+                        color: Colors.white,
                         border: Border.all(
-                          color: AppColors.mmwGold.withOpacity(0.5),
-                          width: 2.5,
+                          color: AppColors.mmwNavy.withOpacity(0.15),
+                          width: 2,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.mmwNavy.withOpacity(0.3),
+                            color: Colors.black.withOpacity(0.12),
                             blurRadius: 16,
                             offset: const Offset(0, 4),
                           ),
                         ],
                       ),
                       child: ClipOval(
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: Image.asset(
-                            'assets/images/mmulogo.png',
-                            fit: BoxFit.contain,
-                          ),
+                        child: Image.asset(
+                          'assets/images/mmulogo.png',
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ),

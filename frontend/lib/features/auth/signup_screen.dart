@@ -299,17 +299,21 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
           Container(
             width: 38,
             height: 38,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.mmwNavy,
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: ClipOval(
-              child: Padding(
-                padding: const EdgeInsets.all(5),
-                child: Image.asset(
-                  'assets/images/mmulogo.png',
-                  fit: BoxFit.contain,
-                ),
+              child: Image.asset(
+                'assets/images/mmulogo.png',
+                fit: BoxFit.cover,
               ),
             ),
           ),

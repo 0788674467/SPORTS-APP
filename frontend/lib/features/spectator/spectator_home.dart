@@ -675,7 +675,7 @@ class _SpectatorHomeState extends State<SpectatorHome>
                             height: 44,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: AppColors.mmwNavy,
+                              color: Colors.white,
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withOpacity(0.25),
@@ -685,12 +685,9 @@ class _SpectatorHomeState extends State<SpectatorHome>
                               ],
                             ),
                             child: ClipOval(
-                              child: Padding(
-                                padding: const EdgeInsets.all(5),
-                                child: Image.asset(
-                                  'assets/images/mmulogo.png',
-                                  fit: BoxFit.contain,
-                                ),
+                              child: Image.asset(
+                                'assets/images/mmulogo.png',
+                                fit: BoxFit.cover,
                               ),
                             ),
                           ),
