@@ -3927,17 +3927,56 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         )),
         const SizedBox(height: 18),
         _card(title: 'Player Performance Table', subtitle: 'Goals + Assists', child: Column(children: [
-          _tableHeader(['Player', 'Team', 'Goals', 'Assists', 'Total']),
-          ...sorted.map((p) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+          // ── Header ──────────────────────────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: Row(children: [
-              Expanded(child: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
-              Expanded(child: Text(p.team, style: const TextStyle(fontSize: 12, color: Colors.grey))),
-              SizedBox(width: 52, child: Text('${p.goals}', textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF00A651)))),
-              SizedBox(width: 52, child: Text('${p.assists}', textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF003087)))),
-              SizedBox(width: 52, child: Text('${p.goals + p.assists}', textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold))),
+              const Expanded(flex: 3, child: Text('Player',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
+              const Expanded(flex: 3, child: Text('Team',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
+              const Expanded(flex: 1, child: Text('Goals',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
+              const Expanded(flex: 1, child: Text('Assists',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
+              const Expanded(flex: 1, child: Text('Total',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
             ]),
-          )),
+          ),
+          const SizedBox(height: 4),
+          // ── Rows ────────────────────────────────────────────────────────────
+          ...sorted.asMap().entries.map((e) {
+            final p = e.value;
+            return Container(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+              decoration: BoxDecoration(
+                color: e.key % 2 == 0 ? Colors.white : Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(children: [
+                Expanded(flex: 3, child: Text(p.name,
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
+                Expanded(flex: 3, child: Text(p.team,
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500))),
+                Expanded(flex: 1, child: Text('${p.goals}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF00A651)))),
+                Expanded(flex: 1, child: Text('${p.assists}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF003087)))),
+                Expanded(flex: 1, child: Text('${p.goals + p.assists}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+              ]),
+            );
+          }),
         ])),
       ]),
     );
