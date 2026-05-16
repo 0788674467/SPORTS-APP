@@ -155,7 +155,6 @@ class AuthProvider extends ChangeNotifier {
       final res = await _supabase.auth.signUp(
         email: email,
         password: password,
-        emailRedirectTo: 'https://0788674467.github.io/SPORTS-APP/email_confirmed.html',
         data: {
           'full_name': fullName,
           'role': role,
