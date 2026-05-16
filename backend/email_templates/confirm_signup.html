@@ -1,0 +1,133 @@
+<!-- 
+  MMU Soccer League — Supabase Confirm Signup Email Template
+  Paste this into: Supabase Dashboard → Authentication → Email Templates → Confirm signup
+  
+  Subject line to use:
+    ⚽ Confirm your MMU Soccer League account
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Confirm your MMU Soccer League account</title>
+</head>
+<body style="margin:0;padding:0;background:#F0F4FF;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+
+  <!-- Outer wrapper -->
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#F0F4FF;padding:40px 16px;">
+    <tr>
+      <td align="center">
+
+        <!-- Card -->
+        <table width="100%" cellpadding="0" cellspacing="0" border="0"
+               style="max-width:540px;background:#ffffff;border-radius:24px;
+                      box-shadow:0 8px 40px rgba(0,48,135,0.12);overflow:hidden;">
+
+          <!-- Header banner -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#001A4D 0%,#003087 60%,#1A4FA0 100%);
+                       padding:36px 40px 32px;text-align:center;">
+              <!-- Ball emoji + league name -->
+              <div style="display:inline-flex;align-items:center;gap:12px;justify-content:center;">
+                <div style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.15);
+                            display:inline-flex;align-items:center;justify-content:center;
+                            font-size:26px;line-height:1;">⚽</div>
+                <div style="text-align:left;">
+                  <div style="color:#ffffff;font-size:13px;font-weight:900;letter-spacing:1.5px;">MMU SOCCER LEAGUE</div>
+                  <div style="color:#D4AF37;font-size:10px;font-weight:700;letter-spacing:1px;margin-top:2px;">OFFICIAL PLATFORM · 2026 SEASON</div>
+                </div>
+              </div>
+
+              <h1 style="color:#ffffff;font-size:26px;font-weight:900;margin:24px 0 8px;letter-spacing:-0.5px;">
+                Welcome to the League! 🏆
+              </h1>
+              <p style="color:rgba(255,255,255,0.8);font-size:14px;margin:0;line-height:1.6;">
+                You're just one tap away from joining<br/>Multimedia University's official soccer platform.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:36px 40px 32px;">
+
+              <p style="font-size:15px;color:#374151;line-height:1.7;margin:0 0 24px;">
+                Hello and a warm welcome! 👋<br/><br/>
+                Thank you for registering with the <strong>MMU Soccer League</strong>.
+                To activate your account and get started, please confirm your email address by clicking the button below.
+              </p>
+
+              <!-- CTA Button -->
+              <div style="text-align:center;margin:0 0 28px;">
+                <a href="{{ .ConfirmationURL }}"
+                   style="display:inline-block;padding:16px 40px;
+                          background:linear-gradient(135deg,#003087,#1A4FA0);
+                          color:#ffffff;font-size:16px;font-weight:800;
+                          text-decoration:none;border-radius:14px;
+                          letter-spacing:0.3px;
+                          box-shadow:0 8px 24px rgba(0,48,135,0.3);">
+                  ✅ &nbsp;Confirm My Email
+                </a>
+              </div>
+
+              <!-- Info box -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                     style="background:#F0F4FF;border-radius:14px;border:1px solid #E5ECFF;
+                            margin-bottom:28px;">
+                <tr>
+                  <td style="padding:20px 24px;">
+                    <p style="margin:0 0 12px;font-size:13px;font-weight:800;color:#001A4D;">What happens next?</p>
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top;">
+                          <span style="margin-right:10px;">📧</span>
+                          <strong>Step 1:</strong> Click "Confirm My Email" above
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top;">
+                          <span style="margin-right:10px;">⏳</span>
+                          <strong>Step 2:</strong> Admin reviews your Coach / Referee registration (up to 24 hours)
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:8px 0;font-size:13px;color:#374151;vertical-align:top;">
+                          <span style="margin-right:10px;">📱</span>
+                          <strong>Step 3:</strong> Return to the UniLeague app and Sign In
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="font-size:12px;color:#9CA3AF;line-height:1.7;margin:0;">
+                This link expires in <strong>24 hours</strong>. If you didn't create an account, 
+                please ignore this email or contact 
+                <a href="mailto:admin@mmu.ac.ke" style="color:#003087;font-weight:600;">admin@mmu.ac.ke</a>.
+              </p>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#F9FAFF;padding:20px 40px;border-top:1px solid #E5ECFF;text-align:center;">
+              <p style="margin:0;font-size:11px;color:#9CA3AF;line-height:1.7;">
+                MMU Soccer League · Multimedia University of Kenya<br/>
+                Magadi Road, Ongata Rongai, Nairobi · Kenya<br/>
+                <a href="mailto:admin@mmu.ac.ke" style="color:#003087;font-weight:600;text-decoration:none;">admin@mmu.ac.ke</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+        <!-- End Card -->
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Email Confirmed — MMU Soccer League</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #001A4D 0%, #003087 55%, #1A4FA0 100%);
+      padding: 24px;
+    }
+
+    /* Animated background orbs */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -30%;
+      right: -20%;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%);
+      animation: pulse 8s ease-in-out infinite;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -20%;
+      left: -15%;
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(212,175,55,0.06) 0%, transparent 70%);
+      animation: pulse 10s ease-in-out 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50%       { transform: scale(1.15); opacity: 0.7; }
+    }
+
+    .card {
+      background: rgba(255,255,255,0.97);
+      border-radius: 28px;
+      padding: 48px 40px 40px;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.05);
+      position: relative;
+      z-index: 1;
+      animation: slideUp 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(40px) scale(0.96); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Logo */
+    .logo-wrap {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+    .logo-circle {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      background: #003087;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+    }
+    .league-name {
+      text-align: left;
+    }
+    .league-name .top  { font-size: 11px; font-weight: 900; letter-spacing: 1.5px; color: #001A4D; }
+    .league-name .sub  { font-size: 9px;  font-weight: 600; letter-spacing: 1px;   color: #D4AF37; }
+
+    /* Check icon */
+    .check-wrap {
+      width: 88px; height: 88px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #003087, #1A4FA0);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 24px;
+      box-shadow: 0 12px 32px rgba(0,48,135,0.35);
+      animation: popIn 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.3s both;
+    }
+    @keyframes popIn {
+      from { transform: scale(0.5); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+    .check-wrap svg {
+      width: 44px; height: 44px;
+      stroke: white;
+      stroke-width: 3;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 60;
+      stroke-dashoffset: 60;
+      animation: drawCheck 0.5s ease 0.7s forwards;
+    }
+    @keyframes drawCheck {
+      to { stroke-dashoffset: 0; }
+    }
+
+    h1 {
+      font-size: 26px;
+      font-weight: 900;
+      color: #001A4D;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+    .tagline {
+      font-size: 14px;
+      color: #6B7280;
+      margin-bottom: 28px;
+      line-height: 1.6;
+    }
+
+    /* Steps */
+    .steps {
+      background: #F0F4FF;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 28px;
+      text-align: left;
+      border: 1px solid #E5ECFF;
+    }
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid #E5ECFF;
+    }
+    .step:last-child { border-bottom: none; padding-bottom: 0; }
+    .step-icon {
+      width: 32px; height: 32px; flex-shrink: 0;
+      border-radius: 50%;
+      background: #003087;
+      color: white;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px;
+    }
+    .step-text strong  { display: block; font-size: 13px; font-weight: 700; color: #001A4D; }
+    .step-text span    { font-size: 12px; color: #6B7280; line-height: 1.5; }
+
+    /* CTA button */
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #003087 0%, #1A4FA0 100%);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      letter-spacing: 0.3px;
+      box-shadow: 0 8px 24px rgba(0,48,135,0.3);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(0,48,135,0.4);
+    }
+    .btn:active { transform: translateY(0); }
+
+    .footer-note {
+      margin-top: 20px;
+      font-size: 11px;
+      color: #9CA3AF;
+      line-height: 1.6;
+    }
+    .footer-note a { color: #003087; text-decoration: none; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="card">
+
+    <!-- Logo -->
+    <div class="logo-wrap">
+      <div class="logo-circle">⚽</div>
+      <div class="league-name">
+        <div class="top">MMU SOCCER LEAGUE</div>
+        <div class="sub">OFFICIAL PLATFORM · 2026 SEASON</div>
+      </div>
+    </div>
+
+    <!-- Animated check -->
+    <div class="check-wrap">
+      <svg viewBox="0 0 52 52">
+        <polyline points="14,27 22,36 38,17" />
+      </svg>
+    </div>
+
+    <h1>Email Confirmed! 🎉</h1>
+    <p class="tagline">
+      Welcome to the MMU Soccer League family.<br />
+      Your account is verified — you're one step away from the action.
+    </p>
+
+    <!-- Steps -->
+    <div class="steps">
+      <div class="step">
+        <div class="step-icon">✅</div>
+        <div class="step-text">
+          <strong>Email Verified</strong>
+          <span>Your email address has been successfully confirmed.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-icon">⏳</div>
+        <div class="step-text">
+          <strong>Awaiting Admin Approval</strong>
+          <span>Coach &amp; Referee accounts are reviewed by the MMU admin. You will be notified once approved.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-icon">📱</div>
+        <div class="step-text">
+          <strong>Return to the App &amp; Sign In</strong>
+          <span>Open the UniLeague app, tap Sign In, and use your registered email &amp; password.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <a href="/" class="btn">↩ Go Back &amp; Sign In</a>
+
+    <p class="footer-note">
+      Didn't register? <a href="mailto:admin@mmu.ac.ke">Contact admin@mmu.ac.ke</a><br />
+      MMU Soccer League &copy; 2026 · Multimedia University of Kenya
+    </p>
+
+  </div>
+</body>
+</html>
