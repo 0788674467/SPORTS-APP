@@ -1244,7 +1244,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 280, childAspectRatio: 1.0, crossAxisSpacing: 18, mainAxisSpacing: 18),
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 280, childAspectRatio: 1.15, crossAxisSpacing: 18, mainAxisSpacing: 18),
       itemCount: cards.length,
       itemBuilder: (_, i) => cards[i],
     );
@@ -5230,20 +5230,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
 
   // ─── Shared helpers ──────────────────────────────────────────────────────────
   Widget _card({required String title, required String subtitle, required Widget child}) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      margin: const EdgeInsets.only(bottom: 4),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12)]),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-          if (subtitle.isNotEmpty) Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
-          const SizedBox(height: 16),
-          child,
-        ],
-      ),
-    );
+    return _HoverCard(title: title, subtitle: subtitle, child: child);
   }
 
   Widget _posBadge(String pos) {
@@ -5456,4 +5443,86 @@ class _SeasonGaugePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_SeasonGaugePainter old) => old.progress != progress;
+}
+
+// ─── Hover Card ───────────────────────────────────────────────────────────────
+
+class _HoverCard extends StatefulWidget {
+  final String title;
+  final String subtitle;
+  final Widget child;
+  const _HoverCard({required this.title, required this.subtitle, required this.child});
+
+  @override
+  State<_HoverCard> createState() => _HoverCardState();
+}
+
+class _HoverCardState extends State<_HoverCard> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit:  (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        transform: Matrix4.translationValues(0, _hovered ? -4.0 : 0.0, 0),
+        padding: const EdgeInsets.all(20),
+        margin: const EdgeInsets.only(bottom: 4),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: _hovered
+                ? const Color(0xFF003087).withOpacity(0.18)
+                : Colors.transparent,
+            width: 1.5,
+          ),
+          boxShadow: _hovered
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF003087).withOpacity(0.10),
+                    blurRadius: 24, offset: const Offset(0, 10),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 8, offset: const Offset(0, 3),
+                  ),
+                ]
+              : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12)],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(widget.title,
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                  if (widget.subtitle.isNotEmpty)
+                    Text(widget.subtitle,
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                ]),
+              ),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 3,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: _hovered
+                      ? const Color(0xFF003087)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ]),
+            const SizedBox(height: 16),
+            widget.child,
+          ],
+        ),
+      ),
+    );
+  }
 }

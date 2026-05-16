@@ -348,14 +348,13 @@ class DashboardHeader extends StatelessWidget {
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 
-class StatCard extends StatelessWidget {
+class StatCard extends StatefulWidget {
   final String title;
   final String value;
   final String subtitle;
   final String percent;
   final IconData icon;
   final Gradient gradient;
-  /// Fraction 0.0–1.0 used to draw the progress bar (e.g. teams / max teams).
   final double? progress;
   final VoidCallback? onTap;
 
@@ -372,91 +371,130 @@ class StatCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final bool isUp   = percent.startsWith('+');
-    final bool isZero = percent == '0';
-    final Color accentColor = (gradient as LinearGradient).colors.first;
+  State<StatCard> createState() => _StatCardState();
+}
 
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        splashColor: accentColor.withOpacity(0.08),
-        highlightColor: accentColor.withOpacity(0.04),
-        child: Container(
+class _StatCardState extends State<StatCard> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isUp    = widget.percent.startsWith('+');
+    final bool isZero  = widget.percent == '0';
+    final Color accent = (widget.gradient as LinearGradient).colors.first;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit:  (_) => setState(() => _hovered = false),
+      cursor: widget.onTap != null
+          ? SystemMouseCursors.click
+          : SystemMouseCursors.basic,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          transform: Matrix4.translationValues(0, _hovered ? -5.0 : 0.0, 0),
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
+            color: Colors.white,
             borderRadius: BorderRadius.circular(18),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 14, offset: const Offset(0, 5))],
+            border: Border.all(
+              color: _hovered ? accent.withOpacity(0.35) : Colors.transparent,
+              width: 1.5,
+            ),
+            boxShadow: _hovered
+                ? [
+                    BoxShadow(color: accent.withOpacity(0.20), blurRadius: 28, offset: const Offset(0, 12)),
+                    BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, 4)),
+                  ]
+                : [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 14, offset: const Offset(0, 5))],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Top row: icon + trend chip ────────────────────────────────
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
+              // ── Top row ──────────────────────────────────────────────────
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    gradient: widget.gradient,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: _hovered
+                        ? [BoxShadow(color: accent.withOpacity(0.45), blurRadius: 12, offset: const Offset(0, 5))]
+                        : [],
+                  ),
+                  child: Icon(widget.icon, color: Colors.white, size: 18),
+                ),
+                Row(mainAxisSize: MainAxisSize.min, children: [
                   Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(gradient: gradient, borderRadius: BorderRadius.circular(12)),
-                    child: Icon(icon, color: Colors.white, size: 18),
-                  ),
-                  Row(mainAxisSize: MainAxisSize.min, children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: isZero
-                            ? Colors.grey.shade100
-                            : isUp ? Colors.green.shade50 : Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(8),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isZero
+                          ? Colors.grey.shade100
+                          : isUp ? Colors.green.shade50 : Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(
+                        isZero ? Icons.remove_rounded
+                            : isUp ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                        size: 12,
+                        color: isZero ? Colors.grey
+                            : isUp ? Colors.green.shade600 : Colors.red.shade600,
                       ),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(
-                          isZero ? Icons.remove_rounded
-                              : isUp ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-                          size: 12,
-                          color: isZero ? Colors.grey : isUp ? Colors.green.shade600 : Colors.red.shade600,
+                      const SizedBox(width: 2),
+                      Text(
+                        isZero ? 'No change' : widget.percent,
+                        style: TextStyle(
+                          color: isZero ? Colors.grey
+                              : isUp ? Colors.green.shade700 : Colors.red.shade700,
+                          fontSize: 11, fontWeight: FontWeight.bold,
                         ),
-                        const SizedBox(width: 2),
-                        Text(isZero ? 'No change' : percent,
-                            style: TextStyle(
-                              color: isZero ? Colors.grey : isUp ? Colors.green.shade700 : Colors.red.shade700,
-                              fontSize: 11, fontWeight: FontWeight.bold,
-                            )),
-                      ]),
-                    ),
-                    if (onTap != null) ...[ const SizedBox(width: 4), Icon(Icons.chevron_right_rounded, size: 16, color: Colors.grey.shade300) ],
-                  ]),
-                ],
-              ),
-              const SizedBox(height: 14),
-              // ── Value + labels ────────────────────────────────────────────
-              Text(value, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
-              const SizedBox(height: 2),
-              Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-              Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
-              const SizedBox(height: 8),
-              // ── Progress bar ─────────────────────────────────────────────────
-              if (progress != null) ...[
-                Row(children: [
-                  Expanded(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: LinearProgressIndicator(
-                        value: progress!.clamp(0.0, 1.0),
-                        minHeight: 6,
-                        backgroundColor: Colors.grey.shade200,
-                        valueColor: AlwaysStoppedAnimation<Color>(accentColor),
                       ),
-                    ),
+                    ]),
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${(progress! * 100).round()}%',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: accentColor),
+                  if (widget.onTap != null) ...[
+                    const SizedBox(width: 4),
+                    Icon(Icons.chevron_right_rounded, size: 16,
+                        color: _hovered ? accent : Colors.grey.shade300),
+                  ],
+                ]),
+              ]),
+              const SizedBox(height: 14),
+              // ── Value ────────────────────────────────────────────────────
+              Text(widget.value,
+                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
+              const SizedBox(height: 2),
+              Text(widget.title,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              Text(widget.subtitle,
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+              const Spacer(),
+              // ── Progress bar ─────────────────────────────────────────────
+              if (widget.progress != null) ...[
+                const SizedBox(height: 10),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: widget.progress!.clamp(0.0, 1.0),
+                    minHeight: 5,
+                    backgroundColor: accent.withOpacity(0.1),
+                    valueColor: AlwaysStoppedAnimation<Color>(accent),
                   ),
+                ),
+                const SizedBox(height: 6),
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  Text('${(widget.progress! * 100).round()}% capacity',
+                      style: TextStyle(fontSize: 10, color: Colors.grey.shade400)),
+                  if (widget.onTap != null)
+                    Text('Tap to view →',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: _hovered ? accent : Colors.grey.shade400,
+                          fontWeight: _hovered ? FontWeight.bold : FontWeight.w600,
+                        )),
                 ]),
               ],
             ],
@@ -466,3 +504,4 @@ class StatCard extends StatelessWidget {
     );
   }
 }
+
