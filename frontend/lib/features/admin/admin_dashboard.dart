@@ -122,6 +122,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   List<Map<String, dynamic>> _venues = [];
   List<_Notification> _liveNotifications = List.from(_initialNotifications);
   StreamSubscription<List<Map<String, dynamic>>>? _notificationSubscription;
+  List<Map<String, dynamic>> _leagues = [];
   
   // Real-time match data
   List<Map<String, dynamic>> _liveMatches = [];
@@ -138,6 +139,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   bool _isLoadingManagement = false;
   bool _isLoadingSquads = false;
   bool _isLoadingVenues = false;
+  bool _isLoadingLeagues = false;
   bool _isLoadingNotifications = false;
   
   // ─── UI State ───────────────────────────────────────────────────────────────
@@ -415,6 +417,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     _fetchManagementData();
     _fetchSquadSubmissions();
     _fetchVenues();
+    _fetchLeagues();
     _loadNotifications();
     _loadLiveMatches();
     _loadRecentResults();
@@ -465,6 +468,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     if (['coaches', 'referees', 'teams', 'players'].contains(id)) _fetchManagementData();
     if (id == 'squad_approvals') _fetchSquadSubmissions();
     if (id == 'venues' || id == 'fixtures') _fetchVenues();
+    if (id == 'leagues') _fetchLeagues();
     if (id == 'live_scores' || id == 'dashboard') {
       _loadLiveMatches();
       _loadRecentResults();
@@ -502,6 +506,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       case 'squad_approvals': return _buildSquadApprovals();
       case 'fixtures': return _buildFixtures();
       case 'venues': return _buildVenues();
+      case 'leagues': return _buildLeagues();
       case 'standings': return _buildStandings();
       case 'results': return _buildResults();
       case 'teams': return _buildTeams();
@@ -634,7 +639,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   }
 
   bool _shouldShowSearch() {
-    return ['teams', 'players', 'coaches', 'referees', 'venues', 'approvals', 'notifications'].contains(_activeSection);
+    return ['teams', 'players', 'coaches', 'referees', 'venues', 'leagues', 'approvals', 'notifications'].contains(_activeSection);
   }
 
   String _getSearchHint() {
@@ -644,6 +649,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       case 'coaches': return 'Search coaches...';
       case 'referees': return 'Search referees...';
       case 'venues': return 'Search venues...';
+      case 'leagues': return 'Search leagues...';
       case 'approvals': return 'Search pending approvals...';
       case 'notifications': return 'Search notifications...';
       default: return 'Search...';
@@ -1962,6 +1968,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           referees: _dynamicReferees.map((r) => r['full_name'] as String).toList(),
           teamMaps: _dynamicTeams,
           venues: _venues,
+          leagues: _leagues,
         ),
         const SizedBox(height: 24),
         // ── Manage saved fixtures ────────────────────────────────────────────
@@ -2283,6 +2290,274 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
 
 
   // ─── Venues ─────────────────────────────────────────────────────────────────
+  // ─── Leagues ─────────────────────────────────────────────────────────────────
+  Future<void> _fetchLeagues() async {
+    if (!mounted) return;
+    setState(() => _isLoadingLeagues = true);
+    try {
+      final res = await Supabase.instance.client
+          .from('leagues')
+          .select()
+          .order('created_at', ascending: true);
+      if (mounted) setState(() { _leagues = List<Map<String, dynamic>>.from(res); _isLoadingLeagues = false; });
+    } catch (e) {
+      debugPrint('Error fetching leagues: $e');
+      if (mounted) setState(() => _isLoadingLeagues = false);
+    }
+  }
+
+  Widget _buildLeagues() {
+    if (_isLoadingLeagues) return const Center(child: CircularProgressIndicator(color: Color(0xFF003087)));
+    final filtered = _leagues.where((l) {
+      if (_searchQuery.isEmpty) return true;
+      return (l['name'] as String? ?? '').toLowerCase().contains(_searchQuery) ||
+             (l['description'] as String? ?? '').toLowerCase().contains(_searchQuery);
+    }).toList();
+
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: [
+        // Header
+        Row(children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFC107).withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.emoji_events_rounded, color: Color(0xFFFF8F00)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('League Management', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('${_leagues.length} league(s) — select when generating fixtures',
+                style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+          ])),
+          const SizedBox(width: 8),
+          ElevatedButton.icon(
+            onPressed: () => _showLeagueDialog(),
+            icon: const Icon(Icons.add_rounded, size: 16),
+            label: const Text('Add League'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF003087),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              elevation: 0,
+            ),
+          ),
+        ]),
+        const SizedBox(height: 16),
+        if (filtered.isEmpty)
+          _emptyState(Icons.emoji_events_rounded, 'No Leagues Yet',
+              'Add a league to use when scheduling fixtures.')
+        else
+          ...filtered.map((l) => _buildLeagueCard(l)),
+      ],
+    );
+  }
+
+  Widget _buildLeagueCard(Map<String, dynamic> l) {
+    final id       = l['id'] as String;
+    final name     = (l['name'] as String?) ?? 'Unnamed';
+    final desc     = (l['description'] as String?);
+    final season   = (l['season'] as String?);
+    final isActive = (l['is_active'] as bool?) ?? true;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isActive ? const Color(0xFF003087).withOpacity(0.2) : Colors.grey.shade200,
+        ),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8)],
+      ),
+      child: Row(children: [
+        Container(
+          width: 46, height: 46,
+          decoration: BoxDecoration(
+            color: isActive
+                ? const Color(0xFFFFC107).withOpacity(0.15)
+                : Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(Icons.emoji_events_rounded,
+              color: isActive ? const Color(0xFFFF8F00) : Colors.grey, size: 24),
+        ),
+        const SizedBox(width: 14),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          if (desc != null && desc.isNotEmpty)
+            Text(desc, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+        ])),
+        if (season != null && season.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF003087).withOpacity(0.07),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(season,
+                style: const TextStyle(fontSize: 11, color: Color(0xFF003087), fontWeight: FontWeight.bold)),
+          ),
+        // Active toggle
+        Switch(
+          value: isActive,
+          activeColor: const Color(0xFF003087),
+          onChanged: (val) async {
+            try {
+              await Supabase.instance.client
+                  .from('leagues')
+                  .update({'is_active': val})
+                  .eq('id', id);
+              _fetchLeagues();
+            } catch (e) {
+              if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red.shade700, behavior: SnackBarBehavior.floating));
+            }
+          },
+        ),
+        // Edit
+        IconButton(
+          icon: const Icon(Icons.edit_rounded, size: 18, color: Colors.blue),
+          onPressed: () => _showLeagueDialog(existing: l),
+          constraints: const BoxConstraints(), padding: const EdgeInsets.only(left: 4),
+        ),
+        // Delete
+        IconButton(
+          icon: Icon(Icons.delete_rounded, size: 18, color: Colors.red.shade400),
+          constraints: const BoxConstraints(), padding: const EdgeInsets.only(left: 4),
+          onPressed: () async {
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                title: const Text('Delete League'),
+                content: Text('Remove "$name"? This cannot be undone.'),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                    child: const Text('Delete'),
+                  ),
+                ],
+              ),
+            );
+            if (confirmed == true) {
+              try {
+                await Supabase.instance.client.from('leagues').delete().eq('id', id);
+                _fetchLeagues();
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('✅ League deleted.'), backgroundColor: Colors.red, behavior: SnackBarBehavior.floating));
+              } catch (e) {
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red.shade700, behavior: SnackBarBehavior.floating));
+              }
+            }
+          },
+        ),
+      ]),
+    );
+  }
+
+  Future<void> _showLeagueDialog({Map<String, dynamic>? existing}) async {
+    final nameCtrl   = TextEditingController(text: existing?['name'] ?? '');
+    final descCtrl   = TextEditingController(text: existing?['description'] ?? '');
+    final seasonCtrl = TextEditingController(text: existing?['season'] ?? '2026');
+    final isEdit = existing != null;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text(isEdit ? 'Edit League' : 'Add League',
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(
+            controller: nameCtrl,
+            decoration: InputDecoration(
+              labelText: 'League Name *',
+              prefixIcon: const Icon(Icons.emoji_events_rounded, size: 18),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: descCtrl,
+            decoration: InputDecoration(
+              labelText: 'Description',
+              prefixIcon: const Icon(Icons.description_rounded, size: 18),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: seasonCtrl,
+            decoration: InputDecoration(
+              labelText: 'Season (e.g. 2026)',
+              prefixIcon: const Icon(Icons.date_range_rounded, size: 18),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            ),
+          ),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              if (nameCtrl.text.trim().isEmpty) return;
+              final name   = nameCtrl.text.trim();
+              final desc   = descCtrl.text.trim();
+              final season = seasonCtrl.text.trim();
+              Navigator.pop(ctx);
+              try {
+                if (isEdit) {
+                  await Supabase.instance.client.from('leagues').update({
+                    'name': name,
+                    'description': desc.isEmpty ? null : desc,
+                    'season': season.isEmpty ? null : season,
+                  }).eq('id', existing!['id'] as String);
+                } else {
+                  await Supabase.instance.client.from('leagues').insert({
+                    'name': name,
+                    if (desc.isNotEmpty) 'description': desc,
+                    if (season.isNotEmpty) 'season': season,
+                  });
+                }
+                _fetchLeagues();
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text(isEdit ? '✅ League updated.' : '✅ League added.'),
+                  backgroundColor: const Color(0xFF003087),
+                  behavior: SnackBarBehavior.floating,
+                ));
+              } catch (e) {
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text(e.toString().contains('leagues')
+                      ? '⚠️ Leagues table not found. Run the SQL in backend/db/leagues.sql in Supabase first.'
+                      : 'Error: $e'),
+                  backgroundColor: Colors.red.shade700,
+                  behavior: SnackBarBehavior.floating,
+                  duration: const Duration(seconds: 5),
+                ));
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF003087), foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            child: Text(isEdit ? 'Save Changes' : 'Add League'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildVenues() {
     if (_isLoadingVenues) return const Center(child: CircularProgressIndicator(color: Color(0xFF00A651)));
     return ListView(

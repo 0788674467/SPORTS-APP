@@ -10,6 +10,8 @@ class FixtureGeneratorPanel extends StatefulWidget {
   final List<Map<String, dynamic>> teamMaps;
   /// Venues from the DB: each map has 'id', 'name', 'location', 'is_active'.
   final List<Map<String, dynamic>> venues;
+  /// Leagues from the DB: each map has 'id', 'name', 'season', 'is_active'.
+  final List<Map<String, dynamic>> leagues;
 
   const FixtureGeneratorPanel({
     super.key,
@@ -17,6 +19,7 @@ class FixtureGeneratorPanel extends StatefulWidget {
     required this.referees,
     this.teamMaps = const [],
     this.venues = const [],
+    this.leagues = const [],
   });
 
   @override
@@ -29,7 +32,9 @@ class _FixtureGeneratorPanelState extends State<FixtureGeneratorPanel> {
   int _kickoffHour = 14;
   int _kickoffMinute = 0;
   bool _generated = false;
-  bool _saving = false; // true while writing to Supabase
+  bool _saving = false;
+  String? _selectedLeagueId;
+  String? _selectedLeagueName;
 
   // Selected venues (by name) — chip multi-select
   final Set<String> _selectedVenues = {};
@@ -37,12 +42,17 @@ class _FixtureGeneratorPanelState extends State<FixtureGeneratorPanel> {
   @override
   void initState() {
     super.initState();
-    // Directly seed selection before first build - no setState needed
     final active = widget.venues
         .where((v) => v['is_active'] == true)
         .map((v) => v['name'] as String)
         .toSet();
     _selectedVenues.addAll(active);
+    // Auto-select first active league
+    final activeLeague = widget.leagues.where((l) => l['is_active'] == true).firstOrNull;
+    if (activeLeague != null) {
+      _selectedLeagueId   = activeLeague['id'] as String?;
+      _selectedLeagueName = activeLeague['name'] as String?;
+    }
   }
 
   List<String> get _selectedVenueList =>
@@ -167,6 +177,10 @@ class _FixtureGeneratorPanelState extends State<FixtureGeneratorPanel> {
           ]),
           const SizedBox(height: 14),
 
+          // ─── League Selector ─────────────────────────────────────────────
+          _buildLeagueSelector(),
+          const SizedBox(height: 14),
+
           // ─── Venue Multi-Select Chips ────────────────────────────────────
           _buildVenueSelector(),
 
@@ -227,6 +241,72 @@ class _FixtureGeneratorPanelState extends State<FixtureGeneratorPanel> {
           ]),
         ),
       ],
+    ]);
+  }
+
+  Widget _buildLeagueSelector() {
+    final activeLeagues = widget.leagues.where((l) => l['is_active'] == true).toList();
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        const Icon(Icons.emoji_events_rounded, size: 16, color: Color(0xFFFF8F00)),
+        const SizedBox(width: 6),
+        const Text('League', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+        const Spacer(),
+        if (_selectedLeagueName != null)
+          Text(_selectedLeagueName!, style: const TextStyle(fontSize: 11, color: Color(0xFF003087), fontWeight: FontWeight.bold)),
+      ]),
+      const SizedBox(height: 8),
+      if (activeLeagues.isEmpty)
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.orange.shade50,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.orange.shade200),
+          ),
+          child: Row(children: [
+            Icon(Icons.info_outline_rounded, size: 16, color: Colors.orange.shade700),
+            const SizedBox(width: 8),
+            Expanded(child: Text('No active leagues. Add leagues in the Leagues section.',
+                style: TextStyle(fontSize: 12, color: Colors.orange.shade700))),
+          ]),
+        )
+      else
+        DropdownButtonFormField<String>(
+          value: _selectedLeagueId,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.grey.shade50,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: Colors.grey.shade200),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: Colors.grey.shade200),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            prefixIcon: const Icon(Icons.emoji_events_rounded, size: 18, color: Color(0xFFFF8F00)),
+          ),
+          hint: const Text('Select a league'),
+          items: activeLeagues.map((l) {
+            final lName   = (l['name'] as String?) ?? 'Unnamed';
+            final lSeason = (l['season'] as String?);
+            return DropdownMenuItem<String>(
+              value: l['id'] as String,
+              child: Text(lSeason != null ? '$lName ($lSeason)' : lName,
+                  style: const TextStyle(fontSize: 13)),
+            );
+          }).toList(),
+          onChanged: (id) {
+            final league = activeLeagues.firstWhere((l) => l['id'] == id);
+            setState(() {
+              _selectedLeagueId   = id;
+              _selectedLeagueName = (league['name'] as String?) ?? '';
+            });
+          },
+        ),
     ]);
   }
 
