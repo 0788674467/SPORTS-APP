@@ -408,7 +408,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       'fixtures': 'Fixtures', 'venues': 'Venues', 'leagues': 'Leagues', 'standings': 'Standings', 'results': 'Match Results',
       'squad_approvals': 'Squad Approvals',
       'teams': 'Teams', 'players': 'Players', 'coaches': 'Coaches', 'referees': 'Referees',
-      'player_stats': 'Player Statistics', 'season_report': 'Season Reports', 'live_scores': 'Live Scores',
+      'player_stats': 'Player Statistics', 'season_report': 'MMU Report Centre', 'live_scores': 'Live Scores',
       'profile': 'My Profile', 'settings': 'Settings',
     };
     return map[id] ?? id;
@@ -1658,7 +1658,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       const Divider(height: 1),
       _actionLink(Icons.format_list_numbered_rounded, 'View Standings', Colors.green, 'standings'),
       const Divider(height: 1),
-      _actionLink(Icons.analytics_rounded, 'Season Report', Colors.purple, 'season_report'),
+      _actionLink(Icons.analytics_rounded, 'Report Centre', Colors.purple, 'season_report'),
     ]));
   }
 
@@ -4479,71 +4479,22 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     );
   }
 
-  // ─── Season Report ────────────────────────────────────────────────────────────
-  Widget _buildSeasonReport() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(children: [
-        Row(children: [
-          Expanded(child: _smallStatCard('Total Matches', '${_liveMatches.length + _recentResults.length}', Icons.sports_soccer_rounded, const Color(0xFF003087))),
-          const SizedBox(width: 12),
-          Expanded(child: _smallStatCard('Total Goals', '${_recentResults.fold(0, (s, r) => s + ((r["home_score"] ?? 0) as int) + ((r["away_score"] ?? 0) as int))}', Icons.emoji_events_rounded, const Color(0xFF00A651))),
-          const SizedBox(width: 12),
-          Expanded(child: _smallStatCard('Yellow Cards', '31', Icons.rectangle_rounded, const Color(0xFFF9A825))),
-          const SizedBox(width: 12),
-          Expanded(child: _smallStatCard('Red Cards', '4', Icons.rectangle_rounded, const Color(0xFFC62828))),
-        ]),
-        const SizedBox(height: 18),
-        _card(title: 'Goals Per Team', subtitle: 'Cumulative goals scored season 2026', child: SizedBox(
-          height: 240,
-          child: BarChart(BarChartData(
-            gridData: FlGridData(show: true, drawVerticalLine: false, getDrawingHorizontalLine: (_) => FlLine(color: Colors.grey.shade100, strokeWidth: 1)),
-            titlesData: FlTitlesData(
-              bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (v, _) {
-                final i = v.toInt();
-                if (i < 0 || i >= _teams.length) return const SizedBox.shrink();
-                return Padding(padding: const EdgeInsets.only(top: 4), child: Text(_teams[i].name.split(' ').first, style: const TextStyle(fontSize: 8)));
-              }, reservedSize: 22)),
-              leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 24, getTitlesWidget: (v, _) => Text('${v.toInt()}', style: const TextStyle(fontSize: 9, color: Colors.grey)))),
-              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            ),
-            borderData: FlBorderData(show: false),
-            barGroups: _teams.asMap().entries.map((e) {
-              final goals = e.value.wins * 2 + e.value.draws; // demo calculation
-              return BarChartGroupData(x: e.key, barRods: [
-                BarChartRodData(toY: goals.toDouble(), gradient: LinearGradient(
-                  colors: [const Color(0xFF003087).withOpacity(0.7), const Color(0xFF1A4FA0)],
-                  begin: Alignment.bottomCenter, end: Alignment.topCenter,
-                ), width: 20, borderRadius: const BorderRadius.vertical(top: Radius.circular(5))),
-              ]);
-            }).toList(),
-          )),
-        )),
-        const SizedBox(height: 18),
-        _card(title: 'Season Summary Report', subtitle: 'Administrative summary', child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _reportRow('Season', 'MMU Soccer League 2026'),
-            _reportRow('Total Teams', '${_teams.length}'),
-            _reportRow('Active Teams', '${_teams.where((t) => t.status == 'Active').length}'),
-            _reportRow('Total Players', '${_dynamicPlayers.length}'),
-            _reportRow('Matches Played', '\${_recentResults.length}'),
-            _reportRow('Upcoming Fixtures', '${_fixtures.length}'),
-            _reportRow('Registered Coaches', '${_dynamicCoaches.length}'),
-            _reportRow('Registered Referees', '${_dynamicReferees.length}'),
-            const SizedBox(height: 16),
-            SizedBox(width: double.infinity, child: ElevatedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.download_rounded, size: 18),
-              label: const Text('Export PDF Report'),
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF003087), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(vertical: 14)),
-            )),
-          ],
-        )),
-      ]),
-    );
-  }
+  // ─── Report Centre ────────────────────────────────────────────────────────────
+  String _reportType = 'season'; // season | players | coaches | referees | teams | fixtures
+
+  Widget _buildSeasonReport() => _ReportCentre(
+    reportType: _reportType,
+    onTypeChanged: (t) => setState(() => _reportType = t),
+    dynamicPlayers:  _dynamicPlayers,
+    dynamicCoaches:  _dynamicCoaches,
+    dynamicReferees: _dynamicReferees,
+    dynamicTeams:    _dynamicTeams,
+    recentResults:   _recentResults,
+    liveMatches:     _liveMatches,
+    standings:       Provider.of<MatchState>(context, listen: false).standings,
+    generatedFixtures: Provider.of<MatchState>(context, listen: false).generatedFixtures,
+  );
+
 
   Widget _reportRow(String k, String v) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 6),
@@ -4687,6 +4638,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       const SizedBox(height: 4),
       Text(name, style: const TextStyle(color: Colors.white70, fontSize: 11)),
       Text(score, style: const TextStyle(color: Colors.white, fontSize: 48, fontWeight: FontWeight.w900)),
+      _buildFooter(),
     ]);
   }
 
@@ -5703,5 +5655,330 @@ class _HoverCardState extends State<_HoverCard> {
         ),
       ),
     );
+  }
+}
+
+class _ReportCentre extends StatefulWidget {
+  final String reportType;
+  final ValueChanged<String> onTypeChanged;
+  final List<Map<String,dynamic>> dynamicPlayers, dynamicCoaches, dynamicReferees, dynamicTeams, recentResults, liveMatches;
+  final List<StandingEntry> standings;
+  final List<GeneratedFixture> generatedFixtures;
+  const _ReportCentre({required this.reportType, required this.onTypeChanged, required this.dynamicPlayers, required this.dynamicCoaches, required this.dynamicReferees, required this.dynamicTeams, required this.recentResults, required this.liveMatches, required this.standings, required this.generatedFixtures});
+  @override State<_ReportCentre> createState() => _ReportCentreState();
+}
+
+class _ReportCentreState extends State<_ReportCentre> {
+  static const navy = Color(0xFF003087);
+  static const green = Color(0xFF00A651);
+
+  final types = [
+    ('season','Full Season','📊'), ('players','Players','👟'), ('coaches','Coaches','🧑‍💼'),
+    ('referees','Referees','🦺'), ('teams','Teams','🏆'), ('fixtures','Fixtures','📅'),
+  ];
+
+  Widget _header(String title, String subtitle) => Container(
+    margin: const EdgeInsets.only(bottom: 20),
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(colors: [navy, Color(0xFF1A4FA0)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+      borderRadius: BorderRadius.circular(18),
+    ),
+    child: Column(children: [
+      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        Image.asset('assets/images/mmulogo.png', height: 56, errorBuilder: (_,__,___) => const Icon(Icons.school, color: Colors.white, size: 48)),
+        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          const Text('MMU UNIVERSITY', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 15, letterSpacing: 1.5)),
+          Text('Department of Sports', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 11)),
+          Text('Generated: ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}', style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 10)),
+        ]),
+      ]),
+      Container(height: 1, color: Colors.white.withOpacity(0.3), margin: const EdgeInsets.symmetric(vertical: 12)),
+      Text(title, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+      const SizedBox(height: 4),
+      Text(subtitle, style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12), textAlign: TextAlign.center),
+    ]),
+  );
+
+  Widget _intro(String text) => Container(
+    margin: const EdgeInsets.only(bottom: 16),
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(color: navy.withOpacity(0.04), borderRadius: BorderRadius.circular(12), border: Border.all(color: navy.withOpacity(0.12))),
+    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Icon(Icons.format_quote_rounded, color: navy.withOpacity(0.5), size: 20),
+      const SizedBox(width: 10),
+      Expanded(child: Text(text, style: TextStyle(fontSize: 12, color: Colors.grey.shade700, height: 1.6))),
+    ]),
+  );
+
+  Widget _card(String title, Widget child) => Container(
+    margin: const EdgeInsets.only(bottom: 16),
+    padding: const EdgeInsets.all(18),
+    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12)]),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+      const SizedBox(height: 14),
+      child,
+    ]),
+  );
+
+  Widget _statRow(List<(String,String,IconData,Color)> items) => GridView.count(
+    shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
+    crossAxisCount: 2, childAspectRatio: 2.4, mainAxisSpacing: 10, crossAxisSpacing: 10,
+    children: items.map((e) => Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(color: e.$4.withOpacity(0.07), borderRadius: BorderRadius.circular(12), border: Border.all(color: e.$4.withOpacity(0.15))),
+      child: Row(children: [
+        Icon(e.$3, color: e.$4, size: 22),
+        const SizedBox(width: 10),
+        Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(e.$2, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: e.$4)),
+          Text(e.$1, style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
+        ]),
+      ]),
+    )).toList(),
+  );
+
+  Widget _table(List<String> cols, List<List<String>> rows, {List<double>? flex}) {
+    final f = flex ?? List.generate(cols.length, (_) => 1.0);
+    return Column(children: [
+      Container(padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8), decoration: BoxDecoration(color: navy, borderRadius: BorderRadius.circular(8)),
+        child: Row(children: cols.asMap().entries.map((e) => Expanded(flex: f[e.key].toInt(), child: Text(e.value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)))).toList())),
+      const SizedBox(height: 4),
+      ...rows.asMap().entries.map((re) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+        color: re.key % 2 == 0 ? Colors.white : Colors.grey.shade50,
+        child: Row(children: re.value.asMap().entries.map((ce) => Expanded(flex: f[ce.key].toInt(), child: Text(ce.value, style: const TextStyle(fontSize: 12)))).toList()),
+      )),
+    ]);
+  }
+
+  Widget _barChart(List<String> labels, List<double> values, Color color) {
+    if (values.isEmpty) return const SizedBox(height: 160, child: Center(child: Text('No data', style: TextStyle(color: Colors.grey))));
+    return SizedBox(height: 200, child: BarChart(BarChartData(
+      borderData: FlBorderData(show: false),
+      gridData: FlGridData(show: true, drawVerticalLine: false, getDrawingHorizontalLine: (_) => FlLine(color: Colors.grey.shade100, strokeWidth: 1)),
+      titlesData: FlTitlesData(
+        bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 22, getTitlesWidget: (v, _) {
+          final i = v.toInt(); if (i < 0 || i >= labels.length) return const SizedBox.shrink();
+          return Text(labels[i].split(' ').first, style: const TextStyle(fontSize: 9));
+        })),
+        leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 24, getTitlesWidget: (v, _) => Text('${v.toInt()}', style: const TextStyle(fontSize: 9, color: Colors.grey)))),
+        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      ),
+      barGroups: values.asMap().entries.map((e) => BarChartGroupData(x: e.key, barRods: [
+        BarChartRodData(toY: e.value, color: color, width: 18, borderRadius: const BorderRadius.vertical(top: Radius.circular(5))),
+      ])).toList(),
+    )));
+  }
+
+  Widget _buildSeason() {
+    final total = widget.recentResults.length + widget.liveMatches.length;
+    final goals = widget.recentResults.fold(0, (s, r) => s + ((r['home_score'] as int? ?? 0) + (r['away_score'] as int? ?? 0)));
+    final yellow = widget.dynamicPlayers.fold(0, (s, p) => s + ((p['yellow_cards'] as int?) ?? 0));
+    final red = widget.dynamicPlayers.fold(0, (s, p) => s + ((p['red_cards'] as int?) ?? 0));
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _header('MMU Soccer League 2026 — Full Season Report', 'Comprehensive overview of all league activities, statistics and outcomes for the current academic season.'),
+      _intro('This report provides an authoritative summary of the MMU University Sports Department soccer league activities. It covers all registered teams, player performances, match results, and administrative statistics for the 2026 season, compiled from data entered by appointed referees and team officials.'),
+      _statRow([(
+        'Total Matches', '$total', Icons.sports_soccer_rounded, navy), ('Total Goals', '$goals', Icons.emoji_events_rounded, green),
+        ('Yellow Cards', '$yellow', Icons.rectangle_rounded, const Color(0xFFF9A825)), ('Red Cards', '$red', Icons.rectangle_rounded, const Color(0xFFC62828)),
+        ('Teams', '${widget.dynamicTeams.length}', Icons.shield_rounded, const Color(0xFF7B1FA2)), ('Players', '${widget.dynamicPlayers.length}', Icons.people_rounded, const Color(0xFF0288D1)),
+        ('Coaches', '${widget.dynamicCoaches.length}', Icons.sports_rounded, const Color(0xFF00796B)), ('Referees', '${widget.dynamicReferees.length}', Icons.gavel_rounded, const Color(0xFF5D4037)),
+      ]),
+      const SizedBox(height: 16),
+      _card('League Standings', _table(
+        ['#', 'Team', 'P', 'W', 'D', 'L', 'GF', 'GA', 'Pts'],
+        widget.standings.asMap().entries.map((e) => [(e.key + 1).toString(), e.value.team, '${e.value.played}', '${e.value.wins}', '${e.value.draws}', '${e.value.losses}', '${e.value.goalsFor}', '${e.value.goalsAgainst}', '${e.value.points}']).toList(),
+        flex: [1,3,1,1,1,1,1,1,1],
+      )),
+      _card('Goals Per Team', _barChart(
+        widget.standings.map((s) => s.team).toList(),
+        widget.standings.map((s) => s.goalsFor.toDouble()).toList(),
+        navy,
+      )),
+      _card('Points Per Team', _barChart(
+        widget.standings.map((s) => s.team).toList(),
+        widget.standings.map((s) => s.points.toDouble()).toList(),
+        green,
+      )),
+      _buildFooter(),
+    ]);
+  }
+
+  Widget _buildPlayers() {
+    final sorted = List.from(widget.dynamicPlayers)..sort((a,b) => ((b['goals'] as int? ?? 0)).compareTo((a['goals'] as int? ?? 0)));
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _header('Player Performance Report', 'Individual player statistics including goals, assists, cards, and appearances.'),
+      _intro('This section details the performance of all registered players across the season. Data is automatically aggregated from referee match reports submitted after each official fixture.'),
+      _statRow([('Players Registered', '${widget.dynamicPlayers.length}', Icons.people_rounded, navy),
+        ('Total Goals', '${widget.dynamicPlayers.fold(0,(s,p) => s + (p['goals'] as int? ?? 0))}', Icons.sports_soccer_rounded, green),
+        ('Total Assists', '${widget.dynamicPlayers.fold(0,(s,p) => s + (p['assists'] as int? ?? 0))}', Icons.assistant_rounded, const Color(0xFF0288D1)),
+        ('Yellow Cards', '${widget.dynamicPlayers.fold(0,(s,p) => s + (p['yellow_cards'] as int? ?? 0))}', Icons.rectangle_rounded, const Color(0xFFF9A825)),
+      ]),
+      const SizedBox(height: 16),
+      _card('Top Scorers Chart', _barChart(
+        sorted.take(8).map((p) => p['full_name'] as String? ?? '?').toList(),
+        sorted.take(8).map((p) => (p['goals'] as int? ?? 0).toDouble()).toList(),
+        green,
+      )),
+      _card('Full Player Statistics', _table(
+        ['Player', 'Team', 'Pos', 'G', 'A', 'YC', 'RC'],
+        sorted.map((p) => [p['full_name'] ?? '—', (p['teams'] as Map?)?['name'] ?? '—', p['position'] ?? '—', '${p['goals'] ?? 0}', '${p['assists'] ?? 0}', '${p['yellow_cards'] ?? 0}', '${p['red_cards'] ?? 0}']).toList(),
+        flex: [3,3,1,1,1,1,1],
+      )),
+    ]);
+  }
+
+  Widget _buildCoaches() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    _header('Coaching Staff Report', 'Registered coaches, team assignments, and contact information.'),
+    _intro('This section lists all coaches registered with the MMU Sports Department. Coaches are responsible for player squad management and lineup submissions for each fixture.'),
+    _statRow([('Total Coaches', '${widget.dynamicCoaches.length}', Icons.sports_rounded, navy), ('Active Teams', '${widget.dynamicTeams.length}', Icons.shield_rounded, green), ('', '', Icons.circle, Colors.transparent), ('', '', Icons.circle, Colors.transparent)]),
+    const SizedBox(height: 16),
+    _card('Registered Coaches', _table(
+      ['Name', 'Email', 'Team', 'Status'],
+      widget.dynamicCoaches.map((c) => [c['full_name'] ?? '—', c['email'] ?? '—', c['team_name'] ?? (c['teams'] as Map?)?['name'] ?? '—', 'Active']).toList(),
+      flex: [3,3,2,1],
+    )),
+    _buildFooter(),
+  ]);
+
+  Widget _buildReferees() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    _header('Referee Report', 'Registered officials and fixture assignments for the season.'),
+    _intro('This section covers all referees approved by the Sports Department. Referees are responsible for officiating fixtures, recording match events, and submitting official match reports.'),
+    _statRow([('Total Referees', '${widget.dynamicReferees.length}', Icons.gavel_rounded, navy), ('Fixtures', '${widget.generatedFixtures.length}', Icons.calendar_month_rounded, green), ('', '', Icons.circle, Colors.transparent), ('', '', Icons.circle, Colors.transparent)]),
+    const SizedBox(height: 16),
+    _card('Registered Referees', _table(
+      ['Name', 'Email', 'Phone', 'Status'],
+      widget.dynamicReferees.map((r) => [r['full_name'] ?? '—', r['email'] ?? '—', r['phone'] ?? '—', 'Active']).toList(),
+      flex: [3,3,2,1],
+    )),
+    _buildFooter(),
+  ]);
+
+  Widget _buildTeams() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    _header('Team Performance Report', 'Team standings, wins/losses, goals, and squad sizes for the season.'),
+    _intro('This section provides a comparative analysis of all registered teams in the MMU Soccer League. Data reflects cumulative performance across all completed fixtures.'),
+    _statRow([('Total Teams', '${widget.dynamicTeams.length}', Icons.shield_rounded, navy), ('Completed Matches', '${widget.recentResults.length}', Icons.check_circle_rounded, green), ('', '', Icons.circle, Colors.transparent), ('', '', Icons.circle, Colors.transparent)]),
+    const SizedBox(height: 16),
+    _card('Team Standings', _table(
+      ['Team', 'P', 'W', 'D', 'L', 'GF', 'GA', 'GD', 'Pts'],
+      widget.standings.map((s) => [s.team, '${s.played}', '${s.wins}', '${s.draws}', '${s.losses}', '${s.goalsFor}', '${s.goalsAgainst}', '${s.goalDifference}', '${s.points}']).toList(),
+      flex: [3,1,1,1,1,1,1,1,1],
+    )),
+    _card('Goals Scored Per Team', _barChart(widget.standings.map((s) => s.team).toList(), widget.standings.map((s) => s.goalsFor.toDouble()).toList(), green)),
+    _card('Points Per Team', _barChart(widget.standings.map((s) => s.team).toList(), widget.standings.map((s) => s.points.toDouble()).toList(), navy)),
+    _buildFooter(),
+  ]);
+
+  Widget _buildFixtures() {
+    final completed = widget.generatedFixtures.where((f) => f.status == 'completed').toList();
+    final upcoming = widget.generatedFixtures.where((f) => f.status == 'scheduled').toList();
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _header('Fixtures & Results Report', 'All scheduled and completed fixtures for the current season.'),
+      _intro('This section presents the full fixture list for the MMU Soccer League 2026 season including scheduled matches, results, venues, and assigned referees.'),
+      _statRow([('Total Fixtures', '${widget.generatedFixtures.length}', Icons.calendar_month_rounded, navy), ('Completed', '${completed.length}', Icons.check_circle_rounded, green), ('Upcoming', '${upcoming.length}', Icons.schedule_rounded, const Color(0xFF0288D1)), ('Live', '${widget.liveMatches.length}', Icons.circle, Colors.red)]),
+      const SizedBox(height: 16),
+      _card('Completed Results', _table(
+        ['Home', 'Score', 'Away', 'Venue', 'Ref'],
+        completed.map((f) => [f.homeTeam, '${f.homeScore}–${f.awayScore}', f.awayTeam, f.venue, f.assignedReferee ?? '—']).toList(),
+        flex: [2,1,2,2,2],
+      )),
+      _card('Upcoming Fixtures', _table(
+        ['Home', 'Away', 'Date', 'Venue'],
+        upcoming.map((f) => [f.homeTeam, f.awayTeam, '${f.dateTime.day}/${f.dateTime.month}/${f.dateTime.year}', f.venue]).toList(),
+        flex: [2,2,1,2],
+      )),
+      _buildFooter(),
+    ]);
+  }
+
+  Widget _buildFooter() => Container(
+    margin: const EdgeInsets.only(top: 32, bottom: 40),
+    padding: const EdgeInsets.all(24),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: Colors.grey.shade200),
+    ),
+    child: Column(children: [
+      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('OFFICIAL REPORT', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2, fontSize: 10, color: Colors.grey)),
+          const SizedBox(height: 4),
+          const Text('MMU Department of Sports', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: navy)),
+          const Text('Athletics & Competitions Office', style: TextStyle(fontSize: 12, color: Colors.grey)),
+        ]),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: navy.withOpacity(0.2), width: 2)),
+          child: const Icon(Icons.verified_user_rounded, color: navy, size: 32),
+        ),
+      ]),
+      const SizedBox(height: 20),
+      const Text(
+        'This document is an electronically generated official record of the Multi-Media University Sports Department. All data contained herein is verified against referee match reports and official league records as of the timestamp provided at the head of this document.',
+        style: TextStyle(fontSize: 11, color: Colors.grey, fontStyle: FontStyle.italic),
+        textAlign: TextAlign.center,
+      ),
+      const SizedBox(height: 24),
+      const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+        Icon(Icons.email_outlined, size: 14, color: Colors.grey),
+        SizedBox(width: 4),
+        Text('sports@mmu.ac.ke', style: TextStyle(fontSize: 11, color: Colors.grey)),
+        SizedBox(width: 20),
+        Icon(Icons.language_rounded, size: 14, color: Colors.grey),
+        SizedBox(width: 4),
+        Text('www.mmu.ac.ke/sports', style: TextStyle(fontSize: 11, color: Colors.grey)),
+      ]),
+    ]),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    Widget body;
+    switch (widget.reportType) {
+      case 'players':  body = _buildPlayers(); break;
+      case 'coaches':  body = _buildCoaches(); break;
+      case 'referees': body = _buildReferees(); break;
+      case 'teams':    body = _buildTeams(); break;
+      case 'fixtures': body = _buildFixtures(); break;
+      default:         body = _buildSeason();
+    }
+    return Column(children: [
+      // ── Report type selector ──────────────────────────────────────────────
+      Container(
+        color: Colors.white,
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Report Type', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+          const SizedBox(height: 8),
+          SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(
+            children: types.map((t) {
+              final active = widget.reportType == t.$1;
+              return GestureDetector(
+                onTap: () => widget.onTypeChanged(t.$1),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  margin: const EdgeInsets.only(right: 8, bottom: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: active ? const Color(0xFF003087) : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text('${t.$3} ${t.$2}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: active ? Colors.white : Colors.grey.shade700)),
+                ),
+              );
+            }).toList(),
+          )),
+        ]),
+      ),
+      // ── Report body ───────────────────────────────────────────────────────
+      Expanded(child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: body,
+      )),
+    ]);
   }
 }
