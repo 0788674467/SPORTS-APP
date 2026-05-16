@@ -438,24 +438,25 @@ class StatCard extends StatelessWidget {
               Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
               Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
               const SizedBox(height: 8),
-              // ── Progress bar ──────────────────────────────────────────────────
+              // ── Progress bar ─────────────────────────────────────────────────
               if (progress != null) ...[
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: progress!.clamp(0.0, 1.0),
-                    minHeight: 5,
-                    backgroundColor: accentColor.withOpacity(0.1),
-                    valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                Row(children: [
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: LinearProgressIndicator(
+                        value: progress!.clamp(0.0, 1.0),
+                        minHeight: 6,
+                        backgroundColor: Colors.grey.shade200,
+                        valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  Text('${(progress! * 100).round()}% capacity',
-                      style: TextStyle(fontSize: 10, color: Colors.grey.shade400)),
-                  if (onTap != null)
-                    Text('Tap to view →',
-                        style: TextStyle(fontSize: 10, color: accentColor, fontWeight: FontWeight.w600)),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${(progress! * 100).round()}%',
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: accentColor),
+                  ),
                 ]),
               ],
             ],
