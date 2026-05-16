@@ -3213,12 +3213,36 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   // ─── Players ────────────────────────────────────────────────────────────────
   Widget _buildPlayers() {
     if (_isLoadingManagement) return const Center(child: CircularProgressIndicator(color: Color(0xFF00A651)));
-    final players = _dynamicPlayers.isEmpty ? [] : _dynamicPlayers;
-    
+
+    // Search filter
+    var players = _dynamicPlayers.where((p) {
+      if (_searchQuery.isEmpty) return true;
+      return (p['full_name'] as String? ?? '').toLowerCase().contains(_searchQuery) ||
+             (p['teams']?['name'] as String? ?? '').toLowerCase().contains(_searchQuery) ||
+             (p['position'] as String? ?? '').toLowerCase().contains(_searchQuery);
+    }).toList();
+
+    // Sort
+    players.sort((a, b) {
+      int cmp;
+      switch (_playersSortCol) {
+        case 'team':     cmp = (a['teams']?['name'] ?? '').toString().compareTo((b['teams']?['name'] ?? '').toString()); break;
+        case 'position': cmp = (a['position'] ?? '').toString().compareTo((b['position'] ?? '').toString()); break;
+        case 'number':   cmp = ((a['jersey_number'] as int?) ?? 0).compareTo((b['jersey_number'] as int?) ?? 0); break;
+        default:         cmp = (a['full_name'] ?? '').toString().compareTo((b['full_name'] ?? '').toString());
+      }
+      return _playersSortAsc ? cmp : -cmp;
+    });
+
+    void toggleSort(String col) => setState(() {
+      if (_playersSortCol == col) _playersSortAsc = !_playersSortAsc;
+      else { _playersSortCol = col; _playersSortAsc = true; }
+    });
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: _card(
-        title: 'Registered Players', 
+        title: 'Registered Players',
         subtitle: '${_dynamicPlayers.length} players — tap to view details',
         child: Column(children: [
           // Toolbar
