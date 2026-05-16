@@ -639,6 +639,47 @@ class MatchState extends ChangeNotifier {
     updateFixture(fixtureId, status: 'completed', homeScore: f.homeScore, awayScore: f.awayScore);
   }
 
+  /// Submits the final match report to Supabase.
+  /// 
+  /// Marks the fixture completed, persists the final score, and saves a
+  /// detailed report row (with all events as JSON) to `match_reports`.
+  /// Player stats are then aggregated by the referee dashboard UI.
+  Future<void> submitMatchReport(String fixtureId) async {
+    final f = _fixture(fixtureId);
+    if (f == null) return;
+
+    // 1. End the match (marks completed, updates standings & persists score)
+    endMatch(fixtureId);
+
+    // 2. Save detailed report to match_reports table
+    try {
+      final eventsJson = f.events.map((e) => {
+        'type':        e.type,
+        'team':        e.team,
+        'player_name': e.playerName,
+        'minute':      e.minute,
+        'detail':      e.detail,
+      }).toList();
+
+      await _db.from('match_reports').upsert({
+        'fixture_id':   fixtureId,
+        'home_team':    f.homeTeam,
+        'away_team':    f.awayTeam,
+        'home_score':   f.homeScore,
+        'away_score':   f.awayScore,
+        'venue':        f.venue,
+        'referee':      f.assignedReferee,
+        'events':       eventsJson,
+        'submitted_at': DateTime.now().toIso8601String(),
+        'status':       'submitted',
+      });
+      debugPrint('✅ Match report saved for $fixtureId');
+    } catch (e) {
+      debugPrint('⚠️ submitMatchReport DB error: $e');
+      // Non-fatal — player stat update in the UI still proceeds
+    }
+  }
+
   // ─── Standings ────────────────────────────────────────────────────────────
 
   /// League standings table

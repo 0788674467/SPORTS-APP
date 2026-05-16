@@ -4397,7 +4397,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         ),
         const SizedBox(height: 18),
         // ── Player Performance Table ─────────────────────────────────────────
-        _card(title: 'Player Performance Table', subtitle: 'Live data — Goals + Assists',
+        _card(title: 'Player Performance Table', subtitle: 'Auto-updated from referee match reports',
           child: Column(children: [
             // Header
             Container(
@@ -4469,15 +4469,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     Expanded(flex: 1, child: Text('${goals + assists}',
                         textAlign: TextAlign.center,
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
-                    // Edit stats button
-                    IconButton(
-                      icon: const Icon(Icons.edit_rounded, size: 16),
-                      color: Colors.grey.shade400,
-                      tooltip: 'Edit stats',
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                      onPressed: () => _showEditStatsDialog(p),
-                    ),
+
                   ]),
                 );
               }),

@@ -983,9 +983,96 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
         ] else const Text('No match selected. Start a match from My Fixtures.', style: TextStyle(color: Colors.grey)),
         const SizedBox(height: 20),
         SizedBox(width: double.infinity, child: ElevatedButton.icon(
-          onPressed: f == null ? null : () => ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: const Text('Report submitted to Admin!'), backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), margin: const EdgeInsets.all(16))),
+          onPressed: f == null ? null : () async {
+            // ── Confirm before submitting ──────────────────────────────────
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                title: const Text('Submit Match Report?'),
+                content: Text(
+                  'This will finalise ${f!.homeTeam} ${f.homeScore} – ${f.awayScore} ${f.awayTeam} '
+                  'and automatically update all player stats. This cannot be undone.',
+                ),
+                actions: [
+                  TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF003087), foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Submit'),
+                  ),
+                ],
+              ),
+            );
+            if (confirmed != true || !mounted) return;
+
+            // ── 1. Save match result to Supabase ──────────────────────────
+            final ms2 = context.read<MatchState>();
+            await ms2.submitMatchReport(f!.id);
+
+            // ── 2. Aggregate events → per-player stat deltas ──────────────
+            final Map<String, Map<String, int>> deltas = {};
+            void add(String playerName, String key) {
+              final k = playerName.trim().toLowerCase();
+              if (k.isEmpty) return;
+              deltas.putIfAbsent(playerName.trim(), () => {'goals': 0, 'assists': 0, 'yellow': 0, 'red': 0});
+              deltas[playerName.trim()]![key] = (deltas[playerName.trim()]![key] ?? 0) + 1;
+            }
+            for (final e in events) {
+              if (e.type == 'goal'   && e.playerName.isNotEmpty) add(e.playerName, 'goals');
+              if (e.type == 'assist' && e.playerName.isNotEmpty) add(e.playerName, 'assists');
+              if (e.type == 'yellow' && e.playerName.isNotEmpty) add(e.playerName, 'yellow');
+              if (e.type == 'red'    && e.playerName.isNotEmpty) add(e.playerName, 'red');
+              // Also credit the assist from goal events' detail field
+              if (e.type == 'goal' && (e.detail ?? '').isNotEmpty) add(e.detail!, 'assists');
+            }
+
+            // ── 3. Fetch players to match names → IDs ─────────────────────
+            if (deltas.isNotEmpty) {
+              try {
+                final supabase = Supabase.instance.client;
+                final allPlayers = await supabase.from('players').select('id, full_name');
+                for (final entry in deltas.entries) {
+                  final pName  = entry.key.toLowerCase();
+                  final delta  = entry.value;
+                  // Fuzzy name match (case-insensitive)
+                  final match = (allPlayers as List).cast<Map<String, dynamic>>().where(
+                    (p) => (p['full_name'] as String? ?? '').toLowerCase() == pName,
+                  ).toList();
+                  if (match.isEmpty) continue;
+                  final pid = match.first['id'].toString();
+                  // Fetch current values and increment
+                  final cur = await supabase.from('players').select(
+                    'goals, assists, yellow_cards, red_cards, matches_played'
+                  ).eq('id', pid).single();
+                  await supabase.from('players').update({
+                    'goals':         ((cur['goals']         as int?) ?? 0) + (delta['goals']   ?? 0),
+                    'assists':       ((cur['assists']        as int?) ?? 0) + (delta['assists'] ?? 0),
+                    'yellow_cards':  ((cur['yellow_cards']   as int?) ?? 0) + (delta['yellow']  ?? 0),
+                    'red_cards':     ((cur['red_cards']      as int?) ?? 0) + (delta['red']     ?? 0),
+                    'matches_played':((cur['matches_played'] as int?) ?? 0) + 1,
+                  }).eq('id', pid);
+                }
+              } catch (err) {
+                debugPrint('⚠️ Player stats update error: $err');
+              }
+            }
+
+            // ── 4. Show confirmation ───────────────────────────────────────
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: const Text('✅ Match report submitted! Player stats updated automatically.'),
+                backgroundColor: Colors.green,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                margin: const EdgeInsets.all(16),
+                duration: const Duration(seconds: 4),
+              ));
+            }
+          },
           icon: const Icon(Icons.send_rounded, size: 18),
           label: const Text('Submit to Admin'),
           style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF003087), foregroundColor: Colors.white,
