@@ -161,12 +161,13 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                             ),
                           ],
                         ),
-                        clipBehavior: Clip.hardEdge,
-                        child: Padding(
-                          padding: const EdgeInsets.all(6),
-                          child: Image.asset(
-                            'assets/images/mmulogo.png',
-                            fit: BoxFit.contain,
+                        child: ClipOval(
+                          child: Padding(
+                            padding: const EdgeInsets.all(6),
+                            child: Image.asset(
+                              'assets/images/mmulogo.png',
+                              fit: BoxFit.contain,
+                            ),
                           ),
                         ),
                       ),
@@ -326,23 +327,24 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                         shape: BoxShape.circle,
                         color: AppColors.mmwNavy,
                         border: Border.all(
-                          color: AppColors.mmwGold.withOpacity(0.4),
-                          width: 2,
+                          color: AppColors.mmwGold.withOpacity(0.5),
+                          width: 2.5,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.mmwNavy.withOpacity(0.25),
+                            color: AppColors.mmwNavy.withOpacity(0.3),
                             blurRadius: 16,
                             offset: const Offset(0, 4),
                           ),
                         ],
                       ),
-                      clipBehavior: Clip.hardEdge,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: Image.asset(
-                          'assets/images/mmulogo.png',
-                          fit: BoxFit.contain,
+                      child: ClipOval(
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Image.asset(
+                            'assets/images/mmulogo.png',
+                            fit: BoxFit.contain,
+                          ),
                         ),
                       ),
                     ),

@@ -684,12 +684,13 @@ class _SpectatorHomeState extends State<SpectatorHome>
                                 ),
                               ],
                             ),
-                            clipBehavior: Clip.hardEdge,
-                            child: Padding(
-                              padding: const EdgeInsets.all(5),
-                              child: Image.asset(
-                                'assets/images/mmulogo.png',
-                                fit: BoxFit.contain,
+                            child: ClipOval(
+                              child: Padding(
+                                padding: const EdgeInsets.all(5),
+                                child: Image.asset(
+                                  'assets/images/mmulogo.png',
+                                  fit: BoxFit.contain,
+                                ),
                               ),
                             ),
                           ),

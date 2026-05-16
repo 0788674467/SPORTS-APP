@@ -303,12 +303,13 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
               shape: BoxShape.circle,
               color: AppColors.mmwNavy,
             ),
-            clipBehavior: Clip.hardEdge,
-            child: Padding(
-              padding: const EdgeInsets.all(5),
-              child: Image.asset(
-                'assets/images/mmulogo.png',
-                fit: BoxFit.contain,
+            child: ClipOval(
+              child: Padding(
+                padding: const EdgeInsets.all(5),
+                child: Image.asset(
+                  'assets/images/mmulogo.png',
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
           ),
