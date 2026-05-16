@@ -1158,7 +1158,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   }
   Widget _buildDashboardHome() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         _buildWelcomeBanner(),
         const SizedBox(height: 24),
@@ -1194,7 +1194,8 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           ]),
         ])),
         const SizedBox(width: 16),
-        const Icon(Icons.sports_soccer, size: 64, color: Colors.white24),
+        if (MediaQuery.of(context).size.width > 400)
+          const Icon(Icons.sports_soccer, size: 48, color: Colors.white24),
       ]),
     );
   }
@@ -1241,13 +1242,24 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           const LinearGradient(colors: [Color(0xFF001A4D), Color(0xFF003087)], begin: Alignment.topLeft, end: Alignment.bottomRight),
           (squadCount / 10).clamp(0.0, 1.0), onTap: () => _navigate('squad_approvals')),
     ];
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(maxCrossAxisExtent: 280, childAspectRatio: 1.15, crossAxisSpacing: 18, mainAxisSpacing: 18),
-      itemCount: cards.length,
-      itemBuilder: (_, i) => cards[i],
-    );
+    return LayoutBuilder(builder: (context, constraints) {
+      final w = constraints.maxWidth;
+      // 1 col < 480, 2 col < 760, 4 col otherwise
+      final crossCount = w < 480 ? 1 : w < 760 ? 2 : 4;
+      final ratio = w < 480 ? 1.6 : w < 760 ? 1.25 : 1.15;
+      return GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: crossCount,
+          childAspectRatio: ratio,
+          crossAxisSpacing: 14,
+          mainAxisSpacing: 14,
+        ),
+        itemCount: cards.length,
+        itemBuilder: (_, i) => cards[i],
+      );
+    });
   }
 
   StatCard _statCardData(String title, String value, String subtitle, String pct, IconData icon, Gradient grad, double progress, {VoidCallback? onTap}) {
@@ -1289,7 +1301,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               ])
             : Column(children: [
                 SizedBox(
-                  width: double.infinity, height: 130,
+                  width: double.infinity, height: 160,
                   child: CustomPaint(painter: _SeasonGaugePainter(progress: pct)),
                 ),
                 const SizedBox(height: 16),
@@ -5368,8 +5380,9 @@ class _SeasonGaugePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final cx     = size.width / 2;
-    final cy     = size.height * 0.92;
-    final radius = size.width * 0.44;
+    // Cap radius so the arc never overflows the canvas on small screens
+    final radius = math.min(size.width * 0.42, size.height * 0.78);
+    final cy     = size.height * 0.94;
 
     const startAngle = math.pi;       // 180° — left side
     const sweepFull  = math.pi;       // 180° sweep — full semicircle

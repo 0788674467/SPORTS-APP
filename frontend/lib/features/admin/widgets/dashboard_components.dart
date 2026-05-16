@@ -464,14 +464,18 @@ class _StatCardState extends State<StatCard> {
               ]),
               const SizedBox(height: 14),
               // ── Value ────────────────────────────────────────────────────
-              Text(widget.value,
-                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(widget.value,
+                    style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: -0.5)),
+              ),
               const SizedBox(height: 2),
               Text(widget.title,
                   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
               Text(widget.subtitle,
                   style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
-              const Spacer(),
+              const SizedBox(height: 8),
               // ── Progress bar ─────────────────────────────────────────────
               if (widget.progress != null) ...[
                 const SizedBox(height: 10),
