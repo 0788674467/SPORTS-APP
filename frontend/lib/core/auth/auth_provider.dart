@@ -436,16 +436,41 @@ class AuthProvider extends ChangeNotifier {
     try {
       final res = await _supabase
           .from('players')
-          .select('*, teams!team_id(name)');
+          .select('id, full_name, position, jersey_number, photo_url, team_id, '
+                  'goals, assists, yellow_cards, red_cards, matches_played, '
+                  'teams!team_id(name)');
       return List<Map<String, dynamic>>.from(res);
     } catch (e) {
-      debugPrint('AuthProvider: Error fetching players: $e');
+      debugPrint('AuthProvider: Error fetching players (with stats): $e');
+      // Fallback — try without stat columns (older schema)
       try {
-        final res = await _supabase.from('players').select();
+        final res = await _supabase
+            .from('players')
+            .select('*, teams!team_id(name)');
         return List<Map<String, dynamic>>.from(res);
       } catch (e2) {
+        debugPrint('AuthProvider: Error fetching players (fallback): $e2');
         return [];
       }
+    }
+  }
+
+  /// Update player stats (goals, assists, cards) by player id.
+  Future<String?> updatePlayerStats(String playerId, {
+    int? goals, int? assists, int? yellowCards, int? redCards, int? matchesPlayed,
+  }) async {
+    try {
+      final updates = <String, dynamic>{};
+      if (goals != null)         updates['goals']          = goals;
+      if (assists != null)       updates['assists']         = assists;
+      if (yellowCards != null)   updates['yellow_cards']    = yellowCards;
+      if (redCards != null)      updates['red_cards']       = redCards;
+      if (matchesPlayed != null) updates['matches_played']  = matchesPlayed;
+      if (updates.isEmpty) return null;
+      await _supabase.from('players').update(updates).eq('id', playerId);
+      return null; // success
+    } catch (e) {
+      return e.toString();
     }
   }
 

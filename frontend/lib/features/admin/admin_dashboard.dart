@@ -3554,6 +3554,90 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     );
   }
 
+  // ─── Edit Player Stats Dialog ────────────────────────────────────────────────
+  Future<void> _showEditStatsDialog(Map<String, dynamic> p) async {
+    final ap = Provider.of<auth.AuthProvider>(context, listen: false);
+    int goals   = (p['goals']   as int?) ?? 0;
+    int assists = (p['assists'] as int?) ?? 0;
+    int yellow  = (p['yellow_cards'] as int?) ?? 0;
+    int red     = (p['red_cards']    as int?) ?? 0;
+    int played  = (p['matches_played'] as int?) ?? 0;
+    final name  = p['name'] as String? ?? p['full_name'] as String? ?? 'Player';
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlg) {
+          Widget counter(String label, Color color, int value, VoidCallback inc, VoidCallback dec) =>
+              Row(children: [
+                SizedBox(width: 110, child: Text(label, style: const TextStyle(fontSize: 13))),
+                IconButton(
+                  icon: const Icon(Icons.remove_circle_outline_rounded),
+                  color: Colors.grey.shade500,
+                  onPressed: value > 0 ? dec : null,
+                ),
+                Container(
+                  width: 40,
+                  alignment: Alignment.center,
+                  child: Text('$value', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.add_circle_outline_rounded),
+                  color: color,
+                  onPressed: inc,
+                ),
+              ]);
+
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('Edit Player Stats', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text(name, style: TextStyle(fontSize: 13, color: Colors.grey.shade500, fontWeight: FontWeight.normal)),
+            ]),
+            content: Column(mainAxisSize: MainAxisSize.min, children: [
+              counter('Goals ⚽',        const Color(0xFF00A651), goals,   () => setDlg(() => goals++),   () => setDlg(() => goals--)),
+              counter('Assists 🅰️',      const Color(0xFF003087), assists, () => setDlg(() => assists++), () => setDlg(() => assists--)),
+              counter('Yellow Cards 🟨',  const Color(0xFFF9A825), yellow,  () => setDlg(() => yellow++),  () => setDlg(() => yellow--)),
+              counter('Red Cards 🟥',     const Color(0xFFC62828), red,     () => setDlg(() => red++),     () => setDlg(() => red--)),
+              counter('Matches Played 📅', Colors.grey.shade600,  played,  () => setDlg(() => played++),  () => setDlg(() => played--)),
+            ]),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF003087),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  final pid = p['id']?.toString() ?? '';
+                  if (pid.isEmpty) return;
+                  final err = await ap.updatePlayerStats(
+                    pid,
+                    goals: goals, assists: assists,
+                    yellowCards: yellow, redCards: red, matchesPlayed: played,
+                  );
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text(err == null ? '✅ Stats updated for $name' : '❌ $err'),
+                      backgroundColor: err == null ? const Color(0xFF00A651) : Colors.red,
+                    ));
+                    if (err == null) _fetchManagementData();
+                  }
+                },
+                child: const Text('Save'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   void _showPlayerEditModal(Map<String, dynamic> player) {
     final nameCtrl = TextEditingController(text: player['full_name'] ?? '');
     final regNoCtrl = TextEditingController(text: player['reg_no'] ?? '');
@@ -4346,9 +4430,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
               )
             else
               ...rawPlayers.asMap().entries.map((e) {
-                final p    = e.value;
-                final name  = p['name'] as String;
-                final photo = p['photo'] as String?;
+                final p      = e.value;
+                final pid    = p['id']?.toString() ?? '';
+                final name   = p['name'] as String;
+                final photo  = p['photo'] as String?;
                 final goals   = p['goals'] as int;
                 final assists = p['assists'] as int;
                 return Container(
@@ -4384,6 +4469,15 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     Expanded(flex: 1, child: Text('${goals + assists}',
                         textAlign: TextAlign.center,
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+                    // Edit stats button
+                    IconButton(
+                      icon: const Icon(Icons.edit_rounded, size: 16),
+                      color: Colors.grey.shade400,
+                      tooltip: 'Edit stats',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                      onPressed: () => _showEditStatsDialog(p),
+                    ),
                   ]),
                 );
               }),
