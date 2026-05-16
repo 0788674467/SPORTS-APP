@@ -134,7 +134,17 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   // ─── Search Controllers ────────────────────────────────────────────────────
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  
+
+  // ─── Sort State (per table) ──────────────────────────────────────────────────
+  String _coachesSortCol  = 'name';   bool _coachesSortAsc  = true;
+  String _refereesSortCol = 'name';   bool _refereesSortAsc = true;
+  String _playersSortCol  = 'name';   bool _playersSortAsc  = true;
+  String _teamsSortCol    = 'name';   bool _teamsSortAsc    = true;
+  String _approvalsSortCol= 'name';   bool _approvalsSortAsc= true;
+  String _venuesSortCol   = 'name';   bool _venuesSortAsc   = true;
+  // Role filter for approvals
+  String _approvalsRoleFilter = 'all';
+
   // ─── Loading States ─────────────────────────────────────────────────────────
   bool _isLoadingPending = false;
   bool _isLoadingManagement = false;
@@ -1655,6 +1665,28 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   // ─── Approvals ──────────────────────────────────────────────────────────────
   Widget _buildApprovals() {
     if (_isLoadingPending) return const Center(child: CircularProgressIndicator(color: Color(0xFF00A651)));
+
+    // Filter by role chip
+    var pending = _pending.where((p) {
+      final role = (p['role'] as String? ?? '').toLowerCase();
+      if (_approvalsRoleFilter != 'all' && role != _approvalsRoleFilter) return false;
+      if (_searchQuery.isEmpty) return true;
+      return (p['full_name'] as String? ?? '').toLowerCase().contains(_searchQuery) ||
+             (p['email'] as String? ?? '').toLowerCase().contains(_searchQuery) ||
+             role.contains(_searchQuery);
+    }).toList();
+
+    // Sort
+    pending.sort((a, b) {
+      int cmp;
+      switch (_approvalsSortCol) {
+        case 'email': cmp = (a['email'] ?? '').toString().compareTo((b['email'] ?? '').toString()); break;
+        case 'role':  cmp = (a['role'] ?? '').toString().compareTo((b['role'] ?? '').toString()); break;
+        default:      cmp = (a['full_name'] ?? '').toString().compareTo((b['full_name'] ?? '').toString());
+      }
+      return _approvalsSortAsc ? cmp : -cmp;
+    });
+
     return RefreshIndicator(
       onRefresh: _fetchPending,
       color: const Color(0xFF00A651),
@@ -1662,11 +1694,35 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         padding: const EdgeInsets.all(24),
         children: [
           _pendingHeader(),
-          const SizedBox(height: 16),
-          if (_pending.isEmpty)
-            _emptyState(Icons.check_circle_outline_rounded, 'All caught up!', 'No pending approvals.')
+          const SizedBox(height: 12),
+          // Role filter chips
+          Row(children: [
+            _filterChips(['all', 'coach', 'referee', 'player'], _approvalsRoleFilter,
+                (v) => setState(() { _approvalsRoleFilter = v; })),
+            const Spacer(),
+            _resultCount(pending.length, _pending.length),
+          ]),
+          const SizedBox(height: 12),
+          // Sort bar
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+            decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
+            child: Row(children: [
+              Expanded(flex: 3, child: _sortableColHeader('Name', 'name', _approvalsSortCol, _approvalsSortAsc,
+                () => setState(() { if (_approvalsSortCol == 'name') _approvalsSortAsc = !_approvalsSortAsc; else { _approvalsSortCol = 'name'; _approvalsSortAsc = true; } }))),
+              Expanded(flex: 3, child: _sortableColHeader('Email', 'email', _approvalsSortCol, _approvalsSortAsc,
+                () => setState(() { if (_approvalsSortCol == 'email') _approvalsSortAsc = !_approvalsSortAsc; else { _approvalsSortCol = 'email'; _approvalsSortAsc = true; } }))),
+              Expanded(flex: 2, child: _sortableColHeader('Role', 'role', _approvalsSortCol, _approvalsSortAsc,
+                () => setState(() { if (_approvalsSortCol == 'role') _approvalsSortAsc = !_approvalsSortAsc; else { _approvalsSortCol = 'role'; _approvalsSortAsc = true; } }))),
+            ]),
+          ),
+          const SizedBox(height: 12),
+          if (pending.isEmpty)
+            _emptyState(Icons.check_circle_outline_rounded,
+                _searchQuery.isEmpty && _approvalsRoleFilter == 'all' ? 'All caught up!' : 'No matches',
+                _searchQuery.isEmpty && _approvalsRoleFilter == 'all' ? 'No pending approvals.' : 'Try a different filter or search.')
           else
-            ..._pending.asMap().entries.map((entry) => _approvalCard(entry.key, entry.value)),
+            ...pending.asMap().entries.map((e) => _approvalCard(e.key, e.value)),
         ],
       ),
     );
@@ -3076,17 +3132,81 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   // ─── Teams ──────────────────────────────────────────────────────────────────
   Widget _buildTeams() {
     if (_isLoadingManagement) return const Center(child: CircularProgressIndicator(color: Color(0xFF00A651)));
+
+    var rows = _dynamicTeams.where((t) {
+      if (_searchQuery.isEmpty) return true;
+      return (t['name'] as String? ?? '').toLowerCase().contains(_searchQuery) ||
+             (t['profiles']?['full_name'] as String? ?? '').toLowerCase().contains(_searchQuery);
+    }).toList();
+
+    rows.sort((a, b) {
+      int cmp;
+      switch (_teamsSortCol) {
+        case 'coach':  cmp = (a['profiles']?['full_name'] ?? '').toString().compareTo((b['profiles']?['full_name'] ?? '').toString()); break;
+        case 'status': cmp = (a['is_active'] == true ? 'Active' : 'Inactive').compareTo(b['is_active'] == true ? 'Active' : 'Inactive'); break;
+        default:       cmp = (a['name'] ?? '').toString().compareTo((b['name'] ?? '').toString());
+      }
+      return _teamsSortAsc ? cmp : -cmp;
+    });
+
+    void toggleSort(String col) => setState(() {
+      if (_teamsSortCol == col) _teamsSortAsc = !_teamsSortAsc;
+      else { _teamsSortCol = col; _teamsSortAsc = true; }
+    });
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
-      child: _card(title: 'Registered Teams', subtitle: '${_dynamicTeams.length} teams in the system', child: Column(children: [
-        _tableHeader(['Team', 'Coach', 'Status']),
-        if (_dynamicTeams.isEmpty) const Padding(padding: EdgeInsets.all(24), child: Text('No teams found.'))
-        else ..._dynamicTeams.map((t) => _tableRow([
-          t['name'] ?? 'Unknown',
-          t['profiles']?['full_name'] ?? 'No Coach',
-          t['is_active'] == true ? 'Active' : 'Inactive'
-        ], t['is_active'] == true ? Colors.green.shade600 : Colors.red.shade600)),
-      ])),
+      child: _card(
+        title: 'Registered Teams',
+        subtitle: '${_dynamicTeams.length} teams in the system',
+        child: Column(children: [
+          Row(children: [
+            const Spacer(),
+            _resultCount(rows.length, _dynamicTeams.length),
+          ]),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+            decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
+            child: Row(children: [
+              Expanded(flex: 3, child: _sortableColHeader('Team', 'name', _teamsSortCol, _teamsSortAsc, () => toggleSort('name'))),
+              Expanded(flex: 3, child: _sortableColHeader('Coach', 'coach', _teamsSortCol, _teamsSortAsc, () => toggleSort('coach'))),
+              Expanded(flex: 2, child: _sortableColHeader('Status', 'status', _teamsSortCol, _teamsSortAsc, () => toggleSort('status'))),
+            ]),
+          ),
+          const SizedBox(height: 4),
+          if (rows.isEmpty)
+            Padding(padding: const EdgeInsets.all(24), child: Text(_searchQuery.isEmpty ? 'No teams found.' : 'No teams match "$_searchQuery".'))
+          else
+            ...rows.asMap().entries.map((e) {
+              final t = e.value;
+              final isActive = t['is_active'] == true;
+              return Container(
+                margin: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                decoration: BoxDecoration(
+                  color: e.key % 2 == 0 ? Colors.white : Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade100),
+                ),
+                child: Row(children: [
+                  Expanded(flex: 3, child: Text(t['name'] ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
+                  Expanded(flex: 3, child: Text(t['profiles']?['full_name'] ?? 'No Coach', style: TextStyle(fontSize: 12, color: Colors.grey.shade600))),
+                  Expanded(flex: 2, child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: isActive ? Colors.green.shade50 : Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(isActive ? 'Active' : 'Inactive',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold,
+                            color: isActive ? Colors.green.shade700 : Colors.red.shade700)),
+                  )),
+                ]),
+              );
+            }),
+        ]),
+      ),
     );
   }
 
@@ -3099,30 +3219,34 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       padding: const EdgeInsets.all(24),
       child: _card(
         title: 'Registered Players', 
-        subtitle: 'All players across all teams - Click to view details', 
+        subtitle: '${_dynamicPlayers.length} players — tap to view details',
         child: Column(children: [
-          // Fixed table header with consistent layout
+          // Toolbar
+          Row(children: [
+            _filterChips(['all', 'gk', 'def', 'mid', 'fw'], 'all', (_) {}),
+            const Spacer(),
+            _resultCount(players.length, _dynamicPlayers.length),
+          ]),
+          const SizedBox(height: 10),
+          // Sortable header
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(8),
-            ),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+            decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
             child: Row(children: [
-              const SizedBox(width: 40), // Photo space
-              const Expanded(flex: 3, child: Text('Player', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
-              const Expanded(flex: 2, child: Text('Team', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
-              const SizedBox(width: 60, child: Text('Position', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey), textAlign: TextAlign.center)),
-              const SizedBox(width: 40, child: Text('#', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey), textAlign: TextAlign.center)),
+              const SizedBox(width: 40),
+              Expanded(flex: 3, child: _sortableColHeader('Player', 'name', _playersSortCol, _playersSortAsc, () => toggleSort('name'))),
+              Expanded(flex: 2, child: _sortableColHeader('Team', 'team', _playersSortCol, _playersSortAsc, () => toggleSort('team'))),
+              SizedBox(width: 70, child: _sortableColHeader('Position', 'position', _playersSortCol, _playersSortAsc, () => toggleSort('position'))),
+              SizedBox(width: 40, child: _sortableColHeader('#', 'number', _playersSortCol, _playersSortAsc, () => toggleSort('number'), align: TextAlign.center)),
               const SizedBox(width: 80, child: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey), textAlign: TextAlign.center)),
             ]),
           ),
           const SizedBox(height: 8),
-          if (players.isEmpty) 
-            const Padding(padding: EdgeInsets.all(24), child: Text('No players found.'))
-          else 
+          if (players.isEmpty)
+            Padding(padding: const EdgeInsets.all(24), child: Text(_searchQuery.isEmpty ? 'No players found.' : 'No players match "$_searchQuery".'))
+          else
             ...players.map((p) => _buildPlayerRow(p)),
-        ])
+        ]),
       ),
     );
   }
@@ -3674,18 +3798,57 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   // ─── Coaches ────────────────────────────────────────────────────────────────
   Widget _buildCoaches() {
     if (_isLoadingManagement) return const Center(child: CircularProgressIndicator(color: Color(0xFF00A651)));
+
+    var coaches = _dynamicCoaches.where((c) {
+      if (_searchQuery.isEmpty) return true;
+      return (c['full_name'] as String? ?? '').toLowerCase().contains(_searchQuery) ||
+             (c['email'] as String? ?? '').toLowerCase().contains(_searchQuery) ||
+             (c['team_name'] as String? ?? '').toLowerCase().contains(_searchQuery);
+    }).toList();
+
+    coaches.sort((a, b) {
+      int cmp;
+      switch (_coachesSortCol) {
+        case 'email': cmp = (a['email'] ?? '').toString().compareTo((b['email'] ?? '').toString()); break;
+        case 'team':  cmp = (a['team_name'] ?? '').toString().compareTo((b['team_name'] ?? '').toString()); break;
+        default:      cmp = (a['full_name'] ?? '').toString().compareTo((b['full_name'] ?? '').toString());
+      }
+      return _coachesSortAsc ? cmp : -cmp;
+    });
+
+    void toggleSort(String col) => setState(() {
+      if (_coachesSortCol == col) _coachesSortAsc = !_coachesSortAsc;
+      else { _coachesSortCol = col; _coachesSortAsc = true; }
+    });
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: _card(
         title: 'Registered Coaches',
         subtitle: '${_dynamicCoaches.length} coach accounts',
         child: Column(children: [
-          _complexTableHeader(['Photo', 'Name', 'Email', 'Team', 'Actions']),
+          Row(children: [
+            const Spacer(),
+            _resultCount(coaches.length, _dynamicCoaches.length),
+          ]),
+          const SizedBox(height: 10),
+          // Sortable header
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+            decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
+            child: Row(children: [
+              const Expanded(flex: 1, child: Text('Photo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
+              Expanded(flex: 2, child: _sortableColHeader('Name', 'name', _coachesSortCol, _coachesSortAsc, () => toggleSort('name'))),
+              Expanded(flex: 2, child: _sortableColHeader('Email', 'email', _coachesSortCol, _coachesSortAsc, () => toggleSort('email'))),
+              Expanded(flex: 2, child: _sortableColHeader('Team', 'team', _coachesSortCol, _coachesSortAsc, () => toggleSort('team'))),
+              const Expanded(flex: 1, child: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
+            ]),
+          ),
           const SizedBox(height: 8),
-          if (_dynamicCoaches.isEmpty)
-            const Padding(padding: EdgeInsets.all(24), child: Text('No approved coaches.'))
+          if (coaches.isEmpty)
+            Padding(padding: const EdgeInsets.all(24), child: Text(_searchQuery.isEmpty ? 'No approved coaches.' : 'No coaches match "$_searchQuery".'))
           else
-            ..._dynamicCoaches.map((c) => _coachRow(c)),
+            ...coaches.map((c) => _coachRow(c)),
         ]),
       ),
     );
@@ -3843,18 +4006,56 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   // ─── Referees ───────────────────────────────────────────────────────────────
   Widget _buildReferees() {
     if (_isLoadingManagement) return const Center(child: CircularProgressIndicator(color: Color(0xFF00A651)));
+
+    var referees = _dynamicReferees.where((r) {
+      if (_searchQuery.isEmpty) return true;
+      return (r['full_name'] as String? ?? '').toLowerCase().contains(_searchQuery) ||
+             (r['email'] as String? ?? '').toLowerCase().contains(_searchQuery) ||
+             (r['phone'] as String? ?? '').toLowerCase().contains(_searchQuery);
+    }).toList();
+
+    referees.sort((a, b) {
+      int cmp;
+      switch (_refereesSortCol) {
+        case 'email': cmp = (a['email'] ?? '').toString().compareTo((b['email'] ?? '').toString()); break;
+        case 'phone': cmp = (a['phone'] ?? '').toString().compareTo((b['phone'] ?? '').toString()); break;
+        default:      cmp = (a['full_name'] ?? '').toString().compareTo((b['full_name'] ?? '').toString());
+      }
+      return _refereesSortAsc ? cmp : -cmp;
+    });
+
+    void toggleSort(String col) => setState(() {
+      if (_refereesSortCol == col) _refereesSortAsc = !_refereesSortAsc;
+      else { _refereesSortCol = col; _refereesSortAsc = true; }
+    });
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: _card(
         title: 'League Referees',
         subtitle: '${_dynamicReferees.length} registered referees',
         child: Column(children: [
-          _complexTableHeader(['Photo', 'Name', 'Email', 'Phone', 'Actions']),
+          Row(children: [
+            const Spacer(),
+            _resultCount(referees.length, _dynamicReferees.length),
+          ]),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+            decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
+            child: Row(children: [
+              const Expanded(flex: 1, child: Text('Photo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
+              Expanded(flex: 2, child: _sortableColHeader('Name', 'name', _refereesSortCol, _refereesSortAsc, () => toggleSort('name'))),
+              Expanded(flex: 2, child: _sortableColHeader('Email', 'email', _refereesSortCol, _refereesSortAsc, () => toggleSort('email'))),
+              Expanded(flex: 2, child: _sortableColHeader('Phone', 'phone', _refereesSortCol, _refereesSortAsc, () => toggleSort('phone'))),
+              const Expanded(flex: 1, child: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
+            ]),
+          ),
           const SizedBox(height: 8),
-          if (_dynamicReferees.isEmpty)
-            const Padding(padding: EdgeInsets.all(24), child: Text('No approved referees.'))
+          if (referees.isEmpty)
+            Padding(padding: const EdgeInsets.all(24), child: Text(_searchQuery.isEmpty ? 'No approved referees.' : 'No referees match "$_searchQuery".'))
           else
-            ..._dynamicReferees.map((r) => _refereeRow(r)),
+            ...referees.map((r) => _refereeRow(r)),
         ]),
       ),
     );
@@ -5028,6 +5229,81 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), 
       decoration: BoxDecoration(color: c.withOpacity(0.12), borderRadius: BorderRadius.circular(4)), 
       child: Text(pos, style: TextStyle(color: c, fontSize: 10, fontWeight: FontWeight.bold))
+    );
+  }
+
+  // ─── Shared Table Helpers ─────────────────────────────────────────────────
+
+  /// Sortable column header — tap to toggle asc/desc.
+  Widget _sortableColHeader(String label, String col, String currentCol, bool asc,
+      VoidCallback onTap, {TextAlign align = TextAlign.left}) {
+    final isActive = currentCol == col;
+    return GestureDetector(
+      onTap: onTap,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: align == TextAlign.center
+            ? MainAxisAlignment.center : MainAxisAlignment.start,
+        children: [
+          Text(label, style: TextStyle(
+            fontWeight: FontWeight.bold, fontSize: 12,
+            color: isActive ? const Color(0xFF003087) : Colors.grey,
+          )),
+          const SizedBox(width: 2),
+          Icon(
+            isActive ? (asc ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded)
+                     : Icons.unfold_more_rounded,
+            size: 12,
+            color: isActive ? const Color(0xFF003087) : Colors.grey.shade400,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Filter chip row (e.g. All / Coach / Referee / Player).
+  Widget _filterChips(List<String> options, String current, ValueChanged<String> onSelect) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: options.map((o) {
+          final isActive = o == current;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              onTap: () => onSelect(o),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isActive ? const Color(0xFF003087) : Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  o[0].toUpperCase() + o.substring(1),
+                  style: TextStyle(
+                    fontSize: 12, fontWeight: FontWeight.w600,
+                    color: isActive ? Colors.white : Colors.grey.shade600,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  /// Small result count indicator.
+  Widget _resultCount(int n, int total) {
+    if (n == total) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+      decoration: BoxDecoration(
+        color: const Color(0xFF003087).withOpacity(0.08),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text('$n of $total', style: const TextStyle(fontSize: 11, color: Color(0xFF003087), fontWeight: FontWeight.bold)),
     );
   }
 
