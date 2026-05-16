@@ -4232,83 +4232,163 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
 
   // ─── Player Stats ────────────────────────────────────────────────────────────
   Widget _buildPlayerStats() {
-    final sorted = List<_Player>.from(_players)..sort((a, b) => b.goals.compareTo(a.goals));
+    if (_isLoadingManagement) {
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF00A651)));
+    }
+
+    // Build stat rows from live Supabase data
+    final rawPlayers = _dynamicPlayers.map((p) {
+      return {
+        'name':    p['full_name'] ?? 'Unknown',
+        'team':    p['teams']?['name'] ?? '—',
+        'photo':   p['photo_url'] as String?,
+        'pos':     p['position'] ?? 'FW',
+        'number':  p['jersey_number'] ?? 0,
+        'goals':   (p['goals']   as num?)?.toInt() ?? 0,
+        'assists': (p['assists'] as num?)?.toInt() ?? 0,
+      };
+    }).toList();
+
+    // Sort by goals desc, then assists
+    rawPlayers.sort((a, b) {
+      final cmp = (b['goals'] as int).compareTo(a['goals'] as int);
+      return cmp != 0 ? cmp : (b['assists'] as int).compareTo(a['assists'] as int);
+    });
+
+    final bool hasData = rawPlayers.isNotEmpty;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       child: Column(children: [
-        _card(title: '🥇 Top Scorers', subtitle: 'Goals this season', child: SizedBox(
-          height: 220,
-          child: BarChart(BarChartData(
-            gridData: FlGridData(show: true, drawVerticalLine: false, getDrawingHorizontalLine: (_) => FlLine(color: Colors.grey.shade100, strokeWidth: 1)),
-            titlesData: FlTitlesData(
-              bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (v, _) {
-                final i = v.toInt();
-                if (i < 0 || i >= sorted.length) return const SizedBox.shrink();
-                return Padding(padding: const EdgeInsets.only(top: 4), child: Text(sorted[i].name.split(' ').first, style: const TextStyle(fontSize: 9)));
-              }, reservedSize: 22)),
-              leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 24, getTitlesWidget: (v, _) => Text('${v.toInt()}', style: const TextStyle(fontSize: 9, color: Colors.grey)))),
-              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            ),
-            borderData: FlBorderData(show: false),
-            barGroups: sorted.asMap().entries.map((e) => BarChartGroupData(x: e.key, barRods: [
-              BarChartRodData(toY: e.value.goals.toDouble(), gradient: const LinearGradient(colors: [Color(0xFF00A651), Color(0xFF00A651)], begin: Alignment.bottomCenter, end: Alignment.topCenter), width: 22, borderRadius: const BorderRadius.vertical(top: Radius.circular(5))),
-            ])).toList(),
-          )),
-        )),
-        const SizedBox(height: 18),
-        _card(title: 'Player Performance Table', subtitle: 'Goals + Assists', child: Column(children: [
-          // ── Header ──────────────────────────────────────────────────────────
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(children: [
-              const Expanded(flex: 3, child: Text('Player',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
-              const Expanded(flex: 3, child: Text('Team',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
-              const Expanded(flex: 1, child: Text('Goals',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
-              const Expanded(flex: 1, child: Text('Assists',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
-              const Expanded(flex: 1, child: Text('Total',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
-            ]),
-          ),
-          const SizedBox(height: 4),
-          // ── Rows ────────────────────────────────────────────────────────────
-          ...sorted.asMap().entries.map((e) {
-            final p = e.value;
-            return Container(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-              decoration: BoxDecoration(
-                color: e.key % 2 == 0 ? Colors.white : Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(6),
+        // ── Top Scorers bar chart ────────────────────────────────────────────
+        _card(title: '🥇 Top Scorers', subtitle: 'Goals this season — live from database',
+          child: hasData
+            ? SizedBox(
+                height: 220,
+                child: BarChart(BarChartData(
+                  gridData: FlGridData(show: true, drawVerticalLine: false,
+                      getDrawingHorizontalLine: (_) => FlLine(color: Colors.grey.shade100, strokeWidth: 1)),
+                  titlesData: FlTitlesData(
+                    bottomTitles: AxisTitles(sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (v, _) {
+                        final i = v.toInt();
+                        if (i < 0 || i >= rawPlayers.length) return const SizedBox.shrink();
+                        final firstName = (rawPlayers[i]['name'] as String).split(' ').first;
+                        return Padding(padding: const EdgeInsets.only(top: 4),
+                            child: Text(firstName, style: const TextStyle(fontSize: 9)));
+                      },
+                      reservedSize: 22,
+                    )),
+                    leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 24,
+                        getTitlesWidget: (v, _) => Text('${v.toInt()}',
+                            style: const TextStyle(fontSize: 9, color: Colors.grey)))),
+                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  barGroups: rawPlayers.asMap().entries.map((e) => BarChartGroupData(
+                    x: e.key,
+                    barRods: [BarChartRodData(
+                      toY: (e.value['goals'] as int).toDouble(),
+                      gradient: const LinearGradient(
+                          colors: [Color(0xFF00A651), Color(0xFF00C853)],
+                          begin: Alignment.bottomCenter, end: Alignment.topCenter),
+                      width: 22,
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(5)),
+                    )],
+                  )).toList(),
+                )),
+              )
+            : Padding(
+                padding: const EdgeInsets.symmetric(vertical: 32),
+                child: Column(children: [
+                  Icon(Icons.bar_chart_rounded, size: 48, color: Colors.grey.shade300),
+                  const SizedBox(height: 8),
+                  Text('No player data yet', style: TextStyle(color: Colors.grey.shade400)),
+                  Text('Add players to teams to see stats here',
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade300)),
+                ]),
               ),
+        ),
+        const SizedBox(height: 18),
+        // ── Player Performance Table ─────────────────────────────────────────
+        _card(title: 'Player Performance Table', subtitle: 'Live data — Goals + Assists',
+          child: Column(children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+              decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
               child: Row(children: [
-                Expanded(flex: 3, child: Text(p.name,
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
-                Expanded(flex: 3, child: Text(p.team,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500))),
-                Expanded(flex: 1, child: Text('${p.goals}',
+                const SizedBox(width: 36),
+                const Expanded(flex: 3, child: Text('Player',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
+                const Expanded(flex: 3, child: Text('Team',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
+                const Expanded(flex: 1, child: Text('Goals',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF00A651)))),
-                Expanded(flex: 1, child: Text('${p.assists}',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
+                const Expanded(flex: 1, child: Text('Assists',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF003087)))),
-                Expanded(flex: 1, child: Text('${p.goals + p.assists}',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
+                const Expanded(flex: 1, child: Text('Total',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
               ]),
-            );
-          }),
-        ])),
+            ),
+            const SizedBox(height: 4),
+            // Rows
+            if (!hasData)
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text('No players registered yet.',
+                    style: TextStyle(color: Colors.grey.shade400)),
+              )
+            else
+              ...rawPlayers.asMap().entries.map((e) {
+                final p    = e.value;
+                final name  = p['name'] as String;
+                final photo = p['photo'] as String?;
+                final goals   = p['goals'] as int;
+                final assists = p['assists'] as int;
+                return Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                  decoration: BoxDecoration(
+                    color: e.key % 2 == 0 ? Colors.white : Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(children: [
+                    // Avatar
+                    CircleAvatar(
+                      radius: 15,
+                      backgroundColor: const Color(0xFF00A651).withOpacity(0.1),
+                      backgroundImage: photo != null && photo.isNotEmpty ? NetworkImage(photo) : null,
+                      child: photo == null || photo.isEmpty
+                          ? Text(name[0].toUpperCase(),
+                              style: const TextStyle(fontSize: 11, color: Color(0xFF00A651), fontWeight: FontWeight.bold))
+                          : null,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(flex: 3, child: Text(name,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
+                    Expanded(flex: 3, child: Text(p['team'] as String,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade500))),
+                    Expanded(flex: 1, child: Text('$goals',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF00A651)))),
+                    Expanded(flex: 1, child: Text('$assists',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF003087)))),
+                    Expanded(flex: 1, child: Text('${goals + assists}',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
+                  ]),
+                );
+              }),
+          ]),
+        ),
       ]),
     );
   }
@@ -4319,9 +4399,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       padding: const EdgeInsets.all(24),
       child: Column(children: [
         Row(children: [
-          Expanded(child: _smallStatCard('Total Matches', '24', Icons.sports_soccer_rounded, const Color(0xFF003087))),
+          Expanded(child: _smallStatCard('Total Matches', '${_liveMatches.length + _recentResults.length}', Icons.sports_soccer_rounded, const Color(0xFF003087))),
           const SizedBox(width: 12),
-          Expanded(child: _smallStatCard('Total Goals', '67', Icons.emoji_events_rounded, const Color(0xFF00A651))),
+          Expanded(child: _smallStatCard('Total Goals', '${_recentResults.fold(0, (s, r) => s + ((r["home_score"] ?? 0) as int) + ((r["away_score"] ?? 0) as int))}', Icons.emoji_events_rounded, const Color(0xFF00A651))),
           const SizedBox(width: 12),
           Expanded(child: _smallStatCard('Yellow Cards', '31', Icons.rectangle_rounded, const Color(0xFFF9A825))),
           const SizedBox(width: 12),
@@ -4361,11 +4441,11 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             _reportRow('Season', 'MMU Soccer League 2026'),
             _reportRow('Total Teams', '${_teams.length}'),
             _reportRow('Active Teams', '${_teams.where((t) => t.status == 'Active').length}'),
-            _reportRow('Total Players', '${_players.length * 11}'),
-            _reportRow('Matches Played', '24'),
+            _reportRow('Total Players', '${_dynamicPlayers.length}'),
+            _reportRow('Matches Played', '\${_recentResults.length}'),
             _reportRow('Upcoming Fixtures', '${_fixtures.length}'),
-            _reportRow('Registered Coaches', '${_coaches.length}'),
-            _reportRow('Registered Referees', '${_referees.length}'),
+            _reportRow('Registered Coaches', '${_dynamicCoaches.length}'),
+            _reportRow('Registered Referees', '${_dynamicReferees.length}'),
             const SizedBox(height: 16),
             SizedBox(width: double.infinity, child: ElevatedButton.icon(
               onPressed: () {},
