@@ -177,27 +177,27 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _directiveItem(
-                      Icons.mark_email_read_rounded,
-                      'Verify your email',
-                      'Check your inbox and confirm your email address.',
+                      Icons.check_circle_rounded,
+                      'Account created successfully',
+                      'Your $roleLabel account has been created and is now in the system.',
                     ),
                     const SizedBox(height: 12),
                     if (isPending) _directiveItem(
                       Icons.admin_panel_settings_rounded,
                       'Awaiting admin approval',
-                      'Your $roleLabel account will be reviewed by the MMU Soccer admin. You will be notified once approved.',
+                      'The MMU Soccer admin will review your $roleLabel registration and grant access once approved.',
                     )
                     else _directiveItem(
                       Icons.login_rounded,
                       'Sign in to continue',
-                      'Once verified, use your email & password to sign in.',
+                      'Use your email & password to sign in right away.',
                     ),
                     if (isPending) ...[
                       const SizedBox(height: 12),
                       _directiveItem(
                         Icons.timer_rounded,
                         'Be patient',
-                        'Approval may take up to 24 hours. You will receive access once confirmed.',
+                        'Approval may take up to 24 hours. You will be able to sign in once the admin confirms your account.',
                       ),
                     ],
                   ],
