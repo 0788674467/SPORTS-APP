@@ -42,3 +42,15 @@ android {
 flutter {
     source = "../.."
 }
+
+// Force a Material library version that includes android:attr/lStar (added in 1.5.0).
+// The `printing` package can pull in an older version that causes AAPT resource linking failure.
+configurations.all {
+    resolutionStrategy {
+        force("com.google.android.material:material:1.9.0")
+    }
+}
+
+dependencies {
+    implementation("com.google.android.material:material:1.9.0")
+}
