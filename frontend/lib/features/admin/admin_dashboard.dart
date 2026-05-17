@@ -8,7 +8,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
+import 'dart:io';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import './widgets/dashboard_components.dart';
 import './fixture_generator.dart';
@@ -6166,7 +6168,11 @@ class _ReportCentreState extends State<_ReportCentre> {
     setState(() => _generatingPdf = true);
     try {
       final bytes = await _buildPdfBytes();
-      await Printing.layoutPdf(onLayout: (_) async => bytes);
+      final label = _reportLabel();
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/MMU_${label}_Report.pdf');
+      await file.writeAsBytes(bytes);
+      await OpenFile.open(file.path);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -6184,7 +6190,13 @@ class _ReportCentreState extends State<_ReportCentre> {
     try {
       final bytes = await _buildPdfBytes();
       final label = _reportLabel();
-      await Printing.sharePdf(bytes: bytes, filename: 'MMU_${label}_Report.pdf');
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/MMU_${label}_Report.pdf');
+      await file.writeAsBytes(bytes);
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'application/pdf')],
+        subject: 'MMU $label Report',
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
