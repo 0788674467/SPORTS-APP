@@ -8,9 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'dart:io';
-import 'package:open_file/open_file.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:file_saver/file_saver.dart';
 import 'package:share_plus/share_plus.dart';
 import './widgets/dashboard_components.dart';
 import './fixture_generator.dart';
@@ -6169,27 +6167,23 @@ class _ReportCentreState extends State<_ReportCentre> {
     try {
       final bytes = await _buildPdfBytes();
       final label = _reportLabel();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      // Save to permanent Documents directory (accessible via file manager)
-      final dir = await getApplicationDocumentsDirectory();
-      final file = File('${dir.path}/MMU_${label}_Report_$timestamp.pdf');
-      await file.writeAsBytes(bytes);
+      final fileName = 'MMU_${label}_Report';
+      // Works on Web (browser download), Android (Downloads folder), iOS (Files app)
+      await FileSaver.instance.saveFile(
+        name: fileName,
+        bytes: bytes,
+        ext: 'pdf',
+        mimeType: MimeType.pdf,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ Report saved: MMU_${label}_Report.pdf'),
-            backgroundColor: const Color(0xFF003087),
-            duration: const Duration(seconds: 4),
-            action: SnackBarAction(
-              label: 'Open',
-              textColor: Colors.white,
-              onPressed: () => OpenFile.open(file.path),
-            ),
+          const SnackBar(
+            content: Text('✅ PDF downloaded successfully'),
+            backgroundColor: Color(0xFF003087),
+            duration: Duration(seconds: 3),
           ),
         );
       }
-      // Also open immediately in PDF viewer (admin can print from there)
-      await OpenFile.open(file.path);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -6207,11 +6201,9 @@ class _ReportCentreState extends State<_ReportCentre> {
     try {
       final bytes = await _buildPdfBytes();
       final label = _reportLabel();
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/MMU_${label}_Report.pdf');
-      await file.writeAsBytes(bytes);
+      // On web this will download; on mobile it opens the share sheet
       await Share.shareXFiles(
-        [XFile(file.path, mimeType: 'application/pdf')],
+        [XFile.fromData(bytes, name: 'MMU_${label}_Report.pdf', mimeType: 'application/pdf')],
         subject: 'MMU $label Report',
       );
     } catch (e) {
