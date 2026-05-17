@@ -6169,9 +6169,26 @@ class _ReportCentreState extends State<_ReportCentre> {
     try {
       final bytes = await _buildPdfBytes();
       final label = _reportLabel();
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/MMU_${label}_Report.pdf');
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      // Save to permanent Documents directory (accessible via file manager)
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/MMU_${label}_Report_$timestamp.pdf');
       await file.writeAsBytes(bytes);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Report saved: MMU_${label}_Report.pdf'),
+            backgroundColor: const Color(0xFF003087),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'Open',
+              textColor: Colors.white,
+              onPressed: () => OpenFile.open(file.path),
+            ),
+          ),
+        );
+      }
+      // Also open immediately in PDF viewer (admin can print from there)
       await OpenFile.open(file.path);
     } catch (e) {
       if (mounted) {
