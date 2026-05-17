@@ -6170,10 +6170,10 @@ class _ReportCentreState extends State<_ReportCentre> {
       final fileName = 'MMU_${label}_Report';
       // Works on Web (browser download), Android (Downloads folder), iOS (Files app)
       await FileSaver.instance.saveFile(
-        name: fileName,
-        bytes: bytes,
-        ext: 'pdf',
-        mimeType: MimeType.pdf,
+        fileName,
+        bytes,
+        'pdf',
+        mimeType: MimeType.PDF,
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
