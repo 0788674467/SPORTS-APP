@@ -6229,135 +6229,340 @@ class _ReportCentreState extends State<_ReportCentre> {
   }
 
   Future<Uint8List> _buildPdfBytes() async {
-    final doc = pw.Document();
-    final now = DateTime.now();
+    final doc   = pw.Document();
+    final now   = DateTime.now();
     final dateStr = '${now.day}/${now.month}/${now.year} ${now.hour}:${now.minute.toString().padLeft(2, '0')}';
-    final label = _reportLabel();
-    final navy = PdfColors.blue900;
-    final green = PdfColor.fromInt(0xFF00A651);
+    final label   = _reportLabel();
+    final navy    = PdfColors.blue900;
+    final green   = PdfColor.fromHex('#00A651');
+    final yellow  = PdfColor.fromHex('#F9A825');
+    final red2    = PdfColor.fromHex('#C62828');
+    final purple2 = PdfColor.fromHex('#7B1FA2');
+    final blue2   = PdfColor.fromHex('#0288D1');
+    final teal2   = PdfColor.fromHex('#00796B');
+    final brown2  = PdfColor.fromHex('#5D4037');
 
-    // ── build rows ─────────────────────────────────────────────────────────
-    List<String> headers = [];
-    List<List<String>> rows = [];
+    // ── helpers ──────────────────────────────────────────────────────────────
 
-    switch (widget.reportType) {
-      case 'players':
-        headers = ['Player', 'Team', 'Pos', 'Goals', 'Assists', 'YC', 'RC'];
-        final sorted = List<Map<String, dynamic>>.from(_filteredPlayers)
-          ..sort((a, b) => ((b['goals'] as num? ?? 0).compareTo(a['goals'] as num? ?? 0)));
-        rows = sorted.map((p) => <String>[
-          p['full_name'] ?? '—',
-          (p['teams'] as Map?)?['name'] ?? '—',
-          p['position'] ?? '—',
-          '${p['goals'] ?? 0}',
-          '${p['assists'] ?? 0}',
-          '${p['yellow_cards'] ?? 0}',
-          '${p['red_cards'] ?? 0}',
-        ]).toList();
-        break;
-      case 'coaches':
-        headers = ['Name', 'Email', 'Team', 'Status'];
-        rows = _filteredCoaches.map((c) => <String>[
-          c['full_name'] ?? '—',
-          c['email'] ?? '—',
-          c['team_name'] ?? (c['teams'] as Map?)?['name'] ?? '—',
-          'Active',
-        ]).toList();
-        break;
-      case 'referees':
-        headers = ['Name', 'Email', 'Phone', 'Status'];
-        rows = _filteredReferees.map((r) => <String>[
-          r['full_name'] ?? '—',
-          r['email'] ?? '—',
-          r['phone'] ?? '—',
-          'Active',
-        ]).toList();
-        break;
-      case 'teams':
-        headers = ['Team', 'P', 'W', 'D', 'L', 'GF', 'GA', 'GD', 'Pts'];
-        rows = widget.standings.map((s) => <String>[
-          s.team, '${s.played}', '${s.wins}', '${s.draws}', '${s.losses}',
-          '${s.goalsFor}', '${s.goalsAgainst}', '${s.goalDifference}', '${s.points}',
-        ]).toList();
-        break;
-      case 'fixtures':
-        headers = ['Home Team', 'Away Team', 'Date', 'Venue', 'Status'];
-        rows = _filteredFixtures.map((f) => <String>[
-          f.homeTeam, f.awayTeam,
-          '${f.dateTime.day}/${f.dateTime.month}/${f.dateTime.year}',
-          f.venue,
-          f.status,
-        ]).toList();
-        break;
-      default:
-        headers = ['Metric', 'Value'];
-        rows = [
-          ['Total Players',  '${_filteredPlayers.length}'],
-          ['Total Coaches',  '${_filteredCoaches.length}'],
-          ['Total Referees', '${_filteredReferees.length}'],
-          ['Total Teams',    '${widget.dynamicTeams.length}'],
-          ['Fixtures',       '${_filteredFixtures.length}'],
-          ['Completed',      '${_filteredResults.length}'],
-        ];
-    }
-
-    doc.addPage(
-      pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(32),
-        header: (_) => pw.Column(children: [
-          pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
-            pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-              pw.Text('OFFICIAL REPORT', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey, letterSpacing: 1.5)),
-              pw.SizedBox(height: 2),
-              pw.Text('MMU Department of Sports', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: navy)),
-              pw.Text('$label Report', style: pw.TextStyle(fontSize: 11, color: PdfColors.grey600)),
-            ]),
-            pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.end, children: [
-              pw.Text('Generated: $dateStr', style: pw.TextStyle(fontSize: 9, color: PdfColors.grey)),
-              pw.Text('Period: $_periodLabel', style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600, fontStyle: pw.FontStyle.italic)),
-              pw.Text('mmusport@mmu.ac.ug', style: pw.TextStyle(fontSize: 9, color: PdfColors.grey)),
-              pw.Text('www.mmu.ac.ke/sports', style: pw.TextStyle(fontSize: 9, color: PdfColors.grey)),
-            ]),
-          ]),
-          pw.SizedBox(height: 6),
-          pw.Divider(color: navy, thickness: 2),
-          pw.SizedBox(height: 8),
+    pw.Widget statCard(String lbl, String val, PdfColor color) => pw.Expanded(
+      child: pw.Container(
+        margin: const pw.EdgeInsets.only(right: 6),
+        padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        decoration: pw.BoxDecoration(
+          color: PdfColors.white,
+          border: pw.Border(left: pw.BorderSide(color: color, width: 4)),
+        ),
+        child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+          pw.Text(val, style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: color)),
+          pw.SizedBox(height: 2),
+          pw.Text(lbl, style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey700)),
         ]),
-        footer: (ctx) => pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
-          pw.Text('MMU UniLeague — Confidential', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey)),
-          pw.Text('Page ${ctx.pageNumber} of ${ctx.pagesCount}', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey)),
-        ]),
-        build: (_) => [
-          if (rows.isEmpty)
-            pw.Center(child: pw.Text('No data available for this report.', style: pw.TextStyle(color: PdfColors.grey)))
-          else
-            pw.TableHelper.fromTextArray(
-              headers: headers,
-              data: rows,
-              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white, fontSize: 9),
-              headerDecoration: pw.BoxDecoration(color: navy),
-              cellStyle: const pw.TextStyle(fontSize: 9),
-              rowDecoration: pw.BoxDecoration(color: PdfColors.grey100),
-              border: null,
-              cellAlignments: {0: pw.Alignment.centerLeft},
-            ),
-          pw.SizedBox(height: 24),
-          pw.Container(
-            padding: const pw.EdgeInsets.all(12),
-            decoration: pw.BoxDecoration(
-              border: pw.Border.all(color: PdfColors.grey300),
-              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
-            ),
-            child: pw.Text(
-              'This document is an electronically generated official record of the Multi-Media University Sports Department. All data is verified against referee match reports and official league records as of the timestamp provided above.',
-              style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey),
-              textAlign: pw.TextAlign.center,
-            ),
-          ),
-        ],
       ),
     );
+
+    pw.Widget barChart(String title, List<String> labels, List<double> values, PdfColor color) {
+      if (values.isEmpty || values.every((v) => v == 0)) return pw.SizedBox();
+      final maxVal = values.reduce((a, b) => a > b ? a : b);
+      const chartH = 70.0;
+      const barW   = 26.0;
+      return pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+        pw.Text(title, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: navy)),
+        pw.SizedBox(height: 6),
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.end,
+          children: values.asMap().entries.map((e) {
+            final bH  = maxVal > 0 ? (e.value / maxVal * chartH).clamp(3.0, chartH) : 3.0;
+            final lbl = labels.length > e.key ? labels[e.key].split(' ').first : '';
+            return pw.Container(
+              width: barW,
+              margin: const pw.EdgeInsets.only(right: 4),
+              child: pw.Column(mainAxisAlignment: pw.MainAxisAlignment.end, children: [
+                pw.Text('${e.value.toInt()}', style: pw.TextStyle(fontSize: 7, color: color)),
+                pw.SizedBox(height: 2),
+                pw.Container(width: barW - 4, height: bH, color: color),
+                pw.SizedBox(height: 3),
+                pw.Text(lbl, style: const pw.TextStyle(fontSize: 6, color: PdfColors.grey700), textAlign: pw.TextAlign.center),
+              ]),
+            );
+          }).toList(),
+        ),
+        pw.SizedBox(height: 14),
+      ]);
+    }
+
+    pw.Widget dataTable(List<String> headers, List<List<String>> rows) {
+      if (rows.isEmpty) return pw.Text('No data available.', style: const pw.TextStyle(color: PdfColors.grey, fontSize: 8));
+      return pw.TableHelper.fromTextArray(
+        headers: headers,
+        data: rows,
+        headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white, fontSize: 7),
+        headerDecoration: pw.BoxDecoration(color: navy),
+        cellStyle: const pw.TextStyle(fontSize: 7),
+        oddRowDecoration: pw.BoxDecoration(color: PdfColors.grey100),
+        border: null,
+        cellPadding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+      );
+    }
+
+    pw.Widget sectionTitle(String text) => pw.Padding(
+      padding: const pw.EdgeInsets.only(top: 14, bottom: 5),
+      child: pw.Text(text, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: navy)),
+    );
+
+    pw.Widget introBox(String text) => pw.Container(
+      padding: const pw.EdgeInsets.all(9),
+      margin: const pw.EdgeInsets.only(bottom: 10),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.grey100,
+        border: pw.Border(left: pw.BorderSide(color: navy, width: 3)),
+      ),
+      child: pw.Text(text, style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
+    );
+
+    pw.Widget footer() => pw.Container(
+      margin: const pw.EdgeInsets.only(top: 16),
+      padding: const pw.EdgeInsets.all(10),
+      decoration: pw.BoxDecoration(color: PdfColors.grey100),
+      child: pw.Column(children: [
+        pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+          pw.Text('MMU Department of Sports — Official Report',
+              style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold, color: navy)),
+          pw.Text('Period: $_periodLabel', style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey600)),
+        ]),
+        pw.SizedBox(height: 5),
+        pw.Text(
+          'This document is an electronically generated official record of the Multi-Media University Sports Department. All data is verified against referee match reports and official league records as of the timestamp provided above.',
+          style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey700),
+          textAlign: pw.TextAlign.center,
+        ),
+        pw.SizedBox(height: 5),
+        pw.Row(mainAxisAlignment: pw.MainAxisAlignment.center, children: [
+          pw.Text('mmusport@mmu.ac.ug  |  www.mmu.ac.ke/sports',
+              style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey)),
+        ]),
+      ]),
+    );
+
+    // ── data ─────────────────────────────────────────────────────────────────
+
+    final fp = _filteredPlayers;
+    final fc = _filteredCoaches;
+    final fr = _filteredReferees;
+    final fx = _filteredFixtures;
+    final rs = _filteredResults;
+    final st = widget.standings;
+    final totalGoals  = rs.fold(0, (s, r) => s + ((r['home_score'] as int? ?? 0) + (r['away_score'] as int? ?? 0)));
+    final totalYellow = fp.fold(0, (s, p) => s + ((p['yellow_cards'] as int?) ?? 0));
+    final totalRed    = fp.fold(0, (s, p) => s + ((p['red_cards']    as int?) ?? 0));
+
+    doc.addPage(pw.MultiPage(
+      pageFormat: PdfPageFormat.a4,
+      margin: const pw.EdgeInsets.all(32),
+      header: (_) => pw.Column(children: [
+        pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+          pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+            pw.Text('OFFICIAL REPORT', style: pw.TextStyle(fontSize: 7, color: PdfColors.grey, letterSpacing: 1.5)),
+            pw.SizedBox(height: 2),
+            pw.Text('MMU Department of Sports',
+                style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: navy)),
+            pw.Text('$label Report  •  Period: $_periodLabel',
+                style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+          ]),
+          pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.end, children: [
+            pw.Text('Generated: $dateStr', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey)),
+            pw.Text('mmusport@mmu.ac.ug', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey)),
+          ]),
+        ]),
+        pw.SizedBox(height: 6),
+        pw.Divider(color: navy, thickness: 2),
+        pw.SizedBox(height: 8),
+      ]),
+      footer: (ctx) => pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+        pw.Text('MMU UniLeague — Confidential', style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey)),
+        pw.Text('Page ${ctx.pageNumber} of ${ctx.pagesCount}', style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey)),
+      ]),
+      build: (_) {
+        switch (widget.reportType) {
+
+          // ── FULL SEASON ──────────────────────────────────────────────────
+          case 'full':
+          default:
+            final totalMatches = rs.length + widget.liveMatches.length;
+            return [
+              introBox('This report provides an authoritative summary of the MMU University Sports Department soccer league activities. It covers all registered teams, player performances, match results, and administrative statistics for the 2026 season.'),
+              pw.Row(children: [
+                statCard('Total Matches', '$totalMatches', navy),
+                statCard('Total Goals',   '$totalGoals',   green),
+                statCard('Yellow Cards',  '$totalYellow',  yellow),
+                statCard('Red Cards',     '$totalRed',     red2),
+              ]),
+              pw.SizedBox(height: 6),
+              pw.Row(children: [
+                statCard('Teams',    '${widget.dynamicTeams.length}', purple2),
+                statCard('Players',  '${fp.length}',                  blue2),
+                statCard('Coaches',  '${fc.length}',                  teal2),
+                statCard('Referees', '${fr.length}',                  brown2),
+              ]),
+              sectionTitle('League Standings'),
+              dataTable(
+                ['#', 'Team', 'P', 'W', 'D', 'L', 'GF', 'GA', 'GD', 'Pts'],
+                st.asMap().entries.map((e) => [
+                  '${e.key+1}', e.value.team, '${e.value.played}',
+                  '${e.value.wins}', '${e.value.draws}', '${e.value.losses}',
+                  '${e.value.goalsFor}', '${e.value.goalsAgainst}',
+                  '${e.value.goalDifference}', '${e.value.points}',
+                ]).toList(),
+              ),
+              pw.SizedBox(height: 12),
+              barChart('Goals Per Team',
+                st.map((s) => s.team).toList(),
+                st.map((s) => s.goalsFor.toDouble()).toList(),
+                green,
+              ),
+              barChart('Points Per Team',
+                st.map((s) => s.team).toList(),
+                st.map((s) => s.points.toDouble()).toList(),
+                navy,
+              ),
+              footer(),
+            ];
+
+          // ── PLAYERS ──────────────────────────────────────────────────────
+          case 'players':
+            final sorted = List<Map<String, dynamic>>.from(fp)
+              ..sort((a, b) => ((b['goals'] as int? ?? 0)).compareTo((a['goals'] as int? ?? 0)));
+            return [
+              introBox('This section details the performance of all registered players across the season. Data is automatically aggregated from referee match reports submitted after each official fixture.'),
+              pw.Row(children: [
+                statCard('Players Registered', '${fp.length}',                                                   navy),
+                statCard('Total Goals',         '${fp.fold(0, (s, p) => s + (p["goals"]        as int? ?? 0)}', green),
+                statCard('Total Assists',        '${fp.fold(0, (s, p) => s + (p["assists"]      as int? ?? 0)}', blue2),
+                statCard('Yellow Cards',         '${fp.fold(0, (s, p) => s + (p["yellow_cards"] as int? ?? 0)}', yellow),
+              ]),
+              pw.SizedBox(height: 12),
+              barChart('Top Scorers',
+                sorted.take(8).map((p) => p['full_name'] as String? ?? '?').toList(),
+                sorted.take(8).map((p) => (p['goals'] as int? ?? 0).toDouble()).toList(),
+                green,
+              ),
+              sectionTitle('Full Player Statistics'),
+              dataTable(
+                ['Player', 'Team', 'Pos', 'Goals', 'Assists', 'YC', 'RC'],
+                sorted.map((p) => [
+                  p['full_name'] ?? '—',
+                  (p['teams'] as Map?)?['name'] ?? '—',
+                  p['position'] ?? '—',
+                  '${p['goals'] ?? 0}', '${p['assists'] ?? 0}',
+                  '${p['yellow_cards'] ?? 0}', '${p['red_cards'] ?? 0}',
+                ]).toList(),
+              ),
+              footer(),
+            ];
+
+          // ── COACHES ──────────────────────────────────────────────────────
+          case 'coaches':
+            return [
+              introBox('This section lists all coaches registered with the MMU Sports Department. Coaches are responsible for player squad management and lineup submissions for each fixture.'),
+              pw.Row(children: [
+                statCard('Total Coaches', '${fc.length}',                  navy),
+                statCard('Active Teams',  '${widget.dynamicTeams.length}', green),
+                statCard('', '', teal2),
+                statCard('', '', teal2),
+              ]),
+              sectionTitle('Registered Coaches'),
+              dataTable(
+                ['Name', 'Email', 'Team', 'Status'],
+                fc.map((c) => [
+                  c['full_name'] ?? '—', c['email'] ?? '—',
+                  c['team_name'] ?? (c['teams'] as Map?)?['name'] ?? '—', 'Active',
+                ]).toList(),
+              ),
+              footer(),
+            ];
+
+          // ── REFEREES ─────────────────────────────────────────────────────
+          case 'referees':
+            return [
+              introBox('This section covers all referees approved by the Sports Department. Referees are responsible for officiating fixtures and submitting official match reports.'),
+              pw.Row(children: [
+                statCard('Total Referees', '${fr.length}', navy),
+                statCard('Fixtures',        '${fx.length}', green),
+                statCard('', '', blue2),
+                statCard('', '', blue2),
+              ]),
+              sectionTitle('Registered Referees'),
+              dataTable(
+                ['Name', 'Email', 'Phone', 'Status'],
+                fr.map((r) => [r['full_name'] ?? '—', r['email'] ?? '—', r['phone'] ?? '—', 'Active']).toList(),
+              ),
+              footer(),
+            ];
+
+          // ── TEAMS ────────────────────────────────────────────────────────
+          case 'teams':
+            return [
+              introBox('This section provides a comparative analysis of all registered teams in the MMU Soccer League. Data reflects cumulative performance across all completed fixtures.'),
+              pw.Row(children: [
+                statCard('Total Teams',       '${widget.dynamicTeams.length}', navy),
+                statCard('Completed Matches', '${rs.length}',                  green),
+                statCard('Total Goals',        '$totalGoals',                   blue2),
+                statCard('', '', teal2),
+              ]),
+              sectionTitle('Team Standings'),
+              dataTable(
+                ['Team', 'P', 'W', 'D', 'L', 'GF', 'GA', 'GD', 'Pts'],
+                st.map((s) => [s.team, '${s.played}', '${s.wins}', '${s.draws}',
+                    '${s.losses}', '${s.goalsFor}', '${s.goalsAgainst}',
+                    '${s.goalDifference}', '${s.points}']).toList(),
+              ),
+              pw.SizedBox(height: 12),
+              barChart('Goals Scored Per Team',
+                st.map((s) => s.team).toList(),
+                st.map((s) => s.goalsFor.toDouble()).toList(),
+                green,
+              ),
+              barChart('Points Per Team',
+                st.map((s) => s.team).toList(),
+                st.map((s) => s.points.toDouble()).toList(),
+                navy,
+              ),
+              footer(),
+            ];
+
+          // ── FIXTURES ─────────────────────────────────────────────────────
+          case 'fixtures':
+            final completed = fx.where((f) => f.status == 'completed').toList();
+            final upcoming  = fx.where((f) => f.status == 'scheduled').toList();
+            return [
+              introBox('This section presents the full fixture list for the MMU Soccer League 2026 season including scheduled matches, results, venues, and assigned referees.'),
+              pw.Row(children: [
+                statCard('Total Fixtures', '${fx.length}',              navy),
+                statCard('Completed',      '${completed.length}',       green),
+                statCard('Upcoming',       '${upcoming.length}',        blue2),
+                statCard('Live',           '${widget.liveMatches.length}', red2),
+              ]),
+              sectionTitle('Completed Results'),
+              dataTable(
+                ['Home Team', 'Score', 'Away Team', 'Venue', 'Referee'],
+                completed.map((f) => [
+                  f.homeTeam, '${f.homeScore}–${f.awayScore}',
+                  f.awayTeam, f.venue, f.assignedReferee ?? '—',
+                ]).toList(),
+              ),
+              sectionTitle('Upcoming Fixtures'),
+              dataTable(
+                ['Home Team', 'Away Team', 'Date', 'Venue'],
+                upcoming.map((f) => [
+                  f.homeTeam, f.awayTeam,
+                  '${f.dateTime.day}/${f.dateTime.month}/${f.dateTime.year}',
+                  f.venue,
+                ]).toList(),
+              ),
+              footer(),
+            ];
+        }
+      },
+    ));
 
     return doc.save();
   }
