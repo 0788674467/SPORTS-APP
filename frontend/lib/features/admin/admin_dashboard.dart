@@ -6384,60 +6384,20 @@ class _ReportCentreState extends State<_ReportCentre> {
       build: (_) {
         switch (widget.reportType) {
 
-          // ── FULL SEASON ──────────────────────────────────────────────────
-          case 'full':
-          default:
-            final totalMatches = rs.length + widget.liveMatches.length;
-            return [
-              introBox('This report provides an authoritative summary of the MMU University Sports Department soccer league activities. It covers all registered teams, player performances, match results, and administrative statistics for the 2026 season.'),
-              pw.Row(children: [
-                statCard('Total Matches', '$totalMatches', navy),
-                statCard('Total Goals',   '$totalGoals',   green),
-                statCard('Yellow Cards',  '$totalYellow',  yellow),
-                statCard('Red Cards',     '$totalRed',     red2),
-              ]),
-              pw.SizedBox(height: 6),
-              pw.Row(children: [
-                statCard('Teams',    '${widget.dynamicTeams.length}', purple2),
-                statCard('Players',  '${fp.length}',                  blue2),
-                statCard('Coaches',  '${fc.length}',                  teal2),
-                statCard('Referees', '${fr.length}',                  brown2),
-              ]),
-              sectionTitle('League Standings'),
-              dataTable(
-                ['#', 'Team', 'P', 'W', 'D', 'L', 'GF', 'GA', 'GD', 'Pts'],
-                st.asMap().entries.map((e) => [
-                  '${e.key+1}', e.value.team, '${e.value.played}',
-                  '${e.value.wins}', '${e.value.draws}', '${e.value.losses}',
-                  '${e.value.goalsFor}', '${e.value.goalsAgainst}',
-                  '${e.value.goalDifference}', '${e.value.points}',
-                ]).toList(),
-              ),
-              pw.SizedBox(height: 12),
-              barChart('Goals Per Team',
-                st.map((s) => s.team).toList(),
-                st.map((s) => s.goalsFor.toDouble()).toList(),
-                green,
-              ),
-              barChart('Points Per Team',
-                st.map((s) => s.team).toList(),
-                st.map((s) => s.points.toDouble()).toList(),
-                navy,
-              ),
-              footer(),
-            ];
-
           // ── PLAYERS ──────────────────────────────────────────────────────
           case 'players':
             final sorted = List<Map<String, dynamic>>.from(fp)
               ..sort((a, b) => ((b['goals'] as int? ?? 0)).compareTo((a['goals'] as int? ?? 0)));
+            final pGoals   = fp.fold<int>(0, (s, p) => s + (p['goals']        as int? ?? 0));
+            final pAssists = fp.fold<int>(0, (s, p) => s + (p['assists']      as int? ?? 0));
+            final pYellow  = fp.fold<int>(0, (s, p) => s + (p['yellow_cards'] as int? ?? 0));
             return [
               introBox('This section details the performance of all registered players across the season. Data is automatically aggregated from referee match reports submitted after each official fixture.'),
               pw.Row(children: [
-                statCard('Players Registered', '${fp.length}',                                                   navy),
-                statCard('Total Goals',         '${fp.fold(0, (s, p) => s + (p["goals"]        as int? ?? 0)}', green),
-                statCard('Total Assists',        '${fp.fold(0, (s, p) => s + (p["assists"]      as int? ?? 0)}', blue2),
-                statCard('Yellow Cards',         '${fp.fold(0, (s, p) => s + (p["yellow_cards"] as int? ?? 0)}', yellow),
+                statCard('Players Registered', '${fp.length}', navy),
+                statCard('Total Goals',         '$pGoals',      green),
+                statCard('Total Assists',        '$pAssists',    blue2),
+                statCard('Yellow Cards',         '$pYellow',     yellow),
               ]),
               pw.SizedBox(height: 12),
               barChart('Top Scorers',
@@ -6448,10 +6408,10 @@ class _ReportCentreState extends State<_ReportCentre> {
               sectionTitle('Full Player Statistics'),
               dataTable(
                 ['Player', 'Team', 'Pos', 'Goals', 'Assists', 'YC', 'RC'],
-                sorted.map((p) => [
-                  p['full_name'] ?? '—',
-                  (p['teams'] as Map?)?['name'] ?? '—',
-                  p['position'] ?? '—',
+                sorted.map((p) => <String>[
+                  p['full_name']?.toString() ?? '—',
+                  (p['teams'] as Map?)?['name']?.toString() ?? '—',
+                  p['position']?.toString() ?? '—',
                   '${p['goals'] ?? 0}', '${p['assists'] ?? 0}',
                   '${p['yellow_cards'] ?? 0}', '${p['red_cards'] ?? 0}',
                 ]).toList(),
@@ -6472,9 +6432,11 @@ class _ReportCentreState extends State<_ReportCentre> {
               sectionTitle('Registered Coaches'),
               dataTable(
                 ['Name', 'Email', 'Team', 'Status'],
-                fc.map((c) => [
-                  c['full_name'] ?? '—', c['email'] ?? '—',
-                  c['team_name'] ?? (c['teams'] as Map?)?['name'] ?? '—', 'Active',
+                fc.map((c) => <String>[
+                  c['full_name']?.toString() ?? '—',
+                  c['email']?.toString() ?? '—',
+                  (c['team_name'] ?? (c['teams'] as Map?)?['name'])?.toString() ?? '—',
+                  'Active',
                 ]).toList(),
               ),
               footer(),
@@ -6493,7 +6455,12 @@ class _ReportCentreState extends State<_ReportCentre> {
               sectionTitle('Registered Referees'),
               dataTable(
                 ['Name', 'Email', 'Phone', 'Status'],
-                fr.map((r) => [r['full_name'] ?? '—', r['email'] ?? '—', r['phone'] ?? '—', 'Active']).toList(),
+                fr.map((r) => <String>[
+                  r['full_name']?.toString() ?? '—',
+                  r['email']?.toString() ?? '—',
+                  r['phone']?.toString() ?? '—',
+                  'Active',
+                ]).toList(),
               ),
               footer(),
             ];
@@ -6511,9 +6478,11 @@ class _ReportCentreState extends State<_ReportCentre> {
               sectionTitle('Team Standings'),
               dataTable(
                 ['Team', 'P', 'W', 'D', 'L', 'GF', 'GA', 'GD', 'Pts'],
-                st.map((s) => [s.team, '${s.played}', '${s.wins}', '${s.draws}',
-                    '${s.losses}', '${s.goalsFor}', '${s.goalsAgainst}',
-                    '${s.goalDifference}', '${s.points}']).toList(),
+                st.map((s) => <String>[
+                  s.team, '${s.played}', '${s.wins}', '${s.draws}',
+                  '${s.losses}', '${s.goalsFor}', '${s.goalsAgainst}',
+                  '${s.goalDifference}', '${s.points}',
+                ]).toList(),
               ),
               pw.SizedBox(height: 12),
               barChart('Goals Scored Per Team',
@@ -6544,7 +6513,7 @@ class _ReportCentreState extends State<_ReportCentre> {
               sectionTitle('Completed Results'),
               dataTable(
                 ['Home Team', 'Score', 'Away Team', 'Venue', 'Referee'],
-                completed.map((f) => [
+                completed.map((f) => <String>[
                   f.homeTeam, '${f.homeScore}–${f.awayScore}',
                   f.awayTeam, f.venue, f.assignedReferee ?? '—',
                 ]).toList(),
@@ -6552,7 +6521,7 @@ class _ReportCentreState extends State<_ReportCentre> {
               sectionTitle('Upcoming Fixtures'),
               dataTable(
                 ['Home Team', 'Away Team', 'Date', 'Venue'],
-                upcoming.map((f) => [
+                upcoming.map((f) => <String>[
                   f.homeTeam, f.awayTeam,
                   '${f.dateTime.day}/${f.dateTime.month}/${f.dateTime.year}',
                   f.venue,
@@ -6560,9 +6529,49 @@ class _ReportCentreState extends State<_ReportCentre> {
               ),
               footer(),
             ];
-        }
-      },
-    ));
+
+          // ── FULL SEASON (default — must be last) ─────────────────────────
+          case 'full':
+          default:
+            final totalMatches = rs.length + widget.liveMatches.length;
+            return [
+              introBox('This report provides an authoritative summary of the MMU University Sports Department soccer league activities. It covers all registered teams, player performances, match results, and administrative statistics for the 2026 season.'),
+              pw.Row(children: [
+                statCard('Total Matches', '$totalMatches', navy),
+                statCard('Total Goals',   '$totalGoals',   green),
+                statCard('Yellow Cards',  '$totalYellow',  yellow),
+                statCard('Red Cards',     '$totalRed',     red2),
+              ]),
+              pw.SizedBox(height: 6),
+              pw.Row(children: [
+                statCard('Teams',    '${widget.dynamicTeams.length}', purple2),
+                statCard('Players',  '${fp.length}',                  blue2),
+                statCard('Coaches',  '${fc.length}',                  teal2),
+                statCard('Referees', '${fr.length}',                  brown2),
+              ]),
+              sectionTitle('League Standings'),
+              dataTable(
+                ['#', 'Team', 'P', 'W', 'D', 'L', 'GF', 'GA', 'GD', 'Pts'],
+                st.asMap().entries.map((e) => <String>[
+                  '${e.key + 1}', e.value.team, '${e.value.played}',
+                  '${e.value.wins}', '${e.value.draws}', '${e.value.losses}',
+                  '${e.value.goalsFor}', '${e.value.goalsAgainst}',
+                  '${e.value.goalDifference}', '${e.value.points}',
+                ]).toList(),
+              ),
+              pw.SizedBox(height: 12),
+              barChart('Goals Per Team',
+                st.map((s) => s.team).toList(),
+                st.map((s) => s.goalsFor.toDouble()).toList(),
+                green,
+              ),
+              barChart('Points Per Team',
+                st.map((s) => s.team).toList(),
+                st.map((s) => s.points.toDouble()).toList(),
+                navy,
+              ),
+              footer(),
+            ];
 
     return doc.save();
   }
