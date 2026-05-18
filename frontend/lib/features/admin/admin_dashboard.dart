@@ -6572,6 +6572,9 @@ class _ReportCentreState extends State<_ReportCentre> {
               ),
               footer(),
             ];
+        }        // close switch
+      },         // close build: callback
+    ));          // close pw.MultiPage + doc.addPage
 
     return doc.save();
   }
