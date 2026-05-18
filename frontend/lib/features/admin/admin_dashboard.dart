@@ -6387,14 +6387,14 @@ class _ReportCentreState extends State<_ReportCentre> {
             else
               pw.Container(
                 width: 52, height: 52,
-                decoration: pw.BoxDecoration(shape: pw.BoxShape.circle, color: PdfColors.white30),
+                decoration: pw.BoxDecoration(shape: pw.BoxShape.circle, color: const PdfColor(1, 1, 1, 0.3)),
                 child: pw.Center(child: pw.Text('MMU', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColors.white))),
               ),
             // Right side: university name + meta
             pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.end, children: [
               pw.Text('MMU UNIVERSITY', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
-              pw.Text('Department of Sports', style: const pw.TextStyle(fontSize: 9, color: PdfColors.white70)),
-              pw.Text('Generated: $dateStr', style: const pw.TextStyle(fontSize: 8, color: PdfColors.white70)),
+              pw.Text('Department of Sports', style: pw.TextStyle(fontSize: 9, color: const PdfColor(1, 1, 1, 0.8))),
+              pw.Text('Generated: $dateStr', style: pw.TextStyle(fontSize: 8, color: const PdfColor(1, 1, 1, 0.7))),
             ]),
           ],
         ),
@@ -6402,7 +6402,7 @@ class _ReportCentreState extends State<_ReportCentre> {
         // Centred title
         pw.Center(child: pw.Text(title, style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.white))),
         pw.SizedBox(height: 4),
-        pw.Center(child: pw.Text(subtitle, style: const pw.TextStyle(fontSize: 9, color: PdfColors.white70))),
+        pw.Center(child: pw.Text(subtitle, style: pw.TextStyle(fontSize: 9, color: const PdfColor(1, 1, 1, 0.8)))),
       ]),
     );
 
