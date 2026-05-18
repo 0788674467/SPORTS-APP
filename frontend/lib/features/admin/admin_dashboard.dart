@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:file_saver/file_saver.dart';
+import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import './widgets/dashboard_components.dart';
 import './fixture_generator.dart';
@@ -6355,6 +6356,56 @@ class _ReportCentreState extends State<_ReportCentre> {
     final totalYellow = fp.fold(0, (s, p) => s + ((p['yellow_cards'] as int?) ?? 0));
     final totalRed    = fp.fold(0, (s, p) => s + ((p['red_cards']    as int?) ?? 0));
 
+    // ── load MMU logo ─────────────────────────────────────────────────────────
+    pw.ImageProvider? logoImg;
+    try {
+      final logoBytes = await rootBundle.load('assets/images/mmulogo.png');
+      logoImg = pw.MemoryImage(logoBytes.buffer.asUint8List());
+    } catch (_) {
+      logoImg = null; // gracefully skip if asset not available on web
+    }
+
+    // ── Navy banner (mirrors the on-screen report header) ────────────────────
+    pw.Widget navyBanner(String title, String subtitle) => pw.Container(
+      width: double.infinity,
+      padding: const pw.EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+      decoration: pw.BoxDecoration(color: navy),
+      child: pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
+        pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            // Logo circle
+            if (logoImg != null)
+              pw.Container(
+                width: 52, height: 52,
+                decoration: pw.BoxDecoration(
+                  shape: pw.BoxShape.circle,
+                  color: PdfColors.white,
+                ),
+                child: pw.ClipOval(child: pw.Image(logoImg, width: 52, height: 52, fit: pw.BoxFit.cover)),
+              )
+            else
+              pw.Container(
+                width: 52, height: 52,
+                decoration: pw.BoxDecoration(shape: pw.BoxShape.circle, color: PdfColors.white30),
+                child: pw.Center(child: pw.Text('MMU', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColors.white))),
+              ),
+            // Right side: university name + meta
+            pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.end, children: [
+              pw.Text('MMU UNIVERSITY', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
+              pw.Text('Department of Sports', style: const pw.TextStyle(fontSize: 9, color: PdfColors.white70)),
+              pw.Text('Generated: $dateStr', style: const pw.TextStyle(fontSize: 8, color: PdfColors.white70)),
+            ]),
+          ],
+        ),
+        pw.SizedBox(height: 14),
+        // Centred title
+        pw.Center(child: pw.Text(title, style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold, color: PdfColors.white))),
+        pw.SizedBox(height: 4),
+        pw.Center(child: pw.Text(subtitle, style: const pw.TextStyle(fontSize: 9, color: PdfColors.white70))),
+      ]),
+    );
+
     doc.addPage(pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
       margin: const pw.EdgeInsets.all(32),
@@ -6392,7 +6443,8 @@ class _ReportCentreState extends State<_ReportCentre> {
             final pAssists = fp.fold<int>(0, (s, p) => s + (p['assists']      as int? ?? 0));
             final pYellow  = fp.fold<int>(0, (s, p) => s + (p['yellow_cards'] as int? ?? 0));
             return [
-              introBox('This section details the performance of all registered players across the season. Data is automatically aggregated from referee match reports submitted after each official fixture.'),
+              navyBanner('Player Performance Report', 'Period: $_periodLabel  •  Individual statistics: goals, assists, cards, and appearances.'),
+              pw.SizedBox(height: 12),
               pw.Row(children: [
                 statCard('Players Registered', '${fp.length}', navy),
                 statCard('Total Goals',         '$pGoals',      green),
@@ -6422,12 +6474,11 @@ class _ReportCentreState extends State<_ReportCentre> {
           // ── COACHES ──────────────────────────────────────────────────────
           case 'coaches':
             return [
-              introBox('This section lists all coaches registered with the MMU Sports Department. Coaches are responsible for player squad management and lineup submissions for each fixture.'),
+              navyBanner('Coaching Staff Report', 'Period: $_periodLabel  •  Registered coaches, team assignments, and contact information.'),
+              pw.SizedBox(height: 12),
               pw.Row(children: [
                 statCard('Total Coaches', '${fc.length}',                  navy),
                 statCard('Active Teams',  '${widget.dynamicTeams.length}', green),
-                statCard('', '', teal2),
-                statCard('', '', teal2),
               ]),
               sectionTitle('Registered Coaches'),
               dataTable(
@@ -6445,12 +6496,11 @@ class _ReportCentreState extends State<_ReportCentre> {
           // ── REFEREES ─────────────────────────────────────────────────────
           case 'referees':
             return [
-              introBox('This section covers all referees approved by the Sports Department. Referees are responsible for officiating fixtures and submitting official match reports.'),
+              navyBanner('Referee Report', 'Period: $_periodLabel  •  Registered officials and fixture assignments for the season.'),
+              pw.SizedBox(height: 12),
               pw.Row(children: [
                 statCard('Total Referees', '${fr.length}', navy),
                 statCard('Fixtures',        '${fx.length}', green),
-                statCard('', '', blue2),
-                statCard('', '', blue2),
               ]),
               sectionTitle('Registered Referees'),
               dataTable(
@@ -6468,12 +6518,12 @@ class _ReportCentreState extends State<_ReportCentre> {
           // ── TEAMS ────────────────────────────────────────────────────────
           case 'teams':
             return [
-              introBox('This section provides a comparative analysis of all registered teams in the MMU Soccer League. Data reflects cumulative performance across all completed fixtures.'),
+              navyBanner('Team Performance Report', 'Period: $_periodLabel  •  Team standings, wins/losses, goals, and squad stats.'),
+              pw.SizedBox(height: 12),
               pw.Row(children: [
                 statCard('Total Teams',       '${widget.dynamicTeams.length}', navy),
                 statCard('Completed Matches', '${rs.length}',                  green),
                 statCard('Total Goals',        '$totalGoals',                   blue2),
-                statCard('', '', teal2),
               ]),
               sectionTitle('Team Standings'),
               dataTable(
@@ -6503,7 +6553,8 @@ class _ReportCentreState extends State<_ReportCentre> {
             final completed = fx.where((f) => f.status == 'completed').toList();
             final upcoming  = fx.where((f) => f.status == 'scheduled').toList();
             return [
-              introBox('This section presents the full fixture list for the MMU Soccer League 2026 season including scheduled matches, results, venues, and assigned referees.'),
+              navyBanner('Fixtures & Results Report', 'Period: $_periodLabel  •  All scheduled and completed fixtures for the current season.'),
+              pw.SizedBox(height: 12),
               pw.Row(children: [
                 statCard('Total Fixtures', '${fx.length}',              navy),
                 statCard('Completed',      '${completed.length}',       green),
@@ -6535,7 +6586,8 @@ class _ReportCentreState extends State<_ReportCentre> {
           default:
             final totalMatches = rs.length + widget.liveMatches.length;
             return [
-              introBox('This report provides an authoritative summary of the MMU University Sports Department soccer league activities. It covers all registered teams, player performances, match results, and administrative statistics for the 2026 season.'),
+              navyBanner('MMU Soccer League 2026 — Full Season Report', 'Period: $_periodLabel  •  Comprehensive overview of all league activities, statistics and outcomes.'),
+              pw.SizedBox(height: 12),
               pw.Row(children: [
                 statCard('Total Matches', '$totalMatches', navy),
                 statCard('Total Goals',   '$totalGoals',   green),
