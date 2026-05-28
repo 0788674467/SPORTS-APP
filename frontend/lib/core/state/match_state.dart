@@ -237,13 +237,8 @@ class MatchState extends ChangeNotifier {
           table: 'scheduled_matches',
           callback: (payload) => _handleDelete(payload.oldRecord),
         )
-        // Keep old matches/fixtures channel for live-score realtime
-        .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'matches',
-          callback: (payload) => _handleMatchChange(payload),
-        )
+        // The old matches table subscription has been removed to prevent channelError.
+        // Live scores and statuses are now fully handled by the scheduled_matches table.
         .subscribe();
   }
 

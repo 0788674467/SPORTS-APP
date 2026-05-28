@@ -197,7 +197,7 @@ class _CoachDashboardState extends State<CoachDashboard> with TickerProviderStat
           child: Row(children: [
             _buildAvatarWidget(avatarUrl, avatarIndex, name, 22),
             const SizedBox(width: 10),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
               Text(name, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis),
               Text(teamName, style: TextStyle(color: _accent, fontSize: 11, fontWeight: FontWeight.w500)),
             ])),
@@ -396,7 +396,7 @@ class _CoachDashboardState extends State<CoachDashboard> with TickerProviderStat
               ),
             ),
             const SizedBox(width: 14),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
               Text('Welcome, $name 👋', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 3),
               Text(teamName, style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12)),
@@ -468,7 +468,7 @@ class _CoachDashboardState extends State<CoachDashboard> with TickerProviderStat
                     borderRadius: BorderRadius.circular(2)),
                 ),
                 const SizedBox(width: 12),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
                   Text('${f.homeTeam} vs ${f.awayTeam}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                   Text('${f.dateTime.day}/${f.dateTime.month}/${f.dateTime.year}', style: const TextStyle(fontSize: 11, color: Colors.grey)),
                 ])),
@@ -696,7 +696,7 @@ class _CoachDashboardState extends State<CoachDashboard> with TickerProviderStat
                   child: (photoBytes == null && photoUrl == null) ? Text(p['name'][0], style: const TextStyle(color: Color(0xFF00A651), fontWeight: FontWeight.bold)) : null,
                 ),
                 const SizedBox(width: 12),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
                   Text(p['name']!, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14), overflow: TextOverflow.ellipsis),
                   Text('${p['regNo']}  ·  ${p['course']} ${p['year']} Year',
                     style: const TextStyle(fontSize: 11, color: Colors.grey), overflow: TextOverflow.ellipsis),
@@ -705,36 +705,35 @@ class _CoachDashboardState extends State<CoachDashboard> with TickerProviderStat
                   decoration: BoxDecoration(color: const Color(0xFF00A651).withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
                   child: Text(p['pos']!, style: const TextStyle(color: Color(0xFF00A651), fontWeight: FontWeight.bold, fontSize: 11))),
               ]),
-              // Second row: Edit and Delete buttons (on small screens)
-              if (_submissionStatus != 'approved')
-                Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                    SizedBox(
-                      width: 36,
-                      height: 36,
-                      child: IconButton(
-                        icon: const Icon(Icons.edit_rounded, size: 18, color: Colors.blue),
-                        onPressed: () => _showEditPlayerDialog(i),
-                        constraints: const BoxConstraints(),
-                        padding: EdgeInsets.zero,
-                        tooltip: 'Edit player',
-                      ),
+              // Second row: Edit and Delete buttons
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                  SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: IconButton(
+                      icon: const Icon(Icons.edit_rounded, size: 18, color: Colors.blue),
+                      onPressed: () => _showEditPlayerDialog(i),
+                      constraints: const BoxConstraints(),
+                      padding: EdgeInsets.zero,
+                      tooltip: 'Edit player',
                     ),
-                    const SizedBox(width: 4),
-                    SizedBox(
-                      width: 36,
-                      height: 36,
-                      child: IconButton(
-                        icon: Icon(Icons.delete_rounded, size: 18, color: Colors.red.shade400),
-                        onPressed: () => _confirmDeletePlayer(i),
-                        constraints: const BoxConstraints(),
-                        padding: EdgeInsets.zero,
-                        tooltip: 'Delete player',
-                      ),
+                  ),
+                  const SizedBox(width: 4),
+                  SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: IconButton(
+                      icon: Icon(Icons.delete_rounded, size: 18, color: Colors.red.shade400),
+                      onPressed: () => _confirmDeletePlayer(i),
+                      constraints: const BoxConstraints(),
+                      padding: EdgeInsets.zero,
+                      tooltip: 'Delete player',
                     ),
-                  ]),
-                ),
+                  ),
+                ]),
+              ),
             ]),
           );
         },
@@ -767,7 +766,7 @@ class _CoachDashboardState extends State<CoachDashboard> with TickerProviderStat
         Row(children: [
           Icon(cfg.$3, color: cfg.$1, size: 20),
           const SizedBox(width: 10),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
             Text(cfg.$4, style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: cfg.$1)),
             const SizedBox(height: 2),
             Text(cfg.$5, style: TextStyle(fontSize: 11, color: cfg.$1.withOpacity(0.8))),
@@ -1591,7 +1590,7 @@ class _CoachDashboardState extends State<CoachDashboard> with TickerProviderStat
               ),
             ),
             const SizedBox(width: 14),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
               Text(_darkMode ? 'Light Background' : 'White Background',
                 style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
               Text('Toggle dashboard background', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
@@ -1645,7 +1644,7 @@ class _CoachDashboardState extends State<CoachDashboard> with TickerProviderStat
                 child: Icon(Icons.logout_rounded, color: Colors.red.shade700, size: 18),
               ),
               const SizedBox(width: 14),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
                 Text('Sign Out', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.red.shade700)),
                 Text('You will be redirected to login', style: TextStyle(fontSize: 11, color: Colors.red.shade400)),
               ])),
@@ -1691,10 +1690,12 @@ class _CoachDashboardState extends State<CoachDashboard> with TickerProviderStat
               child: Icon(icon, color: Colors.white, size: 18),
             ),
             const SizedBox(width: 12),
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(title, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800)),
-              Text(subtitle, style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 11)),
-            ]),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(title, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800)),
+                Text(subtitle, style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 11)),
+              ]),
+            ),
           ]),
         ),
         // Body content

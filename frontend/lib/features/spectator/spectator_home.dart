@@ -668,8 +668,10 @@ class _SpectatorHomeState extends State<SpectatorHome>
                 bottom: false,
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
@@ -794,17 +796,17 @@ class _SpectatorHomeState extends State<SpectatorHome>
                           Icon(Icons.touch_app_rounded, color: Colors.white.withOpacity(0.5), size: 12),
                         ],
                       ),
-                      const SizedBox(height: 8),
                     ],
                   ),
                 ),
               ),
-            ],
-          ),
-        );
-      },
-    );
-  }
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
 
   // ─── Tab 1: Standings ────────────────────────────────────────────────────────
   Widget _buildStandingsPage() {
