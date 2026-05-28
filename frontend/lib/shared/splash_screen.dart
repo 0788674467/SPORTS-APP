@@ -304,7 +304,8 @@ class _SplashScreenState extends State<SplashScreen>
     final t = _ballCtrl.value;
     final arcY = -size.height * 0.18 * sin(t * pi);
     final cy = size.height * _ballPosition.value.dy + arcY;
-    final r = 28.0 * _ballScale.value;
+    final baseRadius = size.shortestSide * 0.065;
+    final r = baseRadius * _ballScale.value;
 
     return Positioned(
       left: cx - r,
@@ -356,8 +357,15 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Widget _buildLogo(Size size) {
+    final sw = size.width;
+    final sh = size.height;
+    final titleFontSize = (sw * 0.1).clamp(22.0, 48.0);
+    final titleLetterSpacing = (sw * 0.018).clamp(2.0, 10.0);
+    final subtitleFontSize = (sw * 0.04).clamp(11.0, 18.0);
+    final subtitleLetterSpacing = (sw * 0.024).clamp(3.0, 12.0);
+
     return Positioned(
-      bottom: size.height * 0.08,
+      bottom: sh * 0.08,
       left: 0,
       right: 0,
       child: Opacity(
@@ -368,49 +376,61 @@ class _SplashScreenState extends State<SplashScreen>
             mainAxisSize: MainAxisSize.min,
             children: [
               // Glowing circle emblem with ball.jpeg
-              _buildEmblem(),
-              const SizedBox(height: 20),
+              _buildEmblem(size),
+              SizedBox(height: sh * 0.024),
               // UNILEAGUE — gold shimmer
-              ShaderMask(
-                blendMode: BlendMode.srcIn,
-                shaderCallback: (bounds) => LinearGradient(
-                  begin: Alignment(_shimmer.value - 1, 0),
-                  end: Alignment(_shimmer.value + 1, 0),
-                  colors: const [
-                    Color(0xFFC47A00), // goldDark
-                    Color(0xFFF5A500), // mmwGold
-                    Color(0xFFFFD966), // bright gold
-                    Color(0xFFF5A500), // mmwGold
-                    Color(0xFFC47A00), // goldDark
-                  ],
-                  stops: const [0.0, 0.35, 0.5, 0.65, 1.0],
-                ).createShader(bounds),
-                child: Text(
-                  'UNILEAGUE',
-                  style: GoogleFonts.orbitron(
-                    fontSize: 42,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 8,
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: sw * 0.05),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: ShaderMask(
+                    blendMode: BlendMode.srcIn,
+                    shaderCallback: (bounds) => LinearGradient(
+                      begin: Alignment(_shimmer.value - 1, 0),
+                      end: Alignment(_shimmer.value + 1, 0),
+                      colors: const [
+                        Color(0xFFC47A00), // goldDark
+                        Color(0xFFF5A500), // mmwGold
+                        Color(0xFFFFD966), // bright gold
+                        Color(0xFFF5A500), // mmwGold
+                        Color(0xFFC47A00), // goldDark
+                      ],
+                      stops: const [0.0, 0.35, 0.5, 0.65, 1.0],
+                    ).createShader(bounds),
+                    child: Text(
+                      'UNILEAGUE',
+                      style: GoogleFonts.orbitron(
+                        fontSize: titleFontSize,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: titleLetterSpacing,
+                      ),
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: sh * 0.008),
               // Subtitle in green accent
               SlideTransition(
                 position: _subtitleSlide,
-                child: Text(
-                  'U  C R E A T E',
-                  style: GoogleFonts.rajdhani(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 10,
-                    color: AppColors.mmwGreen,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: sw * 0.08),
+                    child: Text(
+                      'U  C R E A T E',
+                      style: GoogleFonts.rajdhani(
+                        fontSize: subtitleFontSize,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: subtitleLetterSpacing,
+                        color: AppColors.mmwGreen,
+                      ),
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: sh * 0.035),
               // Loading dots — navy to gold pulse
-              _buildLoadingDots(),
+              _buildLoadingDots(size),
             ],
           ),
         ),
@@ -418,28 +438,30 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 
-  Widget _buildEmblem() {
+  Widget _buildEmblem(Size size) {
+    final emblemSize = (size.shortestSide * 0.2).clamp(60.0, 110.0);
+    final borderWidth = (emblemSize * 0.028).clamp(1.5, 3.0);
     return Transform.scale(
       scale: _logoScale.value,
       child: Container(
-        width: 90,
-        height: 90,
+        width: emblemSize,
+        height: emblemSize,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           gradient: const RadialGradient(
             colors: [AppColors.mmwNavy, AppColors.navyDark],
           ),
-          border: Border.all(color: AppColors.mmwGold, width: 2.5),
+          border: Border.all(color: AppColors.mmwGold, width: borderWidth),
           boxShadow: [
             BoxShadow(
               color: AppColors.mmwGold.withOpacity(0.4),
-              blurRadius: 24,
-              spreadRadius: 4,
+              blurRadius: emblemSize * 0.27,
+              spreadRadius: emblemSize * 0.045,
             ),
             BoxShadow(
               color: AppColors.mmwNavy.withOpacity(0.5),
-              blurRadius: 40,
-              spreadRadius: 8,
+              blurRadius: emblemSize * 0.44,
+              spreadRadius: emblemSize * 0.09,
             ),
           ],
         ),
@@ -452,17 +474,19 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 
-  Widget _buildLoadingDots() {
+  Widget _buildLoadingDots(Size size) {
     final t = _shimmerCtrl.value;
+    final dotSize = (size.shortestSide * 0.02).clamp(5.0, 10.0);
+    final dotSpacing = (size.shortestSide * 0.014).clamp(3.0, 7.0);
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(3, (i) {
         final phase = (t - i * 0.25).clamp(0.0, 1.0);
         final brightness = (sin(phase * 2 * pi) * 0.5 + 0.5).clamp(0.2, 1.0);
         return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 5),
-          width: 8,
-          height: 8,
+          margin: EdgeInsets.symmetric(horizontal: dotSpacing),
+          width: dotSize,
+          height: dotSize,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: Color.lerp(
@@ -651,8 +675,8 @@ class _FireTrailPainter extends CustomPainter {
     final paint = Paint()
       ..style = PaintingStyle.fill;
 
-    // Trail length increases as it moves
-    final trailLength = 120.0 * progress;
+    // Trail length increases as it moves — scale to screen
+    final trailLength = size.shortestSide * 0.28 * progress;
     final particleCount = (30 * progress).toInt();
 
     for (int i = 0; i < particleCount; i++) {

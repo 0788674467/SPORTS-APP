@@ -6,19 +6,36 @@ class LiveScore extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ss = MediaQuery.of(context).size.shortestSide;
+    final scoreFs = (ss * 0.12).clamp(28.0, 52.0);
     return Scaffold(
       appBar: AppBar(title: const Text("Live Match")),
       body: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.symmetric(
+              vertical: (ss * 0.055).clamp(12.0, 24.0),
+              horizontal: (ss * 0.05).clamp(12.0, 24.0),
+            ),
             color: Colors.grey[100],
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildTeam("Lions FC"),
-                const Text("2 - 1", style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold)),
-                _buildTeam("Eagles Utd"),
+                Expanded(child: _buildTeam(context, "Lions FC")),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      "2 - 1",
+                      style: TextStyle(
+                        fontSize: scoreFs,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(child: _buildTeam(context, "Eagles Utd")),
               ],
             ),
           ),
@@ -27,7 +44,7 @@ class LiveScore extends StatelessWidget {
               length: 3,
               child: Column(
                 children: [
-                   TabBar(
+                  TabBar(
                     tabs: [
                       Tab(text: "Timeline"),
                       Tab(text: "Lineups"),
@@ -52,12 +69,20 @@ class LiveScore extends StatelessWidget {
     );
   }
 
-  Widget _buildTeam(String name) {
+  Widget _buildTeam(BuildContext context, String name) {
+    final ss = MediaQuery.of(context).size.shortestSide;
+    final avatarR = (ss * 0.08).clamp(20.0, 36.0);
     return Column(
       children: [
-        const CircleAvatar(radius: 32, child: Icon(Icons.shield, size: 32)),
+        CircleAvatar(
+          radius: avatarR,
+          child: Icon(Icons.shield, size: avatarR * 0.85),
+        ),
         const SizedBox(height: 8),
-        Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+        ),
       ],
     );
   }

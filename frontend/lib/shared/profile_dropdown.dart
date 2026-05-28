@@ -125,7 +125,7 @@ class _ProfileDropdownState extends State<ProfileDropdown>
     return Material(
       color: Colors.transparent,
       child: Container(
-        width: 210,
+        width: (MediaQuery.of(context).size.width * 0.52).clamp(170.0, 220.0),
         decoration: BoxDecoration(
           color: const Color(0xFF141428),
           borderRadius: BorderRadius.circular(16),

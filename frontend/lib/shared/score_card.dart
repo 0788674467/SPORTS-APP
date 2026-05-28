@@ -22,6 +22,9 @@ class ScoreCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final sw = MediaQuery.of(context).size.width;
+    final avatarR = (sw * 0.06).clamp(16.0, 28.0);
+    final scoreFs = (sw * 0.07).clamp(20.0, 36.0);
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: InkWell(
@@ -59,7 +62,7 @@ class ScoreCard extends StatelessWidget {
                   Expanded(
                     child: Column(
                       children: [
-                        const CircleAvatar(radius: 24, child: Icon(Icons.shield)),
+                         CircleAvatar(radius: avatarR, child: Icon(Icons.shield, size: avatarR * 0.7)),
                         const SizedBox(height: 8),
                         Text(homeTeam, style: const TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.center),
                       ],
@@ -69,13 +72,13 @@ class ScoreCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
                       "$homeScore - $awayScore",
-                      style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: scoreFs, fontWeight: FontWeight.bold),
                     ),
                   ),
                   Expanded(
                     child: Column(
                       children: [
-                        const CircleAvatar(radius: 24, child: Icon(Icons.shield)),
+                         CircleAvatar(radius: avatarR, child: Icon(Icons.shield, size: avatarR * 0.7)),
                         const SizedBox(height: 8),
                         Text(awayTeam, style: const TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.center),
                       ],

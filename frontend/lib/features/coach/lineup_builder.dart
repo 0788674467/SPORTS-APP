@@ -197,9 +197,14 @@ class _LineupBuilderState extends State<LineupBuilder> {
               final player = starters[i];
               final photoBytes = player['photoBytes'] as Uint8List?;
               final photoUrl = player['photoUrl'] as String?;
+              // Scale pin to pitch width: ~18% of pitch width, clamped
+              final pinSize = (w * 0.18).clamp(52.0, 80.0);
+              final avatarSize = pinSize * 0.67;
+              final halfPin = pinSize / 2;
+              final pinH = pinSize + 20; // approx label height
               return Positioned(
-                left: p.dx * w - 36,
-                top: p.dy * h - 48,
+                left: p.dx * w - halfPin,
+                top: p.dy * h - pinH,
                 child: GestureDetector(
                   onTap: () => setState(() => _swappingIndex = i),
                   child: _PlayerPin(
@@ -209,6 +214,8 @@ class _LineupBuilderState extends State<LineupBuilder> {
                     photoBytes: photoBytes,
                     photoUrl: photoUrl,
                     isHighlighted: _swappingIndex == i,
+                    pinSize: pinSize,
+                    avatarSize: avatarSize,
                   ),
                 ),
               );
@@ -427,15 +434,29 @@ class _PlayerPin extends StatelessWidget {
   final Uint8List? photoBytes;
   final String? photoUrl;
   final bool isHighlighted;
-  const _PlayerPin({required this.name, required this.number, required this.position, this.photoBytes, this.photoUrl, this.isHighlighted = false});
+  final double pinSize;
+  final double avatarSize;
+
+  const _PlayerPin({
+    required this.name,
+    required this.number,
+    required this.position,
+    this.photoBytes,
+    this.photoUrl,
+    this.isHighlighted = false,
+    this.pinSize = 72,
+    this.avatarSize = 48,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(width: 72, child: Column(children: [
+    final labelFs = (pinSize * 0.13).clamp(7.0, 11.0);
+    final badgeFs = (pinSize * 0.10).clamp(6.0, 8.0);
+    return SizedBox(width: pinSize, child: Column(children: [
       Stack(alignment: Alignment.bottomRight, children: [
         AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          width: 48, height: 48,
+          width: avatarSize, height: avatarSize,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: isHighlighted ? const Color(0xFFFFEB3B) : Colors.white,
@@ -449,43 +470,44 @@ class _PlayerPin extends StatelessWidget {
             ],
           ),
           child: photoBytes != null
-            ? ClipOval(child: Image.memory(photoBytes!, width: 48, height: 48, fit: BoxFit.cover))
+            ? ClipOval(child: Image.memory(photoBytes!, width: avatarSize, height: avatarSize, fit: BoxFit.cover))
             : (photoUrl != null
-                ? ClipOval(child: Image.network(photoUrl!, width: 48, height: 48, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _fallbackPin()))
-                : _fallbackPin()),
+                ? ClipOval(child: Image.network(photoUrl!, width: avatarSize, height: avatarSize, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _fallbackPin(labelFs)))
+                : _fallbackPin(labelFs)),
         ),
         // Position Badge Overlay
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+          padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
           decoration: BoxDecoration(
             color: const Color(0xFF003087),
             borderRadius: BorderRadius.circular(4),
             border: Border.all(color: Colors.white, width: 1),
           ),
-          child: Text(position, style: const TextStyle(color: Colors.white, fontSize: 7, fontWeight: FontWeight.bold)),
+          child: Text(position, style: TextStyle(color: Colors.white, fontSize: badgeFs, fontWeight: FontWeight.bold)),
         ),
       ]),
       const SizedBox(height: 4),
       Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         decoration: BoxDecoration(color: Colors.black.withOpacity(0.65), borderRadius: BorderRadius.circular(6)),
         child: Text(name.split(' ').first,
-          style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w600),
+          style: TextStyle(color: Colors.white, fontSize: labelFs, fontWeight: FontWeight.w600),
           textAlign: TextAlign.center, overflow: TextOverflow.ellipsis),
       ),
     ]));
   }
 
-  Widget _fallbackPin() {
+  Widget _fallbackPin(double fs) {
     return Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      Text(number, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14,
+      Text(number, style: TextStyle(fontWeight: FontWeight.w900, fontSize: fs * 1.4,
         color: isHighlighted ? Colors.black87 : const Color(0xFF00A651))),
-      Text(position, style: TextStyle(fontSize: 7,
+      Text(position, style: TextStyle(fontSize: fs * 0.85,
         color: isHighlighted ? Colors.black54 : const Color(0xFF00A651),
         fontWeight: FontWeight.bold, letterSpacing: 0.5)),
     ]);
   }
 }
+
 
 // ─── Dark Purple Glowing Pitch Painter ───────────────────────────────────────
 

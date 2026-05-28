@@ -103,7 +103,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         children: [
           _buildHeroPanel(size, full: false),
           _buildFormCard(false),
-          const SizedBox(height: 32),
+          SizedBox(height: size.height * 0.035),
         ],
       ),
     );
@@ -111,7 +111,9 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
   // ── Hero panel — matches spectator dashboard hero exactly ────────────────
   Widget _buildHeroPanel(Size size, {required bool full}) {
-    final panelHeight = full ? size.height : (size.height * 0.38).clamp(240.0, 340.0);
+    final panelHeight = full ? size.height : (size.height * 0.38).clamp(200.0, 340.0);
+    final sw = size.width;
+    final logoSize = full ? (sw * 0.1).clamp(48.0, 80.0) : (sw * 0.11).clamp(36.0, 52.0);
     return SizedBox(
       height: panelHeight,
       child: Stack(
@@ -140,7 +142,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
           // Content
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: EdgeInsets.symmetric(horizontal: sw * 0.05, vertical: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -148,8 +150,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                   Row(
                     children: [
                       Container(
-                        width: full ? 72 : 44,
-                        height: full ? 72 : 44,
+                        width: logoSize,
+                        height: logoSize,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: Colors.white,
@@ -173,17 +175,17 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text('MMU SOCCER LEAGUE',
+                          Flexible(child: Text('MMU SOCCER LEAGUE',
                               style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w900,
-                                  fontSize: full ? 18 : 12, // Larger on desktop
-                                  letterSpacing: full ? 2.5 : 1.5)),
+                                  fontSize: (sw * 0.035).clamp(10.0, 18.0),
+                                  letterSpacing: full ? 2.5 : 1.5))),
                           Text('2026 Season • Premier Grade',
                               style: TextStyle(
                                   color: AppColors.mmwGold,
                                   fontWeight: FontWeight.w700,
-                                  fontSize: full ? 14 : 9, // Larger on desktop
+                                  fontSize: (sw * 0.025).clamp(8.0, 14.0),
                                   letterSpacing: 1.5)),
                         ],
                       ),
@@ -204,7 +206,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                         ),
                     ],
                   ),
-                  const SizedBox(height: 100), // Adjusted margin 
+                  SizedBox(height: (size.height * 0.06).clamp(20.0, 100.0)),
                   // ── App logo is now removed from the background centre per request ─────────────────
                   // We already have the logo in the top margin row above.
 
@@ -213,9 +215,9 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                     full
                         ? 'Mountains of the\nMoon University'
                         : 'Welcome Back!',
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: Colors.white,
-                        fontSize: 28,
+                        fontSize: (sw * 0.065).clamp(18.0, 32.0),
                         fontWeight: FontWeight.w900,
                         height: 1.15),
                   ),
@@ -291,10 +293,12 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
 
   // ── Form card — white card on background ─────────────────────────────────
   Widget _buildFormCard(bool full) {
+    final sw = MediaQuery.of(context).size.width;
+    final cardPad = (sw * 0.06).clamp(16.0, 32.0);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      padding: EdgeInsets.symmetric(horizontal: (sw * 0.05).clamp(12.0, 24.0), vertical: 20),
       child: Container(
-        padding: const EdgeInsets.all(28),
+        padding: EdgeInsets.all(cardPad),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(28),
@@ -318,8 +322,8 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                 child: Column(
                   children: [
                     Container(
-                      width: full ? 88 : 72,
-                      height: full ? 88 : 72,
+                      width: (sw * 0.18).clamp(56.0, 96.0),
+                      height: (sw * 0.18).clamp(56.0, 96.0),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: Colors.white,
@@ -343,15 +347,17 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Text(
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
                       'UNILEAGUE',
                       style: GoogleFonts.orbitron(
-                        fontSize: full ? 26 : 20, // Responsive font size
+                        fontSize: (sw * 0.055).clamp(16.0, 28.0),
                         fontWeight: FontWeight.w900,
-                        letterSpacing: full ? 4 : 2,
+                        letterSpacing: (sw * 0.008).clamp(1.5, 4.0),
                         color: AppColors.mmwNavy,
                       ),
-                    ),
+                    )),
                   ],
                 ),
               ),
@@ -520,9 +526,10 @@ class _SignInButtonState extends State<_SignInButton>
 
   @override
   Widget build(BuildContext context) {
+    final sh = MediaQuery.of(context).size.height;
     return SizedBox(
       width: double.infinity,
-      height: 52,
+      height: (sh * 0.06).clamp(44.0, 56.0),
       child: AnimatedBuilder(
         animation: _shimmer,
         builder: (_, child) => CustomPaint(

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { supabase } from '../config/db';
-import { AuthUser } from '../types';
+import { AuthUser, UserRole } from '../types';
 
 /**
  * Extended Express Request with authenticated user information.
@@ -34,7 +34,7 @@ export const authenticate = async (
     req.user = {
         id: data.user.id,
         email: data.user.email ?? '',
-        role: (data.user.user_metadata?.role as string) ?? 'spectator',
+        role: (data.user.user_metadata?.role as UserRole) ?? 'spectator',
     };
 
     next();

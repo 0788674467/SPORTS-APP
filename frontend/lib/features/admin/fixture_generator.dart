@@ -211,34 +211,52 @@ class _FixtureGeneratorPanelState extends State<FixtureGeneratorPanel> {
         const SizedBox(height: 16),
         _card(
           title: '📅 Generated Fixtures (${ms.generatedFixtures.length} matches)',
-          child: Column(children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-              child: Row(children: [
-                for (final h in ['#', 'Home', 'Away', 'Date', 'Time', 'Venue', 'Referee'])
-                  Expanded(child: Text(h, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey))),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 480),
+              child: Column(children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                  child: Row(children: [
+                    for (final h in ['#', 'Home', 'Away', 'Date', 'Time', 'Venue', 'Referee'])
+                      SizedBox(
+                        width: h == '#' ? 28 : 84,
+                        child: Text(h, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.grey)),
+                      ),
+                  ]),
+                ),
+                const Divider(height: 1),
+                ...ms.generatedFixtures.asMap().entries.map((e) {
+                  final f = e.value;
+                  final dt = f.dateTime;
+                  return Container(
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                    color: e.key % 2 == 0 ? Colors.grey.shade50 : Colors.white,
+                    child: Row(children: [
+                      SizedBox(width: 28,
+                        child: Text('${e.key + 1}', style: const TextStyle(fontSize: 11, color: Colors.grey))),
+                      SizedBox(width: 84,
+                        child: Text(f.homeTeam, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis)),
+                      SizedBox(width: 84,
+                        child: Text(f.awayTeam, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis)),
+                      SizedBox(width: 84,
+                        child: Text('${dt.day}/${dt.month}/${dt.year}', style: const TextStyle(fontSize: 11))),
+                      SizedBox(width: 84,
+                        child: Text('${dt.hour.toString().padLeft(2,'0')}:${dt.minute.toString().padLeft(2,'0')}', style: const TextStyle(fontSize: 11))),
+                      SizedBox(width: 84,
+                        child: Text(f.venue, style: const TextStyle(fontSize: 11), overflow: TextOverflow.ellipsis)),
+                      SizedBox(width: 84,
+                        child: Text(f.assignedReferee ?? '—',
+                          style: TextStyle(fontSize: 11, color: f.assignedReferee != null ? const Color(0xFF1565C0) : Colors.grey),
+                          overflow: TextOverflow.ellipsis)),
+                    ]),
+                  );
+                }),
               ]),
             ),
-            const Divider(height: 1),
-            ...ms.generatedFixtures.asMap().entries.map((e) {
-              final f = e.value;
-              final dt = f.dateTime;
-              return Container(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                color: e.key % 2 == 0 ? Colors.grey.shade50 : Colors.white,
-                child: Row(children: [
-                  Expanded(child: Text('${e.key + 1}', style: const TextStyle(fontSize: 11, color: Colors.grey))),
-                  Expanded(child: Text(f.homeTeam, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis)),
-                  Expanded(child: Text(f.awayTeam, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis)),
-                  Expanded(child: Text('${dt.day}/${dt.month}/${dt.year}', style: const TextStyle(fontSize: 11))),
-                  Expanded(child: Text('${dt.hour.toString().padLeft(2,'0')}:${dt.minute.toString().padLeft(2,'0')}', style: const TextStyle(fontSize: 11))),
-                  Expanded(child: Text(f.venue, style: const TextStyle(fontSize: 11), overflow: TextOverflow.ellipsis)),
-                  Expanded(child: Text(f.assignedReferee ?? '—', style: TextStyle(fontSize: 11, color: f.assignedReferee != null ? const Color(0xFF1565C0) : Colors.grey), overflow: TextOverflow.ellipsis)),
-                ]),
-              );
-            }),
-          ]),
+          ),
         ),
       ],
     ]);

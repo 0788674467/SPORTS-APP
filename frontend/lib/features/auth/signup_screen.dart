@@ -338,6 +338,8 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
   }
 
   Widget _buildTopBar() {
+    final sw = MediaQuery.of(context).size.width;
+    final badgeSize = (sw * 0.09).clamp(28.0, 42.0);
     return Container(
       color: AppColors.mmwNavy,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -347,10 +349,9 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
             icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
             onPressed: _currentStep == 0 ? () => Navigator.pop(context) : _prevStep,
           ),
-          // ball.jpeg badge — matches spectator header
           Container(
-            width: 38,
-            height: 38,
+            width: badgeSize,
+            height: badgeSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.white,
@@ -370,7 +371,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
             ),
           ),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -379,13 +380,13 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
                     style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w900,
-                        fontSize: 10,
+                        fontSize: (sw * 0.025).clamp(8.0, 12.0),
                         letterSpacing: 1.2)),
                 Text('Join the 2026 Season',
                     style: TextStyle(
                         color: AppColors.mmwGold,
                         fontWeight: FontWeight.w700,
-                        fontSize: 8)),
+                        fontSize: (sw * 0.02).clamp(7.0, 10.0))),
               ],
             ),
           ),
@@ -397,9 +398,11 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
   }
 
   Widget _buildStepIndicator() {
+    final sw = MediaQuery.of(context).size.width;
+    final stepSize = (sw * 0.075).clamp(24.0, 36.0);
     return Container(
       color: AppColors.mmwNavy,
-      padding: const EdgeInsets.fromLTRB(32, 0, 32, 14),
+      padding: EdgeInsets.fromLTRB((sw * 0.06).clamp(12.0, 32.0), 0, (sw * 0.06).clamp(12.0, 32.0), 14),
       child: Row(
         children: List.generate(3, (i) {
           final isActive = i == _currentStep;
@@ -408,7 +411,7 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
             child: Row(
               children: [
                 Container(
-                  width: 32, height: 32,
+                  width: stepSize, height: stepSize,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: isDone
@@ -420,10 +423,10 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
                   ),
                   child: Center(
                     child: isDone
-                        ? const Icon(Icons.check_rounded, color: Colors.white, size: 16)
+                        ? Icon(Icons.check_rounded, color: Colors.white, size: stepSize * 0.5)
                         : Text('${i + 1}', style: TextStyle(
                             color: isActive ? AppColors.mmwNavy : Colors.white54,
-                            fontWeight: FontWeight.bold, fontSize: 13)),
+                            fontWeight: FontWeight.bold, fontSize: stepSize * 0.4)),
                   ),
                 ),
                 if (i < 2) Expanded(
@@ -443,10 +446,11 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
   }
 
   Widget _buildCard({required Widget child}) {
+    final sw = MediaQuery.of(context).size.width;
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+      padding: EdgeInsets.fromLTRB((sw * 0.04).clamp(12.0, 20.0), 8, (sw * 0.04).clamp(12.0, 20.0), 20),
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all((sw * 0.05).clamp(14.0, 24.0)),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(28),
@@ -480,29 +484,34 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
             Center(
               child: GestureDetector(
                 onTap: _pickImage,
-                child: Stack(
-                  children: [
-                    CircleAvatar(
-                      radius: 52,
-                      backgroundColor: AppColors.mmwNavy.withOpacity(0.08),
-                      backgroundImage: _profileImage != null ? MemoryImage(_profileImage!) : null,
-                      child: _profileImage == null
-                          ? Icon(Icons.person_rounded, size: 52, color: AppColors.mmwNavy.withOpacity(0.4))
-                          : null,
-                    ),
-                    Positioned(
-                      bottom: 0, right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.mmwNavy,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final avatarRadius = (MediaQuery.of(context).size.shortestSide * 0.11).clamp(36.0, 56.0);
+                    return Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: avatarRadius,
+                          backgroundColor: AppColors.mmwNavy.withOpacity(0.08),
+                          backgroundImage: _profileImage != null ? MemoryImage(_profileImage!) : null,
+                          child: _profileImage == null
+                              ? Icon(Icons.person_rounded, size: avatarRadius, color: AppColors.mmwNavy.withOpacity(0.4))
+                              : null,
                         ),
-                        child: const Icon(Icons.camera_alt_rounded, size: 16, color: Colors.white),
-                      ),
-                    ),
-                  ],
+                        Positioned(
+                          bottom: 0, right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.mmwNavy,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
+                            child: const Icon(Icons.camera_alt_rounded, size: 16, color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
             ),
@@ -753,9 +762,10 @@ class _SignupScreenState extends State<SignupScreen> with TickerProviderStateMix
   }
 
   Widget _nextBtn(String label) {
+    final sh = MediaQuery.of(context).size.height;
     return SizedBox(
       width: double.infinity,
-      height: 52,
+      height: (sh * 0.06).clamp(44.0, 52.0),
       child: ElevatedButton(
         onPressed: _nextStep,
         style: ElevatedButton.styleFrom(

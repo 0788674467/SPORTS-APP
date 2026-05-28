@@ -230,12 +230,11 @@ class _SpectatorHomeState extends State<SpectatorHome>
               ],
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _navItem(0, Icons.home_rounded, context.read<AppState>().translate('home')),
-                _navItem(1, Icons.leaderboard_rounded, context.read<AppState>().translate('standings')),
-                _navItem(2, Icons.chat_bubble_rounded, context.read<AppState>().translate('talk')),
-                _navItem(3, Icons.settings_rounded, context.read<AppState>().translate('more')),
+                Expanded(child: _navItem(0, Icons.home_rounded, context.read<AppState>().translate('home'))),
+                Expanded(child: _navItem(1, Icons.leaderboard_rounded, context.read<AppState>().translate('standings'))),
+                Expanded(child: _navItem(2, Icons.chat_bubble_rounded, context.read<AppState>().translate('talk'))),
+                Expanded(child: _navItem(3, Icons.settings_rounded, context.read<AppState>().translate('more'))),
               ],
             ),
           ),
@@ -249,66 +248,66 @@ class _SpectatorHomeState extends State<SpectatorHome>
     return GestureDetector(
       onTap: () => setState(() => _currentIndex = index),
       behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                color: active ? AppColors.mmwGold.withOpacity(0.2) : Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Icon(
-                    icon,
-                    color: active ? AppColors.mmwGold : Colors.white,
-                    size: 24,
-                  ),
-                  if (index == 2 && _unreadCount > 0 && !active)
-                    Positioned(
-                      right: -6,
-                      top: -6,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.redAccent,
-                          shape: BoxShape.circle,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: active ? AppColors.mmwGold.withOpacity(0.2) : Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  icon,
+                  color: active ? AppColors.mmwGold : Colors.white,
+                  size: 22,
+                ),
+                if (index == 2 && _unreadCount > 0 && !active)
+                  Positioned(
+                    right: -6,
+                    top: -6,
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: const BoxDecoration(
+                        color: Colors.redAccent,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 14,
+                        minHeight: 14,
+                      ),
+                      child: Text(
+                        _unreadCount > 9 ? '9+' : '$_unreadCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
                         ),
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        child: Text(
-                          _unreadCount > 9 ? '9+' : '$_unreadCount',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                color: active ? AppColors.mmwGold : Colors.white70,
-                fontSize: 9,
-                fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                letterSpacing: 0.3,
-              ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              color: active ? AppColors.mmwGold : Colors.white70,
+              fontSize: 9,
+              fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+              letterSpacing: 0.3,
             ),
-          ],
-        ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+        ],
       ),
     );
   }
@@ -627,7 +626,11 @@ class _SpectatorHomeState extends State<SpectatorHome>
     children: [
       Icon(icon, color: Colors.white38, size: 11),
       const SizedBox(width: 4),
-      Text(label, style: const TextStyle(color: Colors.white54, fontSize: 10)),
+      Flexible(
+        child: Text(label,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.white54, fontSize: 10)),
+      ),
     ],
   );
 
@@ -692,23 +695,27 @@ class _SpectatorHomeState extends State<SpectatorHome>
                             ),
                           ),
                           const SizedBox(width: 10),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text('MMU SOCCER LEAGUE',
-                                  style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w900,
-                                      fontSize: 12,
-                                      letterSpacing: 1.5)),
-                              Text(appState.seasonLabel,
-                                  style: const TextStyle(
-                                      color: AppColors.mmwGold,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 9,
-                                      letterSpacing: 1)),
-                            ],
+                          Flexible(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text('MMU SOCCER LEAGUE',
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 12,
+                                        letterSpacing: 1.5)),
+                                Text(appState.seasonLabel,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                        color: AppColors.mmwGold,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 9,
+                                        letterSpacing: 1)),
+                              ],
+                            ),
                           ),
                           const Spacer(),
                           if (ap.user == null)
@@ -778,8 +785,11 @@ class _SpectatorHomeState extends State<SpectatorHome>
                             ),
                           ),
                           const SizedBox(width: 10),
-                          Text(appState.translate('season_underway'),
-                              style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12)),
+                          Flexible(
+                            child: Text(appState.translate('season_underway'),
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12)),
+                          ),
                           const SizedBox(width: 6),
                           Icon(Icons.touch_app_rounded, color: Colors.white.withOpacity(0.5), size: 12),
                         ],
@@ -1779,7 +1789,6 @@ class _SpectatorHomeState extends State<SpectatorHome>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -1791,12 +1800,21 @@ class _SpectatorHomeState extends State<SpectatorHome>
                                   style: const TextStyle(
                                       color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800)),
                             ),
-                            Row(children: [
-                              const Icon(Icons.location_on_rounded, color: Colors.white54, size: 12),
-                              const SizedBox(width: 3),
-                              Text(f.venue,
-                                  style: const TextStyle(color: Colors.white70, fontSize: 11)),
-                            ]),
+                            Expanded(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  const Icon(Icons.location_on_rounded, color: Colors.white54, size: 12),
+                                  const SizedBox(width: 3),
+                                  Flexible(
+                                    child: Text(f.venue,
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                        style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
                         const Spacer(),
@@ -1833,9 +1851,12 @@ class _SpectatorHomeState extends State<SpectatorHome>
                         Row(children: [
                           const Icon(Icons.access_time_rounded, color: Colors.white54, size: 12),
                           const SizedBox(width: 4),
-                          Text(dateStr,
-                              style: TextStyle(
-                                  color: Colors.white.withOpacity(0.6), fontSize: 11)),
+                          Flexible(
+                            child: Text(dateStr,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    color: Colors.white.withOpacity(0.6), fontSize: 11)),
+                          ),
                         ]),
                       ],
                     ),
@@ -1862,7 +1883,6 @@ class _SpectatorHomeState extends State<SpectatorHome>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -1874,13 +1894,20 @@ class _SpectatorHomeState extends State<SpectatorHome>
                                 style: const TextStyle(
                                     color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800)),
                           ),
-                          Row(
-                            children: [
-                              const Icon(Icons.location_on_rounded, color: Colors.white54, size: 12),
-                              const SizedBox(width: 3),
-                              Text(s['venue']!,
-                                  style: const TextStyle(color: Colors.white70, fontSize: 11)),
-                            ],
+                          Expanded(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                const Icon(Icons.location_on_rounded, color: Colors.white54, size: 12),
+                                const SizedBox(width: 3),
+                                Flexible(
+                                  child: Text(s['venue']!,
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                      style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -1921,9 +1948,12 @@ class _SpectatorHomeState extends State<SpectatorHome>
                         children: [
                           const Icon(Icons.access_time_rounded, color: Colors.white54, size: 12),
                           const SizedBox(width: 4),
-                          Text(s['sub']!,
-                              style: TextStyle(
-                                  color: Colors.white.withOpacity(0.6), fontSize: 11)),
+                          Flexible(
+                            child: Text(s['sub']!,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    color: Colors.white.withOpacity(0.6), fontSize: 11)),
+                          ),
                         ],
                       ),
                     ],
@@ -2082,50 +2112,107 @@ class _SpectatorHomeState extends State<SpectatorHome>
     required Color accentColor,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColors.divider),
-          boxShadow: [
-            BoxShadow(
-              color: accentColor.withOpacity(0.08),
-              blurRadius: 14,
-              offset: const Offset(0, 4),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 170;
+        final pad = isNarrow ? 12.0 : 16.0;
+        final iconSize = isNarrow ? 20.0 : 22.0;
+        final iconPad = isNarrow ? 8.0 : 10.0;
+        return GestureDetector(
+          onTap: onTap,
+          child: Container(
+            padding: EdgeInsets.all(pad),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: AppColors.divider),
+              boxShadow: [
+                BoxShadow(
+                  color: accentColor.withOpacity(0.08),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: iconBg,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: iconColor, size: 22),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label,
-                      style: const TextStyle(
-                          color: AppColors.textDark, fontWeight: FontWeight.w700, fontSize: 13)),
-                  Text(sub,
-                      style: const TextStyle(
-                          color: AppColors.textMid, fontSize: 10)),
-                ],
-              ),
-            ),
-            Icon(Icons.chevron_right_rounded, color: accentColor, size: 18),
-          ],
-        ),
-      ),
+            child: isNarrow
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(iconPad),
+                        decoration: BoxDecoration(
+                          color: iconBg,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(icon, color: iconColor, size: iconSize),
+                      ),
+                      const SizedBox(height: 8),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(label,
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            style: TextStyle(
+                                color: Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.white
+                                    : AppColors.textDark,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12)),
+                      ),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(sub,
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            style: TextStyle(
+                                color: Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.white70
+                                    : AppColors.textMid,
+                                fontSize: 9)),
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(iconPad),
+                        decoration: BoxDecoration(
+                          color: iconBg,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(icon, color: iconColor, size: iconSize),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    color: Theme.of(context).brightness == Brightness.dark
+                                        ? Colors.white
+                                        : AppColors.textDark,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13)),
+                            Text(sub,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    color: Theme.of(context).brightness == Brightness.dark
+                                        ? Colors.white70
+                                        : AppColors.textMid,
+                                    fontSize: 10)),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.chevron_right_rounded, color: accentColor, size: 18),
+                    ],
+                  ),
+          ),
+        );
+      },
     );
   }
 
@@ -2136,52 +2223,108 @@ class _SpectatorHomeState extends State<SpectatorHome>
     required Color accentColor,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColors.divider),
-          boxShadow: [
-            BoxShadow(
-              color: accentColor.withOpacity(0.08),
-              blurRadius: 14,
-              offset: const Offset(0, 4),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 170;
+        final pad = isNarrow ? 12.0 : 16.0;
+        final imgSize = isNarrow ? 34.0 : 42.0;
+        return GestureDetector(
+          onTap: onTap,
+          child: Container(
+            padding: EdgeInsets.all(pad),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: AppColors.divider),
+              boxShadow: [
+                BoxShadow(
+                  color: accentColor.withOpacity(0.08),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFEAEA),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              clipBehavior: Clip.hardEdge,
-              child: Image.asset(imagePath, fit: BoxFit.cover),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label,
-                      style: const TextStyle(
-                          color: AppColors.textDark, fontWeight: FontWeight.w700, fontSize: 13)),
-                  Text(sub,
-                      style: const TextStyle(
-                          color: AppColors.textMid, fontSize: 10)),
-                ],
-              ),
-            ),
-            Icon(Icons.chevron_right_rounded, color: accentColor, size: 18),
-          ],
-        ),
-      ),
+            child: isNarrow
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: imgSize, height: imgSize,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFEAEA),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        clipBehavior: Clip.hardEdge,
+                        child: Image.asset(imagePath, fit: BoxFit.cover),
+                      ),
+                      const SizedBox(height: 8),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(label,
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            style: TextStyle(
+                                color: Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.white
+                                    : AppColors.textDark,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12)),
+                      ),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(sub,
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            style: TextStyle(
+                                color: Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.white70
+                                    : AppColors.textMid,
+                                fontSize: 9)),
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      Container(
+                        width: imgSize, height: imgSize,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFEAEA),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        clipBehavior: Clip.hardEdge,
+                        child: Image.asset(imagePath, fit: BoxFit.cover),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    color: Theme.of(context).brightness == Brightness.dark
+                                        ? Colors.white
+                                        : AppColors.textDark,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13)),
+                            Text(sub,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    color: Theme.of(context).brightness == Brightness.dark
+                                        ? Colors.white70
+                                        : AppColors.textMid,
+                                    fontSize: 10)),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.chevron_right_rounded, color: accentColor, size: 18),
+                    ],
+                  ),
+          ),
+        );
+      },
     );
   }
 

@@ -36,6 +36,11 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
     final role = authProvider.role ?? 'user';
     final name = authProvider.user?.userMetadata?['full_name'] ?? 'there';
 
+    final size = MediaQuery.of(context).size;
+    final ss = size.shortestSide;
+    final iconSize = (ss * 0.18).clamp(48.0, 80.0);
+    final titleFs = (ss * 0.055).clamp(18.0, 26.0);
+
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
@@ -51,30 +56,33 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
           ),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(32),
+              padding: EdgeInsets.all((ss * 0.07).clamp(16.0, 32.0)),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // Rotating ball
                   RotationTransition(
                     turns: _rotation,
-                    child: const Icon(Icons.sports_soccer, size: 80, color: Colors.white),
+                    child: Icon(Icons.sports_soccer, size: iconSize, color: Colors.white),
                   ),
-                  const SizedBox(height: 32),
-                  Text(
-                    'Hi, $name! 👋',
-                    style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
+                  SizedBox(height: (ss * 0.06).clamp(16.0, 32.0)),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'Hi, $name! 👋',
+                      style: TextStyle(color: Colors.white, fontSize: titleFs, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     'Your ${role[0].toUpperCase()}${role.substring(1)} account is awaiting approval',
-                    style: const TextStyle(color: Colors.white70, fontSize: 15),
+                    style: TextStyle(color: Colors.white70, fontSize: (ss * 0.035).clamp(12.0, 16.0)),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 32),
+                  SizedBox(height: (ss * 0.06).clamp(16.0, 32.0)),
                   Container(
-                    padding: const EdgeInsets.all(24),
+                    padding: EdgeInsets.all((ss * 0.05).clamp(14.0, 24.0)),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(20),
@@ -82,16 +90,19 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
                     ),
                     child: Column(
                       children: [
-                        const Icon(Icons.pending_actions_rounded, color: Colors.amber, size: 40),
+                        Icon(Icons.pending_actions_rounded, color: Colors.amber, size: (ss * 0.09).clamp(28.0, 44.0)),
                         const SizedBox(height: 16),
-                        const Text(
-                          'Pending Admin Review',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'Pending Admin Review',
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: (ss * 0.04).clamp(13.0, 18.0)),
+                          ),
                         ),
                         const SizedBox(height: 10),
-                        const Text(
+                        Text(
                           'The MMU Soccer admin will review and approve your account. This usually takes 1–24 hours.',
-                          style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.6),
+                          style: TextStyle(color: Colors.white70, fontSize: (ss * 0.032).clamp(11.0, 14.0), height: 1.6),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 16),
@@ -101,10 +112,10 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
                       ],
                     ),
                   ),
-                  const SizedBox(height: 40),
+                  SizedBox(height: (ss * 0.08).clamp(20.0, 40.0)),
                   SizedBox(
                     width: double.infinity,
-                    height: 50,
+                    height: (size.height * 0.06).clamp(44.0, 52.0),
                     child: OutlinedButton.icon(
                       onPressed: () => authProvider.signOut(),
                       icon: const Icon(Icons.logout_rounded, color: Colors.white),

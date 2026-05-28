@@ -20,12 +20,18 @@ class PlayerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final avatarR = (MediaQuery.of(context).size.shortestSide * 0.055).clamp(16.0, 24.0);
     return ListTile(
       onTap: onTap,
       leading: CircleAvatar(
-        radius: 20,
+        radius: avatarR,
         backgroundImage: imageUrl != null ? NetworkImage(imageUrl!) : null,
-        child: imageUrl == null ? Text(jerseyNumber.toString()) : null,
+        child: imageUrl == null
+            ? Text(
+                jerseyNumber.toString(),
+                style: TextStyle(fontSize: (avatarR * 0.7).clamp(10.0, 16.0)),
+              )
+            : null,
       ),
       title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
       subtitle: Text(position),

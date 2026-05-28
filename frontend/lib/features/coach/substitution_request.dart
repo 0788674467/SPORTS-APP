@@ -197,7 +197,7 @@ class _SubstitutionRequestState extends State<SubstitutionRequest> {
                   ],
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  _playerAvatar(p, isSelected),
+                  _playerAvatar(context, p, isSelected),
                   const SizedBox(width: 8),
                   Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(p.name,
@@ -243,7 +243,7 @@ class _SubstitutionRequestState extends State<SubstitutionRequest> {
                   ],
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  _playerAvatar(p, canSelect),
+                  _playerAvatar(context, p, canSelect),
                   const SizedBox(width: 8),
                   Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(p.name,
@@ -319,7 +319,9 @@ class _SubstitutionRequestState extends State<SubstitutionRequest> {
     ]);
   }
 
-  Widget _playerAvatar(LineupPlayer p, bool highlighted) {
+  Widget _playerAvatar(BuildContext context, LineupPlayer p, bool highlighted) {
+    final ss = MediaQuery.of(context).size.shortestSide;
+    final avatarSize = (ss * 0.09).clamp(28.0, 40.0);
     final photo = p.photoUrl;
     ImageProvider? img;
     if (photo != null) {
@@ -330,7 +332,7 @@ class _SubstitutionRequestState extends State<SubstitutionRequest> {
       }
     }
     return Container(
-      width: 36, height: 36,
+      width: avatarSize, height: avatarSize,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: highlighted ? Colors.orange : const Color(0xFF00A651),
@@ -338,9 +340,9 @@ class _SubstitutionRequestState extends State<SubstitutionRequest> {
       ),
       child: img == null ? Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         Text('#${p.jerseyNo}',
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11)),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: (avatarSize * 0.3).clamp(8.0, 12.0))),
         Text(p.position,
-          style: const TextStyle(color: Colors.white70, fontSize: 7, fontWeight: FontWeight.bold)),
+          style: TextStyle(color: Colors.white70, fontSize: (avatarSize * 0.2).clamp(6.0, 8.0), fontWeight: FontWeight.bold)),
       ]) : null,
     );
   }

@@ -5,6 +5,7 @@ class MatchConsole extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ss = MediaQuery.of(context).size.shortestSide;
     return Scaffold(
       appBar: AppBar(
         title: const Text("Ref Match Console"),
@@ -13,14 +14,30 @@ class MatchConsole extends StatelessWidget {
       body: Column(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+            padding: EdgeInsets.symmetric(
+              vertical: (ss * 0.07).clamp(16.0, 32.0),
+              horizontal: 16,
+            ),
             color: Colors.red[900],
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildScoreCol("Lions FC", 2),
-                const Text("VS", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                _buildScoreCol("Eagles Utd", 1),
+                Expanded(child: _buildScoreCol(context, "Lions FC", 2)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      "VS",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: (ss * 0.055).clamp(16.0, 26.0),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(child: _buildScoreCol(context, "Eagles Utd", 1)),
               ],
             ),
           ),
@@ -31,7 +48,13 @@ class MatchConsole extends StatelessWidget {
               children: [
                 const Icon(Icons.timer, color: Colors.red),
                 const SizedBox(width: 8),
-                Text("67:45", style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.red, fontWeight: FontWeight.bold)),
+                Text(
+                  "67:45",
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
             ),
           ),
@@ -57,29 +80,57 @@ class MatchConsole extends StatelessWidget {
     );
   }
 
-  Widget _buildScoreCol(String team, int score) {
+  Widget _buildScoreCol(BuildContext context, String team, int score) {
+    final ss = MediaQuery.of(context).size.shortestSide;
     return Column(
       children: [
-        Text(team, style: const TextStyle(color: Colors.white, fontSize: 18)),
-        Text(score.toString(), style: const TextStyle(color: Colors.white, fontSize: 64, fontWeight: FontWeight.bold)),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            team,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: (ss * 0.045).clamp(12.0, 20.0),
+            ),
+          ),
+        ),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            score.toString(),
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: (ss * 0.15).clamp(36.0, 64.0),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
       ],
     );
   }
 
   Widget _buildEventBtn(BuildContext context, IconData icon, String label, Color color) {
+    final ss = MediaQuery.of(context).size.shortestSide;
     return ElevatedButton(
       onPressed: () {},
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
         foregroundColor: Colors.white,
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 32),
-          const SizedBox(height: 8),
-          Text(label, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+          Icon(icon, size: (ss * 0.07).clamp(20.0, 36.0)),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: (ss * 0.03).clamp(9.0, 13.0),
+            ),
+          ),
         ],
       ),
     );
