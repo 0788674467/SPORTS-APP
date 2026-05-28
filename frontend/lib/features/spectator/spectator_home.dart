@@ -697,7 +697,7 @@ class _SpectatorHomeState extends State<SpectatorHome>
                             ),
                           ),
                           const SizedBox(width: 10),
-                          Flexible(
+                          Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisSize: MainAxisSize.min,
@@ -719,7 +719,6 @@ class _SpectatorHomeState extends State<SpectatorHome>
                               ],
                             ),
                           ),
-                          const Spacer(),
                           if (ap.user == null)
                             GestureDetector(
                               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen())),
