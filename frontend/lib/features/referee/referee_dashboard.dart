@@ -802,64 +802,109 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
     }
     
     if (_activeFixId == null || !ms.lineups.containsKey(_activeFixId)) {
-      return _empty(Icons.grid_view_rounded, 'No Lineup Yet', 'Coach has not submitted a lineup yet.');
+      return _empty(Icons.grid_view_rounded, 'No Lineup Yet', 'Start a match and wait for the coach to submit a lineup.');
     }
-    final players = ms.lineups[_activeFixId]!;
-    final starters = players.where((p) => !p.isSubstituted).toList();
-    final bench = players.where((p) => p.isSubstituted).toList();
+    
+    GeneratedFixture? f;
+    try { f = ms.generatedFixtures.firstWhere((x) => x.id == _activeFixId); } catch (_) {}
+    if (f == null) return _empty(Icons.grid_view_rounded, 'No Match Selected', 'Start a match to view lineups.');
 
-    return SingleChildScrollView(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Text('Starting XI', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-      const SizedBox(height: 10),
-      ...starters.map((p) => GestureDetector(
-        onTap: () => _showCardAssignDialog(p),
-        child: Container(margin: const EdgeInsets.only(bottom: 8), padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: p.hasRed ? Colors.red.shade50 : (p.hasYellow ? Colors.amber.shade50 : Colors.white),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: p.hasRed ? Colors.red.shade200 : (p.hasYellow ? Colors.amber.shade200 : Colors.grey.shade100))),
-          child: Row(children: [
-            _playerAvatar(p, radius: 20),
-            const SizedBox(width: 12),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-              Row(children: [
-                Text('#${p.jerseyNo}', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
-                const SizedBox(width: 6),
+    final players = ms.lineups[_activeFixId]!;
+    final homePlayers = players.where((p) => p.team == f!.homeTeam).toList();
+    final awayPlayers = players.where((p) => p.team == f!.awayTeam).toList();
+
+    return DefaultTabController(
+      length: 2,
+      child: Column(
+        children: [
+          Container(
+            color: Colors.white,
+            child: TabBar(
+              labelColor: const Color(0xFF003087),
+              unselectedLabelColor: Colors.grey,
+              indicatorColor: const Color(0xFF003087),
+              indicatorWeight: 3,
+              tabs: [
+                Tab(text: f.homeTeam),
+                Tab(text: f.awayTeam),
+              ],
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                _buildTeamLineupList(homePlayers),
+                _buildTeamLineupList(awayPlayers),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTeamLineupList(List<LineupPlayer> teamPlayers) {
+    final starters = teamPlayers.where((p) => !p.isSubstituted).toList();
+    final bench = teamPlayers.where((p) => p.isSubstituted).toList();
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Starting XI', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          ...starters.map((p) => GestureDetector(
+            onTap: () => _showCardAssignDialog(p),
+            child: Container(margin: const EdgeInsets.only(bottom: 8), padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: p.hasRed ? Colors.red.shade50 : (p.hasYellow ? Colors.amber.shade50 : Colors.white),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: p.hasRed ? Colors.red.shade200 : (p.hasYellow ? Colors.amber.shade200 : Colors.grey.shade100))),
+              child: Row(children: [
+                _playerAvatar(p, radius: 20),
+                const SizedBox(width: 12),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                  Row(children: [
+                    Text('#${p.jerseyNo}', style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(color: const Color(0xFF003087), borderRadius: BorderRadius.circular(4)),
+                      child: Text(p.position, style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+                    ),
+                  ]),
+                ])),
+                if (p.hasYellow) const Padding(padding: EdgeInsets.only(left: 6), child: Text('🟡', style: TextStyle(fontSize: 14))),
+                if (p.hasRed) const Padding(padding: EdgeInsets.only(left: 6), child: Text('🔴', style: TextStyle(fontSize: 14))),
+                const SizedBox(width: 4),
+                Icon(Icons.touch_app_rounded, size: 14, color: Colors.grey.shade400),
+              ])),
+          )),
+          if (bench.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Text('Bench / Substituted', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            ...bench.map((p) => Container(margin: const EdgeInsets.only(bottom: 6), padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(10)),
+              child: Row(children: [
+                _playerAvatar(p, radius: 16),
+                const SizedBox(width: 10),
+                Expanded(child: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.grey))),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                  decoration: BoxDecoration(color: const Color(0xFF003087), borderRadius: BorderRadius.circular(4)),
+                  decoration: BoxDecoration(color: Colors.grey.shade400, borderRadius: BorderRadius.circular(4)),
                   child: Text(p.position, style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
                 ),
-              ]),
-            ])),
-            if (p.hasYellow) const Padding(padding: EdgeInsets.only(left: 6), child: Text('🟡', style: TextStyle(fontSize: 14))),
-            if (p.hasRed) const Padding(padding: EdgeInsets.only(left: 6), child: Text('🔴', style: TextStyle(fontSize: 14))),
-            const SizedBox(width: 4),
-            Icon(Icons.touch_app_rounded, size: 14, color: Colors.grey.shade400),
-          ])),
-      )),
-      if (bench.isNotEmpty) ...[
-        const SizedBox(height: 16),
-        const Text('Bench / Substituted', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        ...bench.map((p) => Container(margin: const EdgeInsets.only(bottom: 6), padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(10)),
-          child: Row(children: [
-            _playerAvatar(p, radius: 16),
-            const SizedBox(width: 10),
-            Expanded(child: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.grey))),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-              decoration: BoxDecoration(color: Colors.grey.shade400, borderRadius: BorderRadius.circular(4)),
-              child: Text(p.position, style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
-            ),
-            const Padding(padding: EdgeInsets.only(left: 4), child: Text('↔️', style: TextStyle(fontSize: 12))),
-          ]))),
-      ],
-      const SizedBox(height: 12),
-      Text('Tap a player to assign a card', style: TextStyle(fontSize: 11, color: Colors.grey.shade400, fontStyle: FontStyle.italic)),
-    ]));
+                const Padding(padding: EdgeInsets.only(left: 4), child: Text('↔️', style: TextStyle(fontSize: 12))),
+              ]))),
+          ],
+          const SizedBox(height: 12),
+          Text('Tap a player to assign a card', style: TextStyle(fontSize: 11, color: Colors.grey.shade400, fontStyle: FontStyle.italic)),
+        ],
+      ),
+    );
   }
 
   Widget _playerAvatar(LineupPlayer p, {double radius = 20}) {
