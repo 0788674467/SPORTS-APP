@@ -1535,38 +1535,220 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
 
   void _promptEvent(EventType type, GeneratedFixture f) {
     final ms = context.read<MatchState>();
-    final playerCtrl = TextEditingController(), assistCtrl = TextEditingController();
+    final assistCtrl = TextEditingController();
+
+    // Get all players from the loaded lineups (keyed by fixtureId)
+    final allPlayers = ms.lineups[_activeFixId] ?? [];
+
     String selectedTeam = f.homeTeam;
-    showDialog(context: context, builder: (_) => StatefulBuilder(builder: (ctx, setS) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      title: Text(_eventTitle(type)),
-      content: Column(mainAxisSize: MainAxisSize.min, children: [
-        if (type != EventType.corner) ...[TextField(controller: playerCtrl, decoration: InputDecoration(labelText: 'Player Name', border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)))), const SizedBox(height: 10)],
-        if (type == EventType.goal || type == EventType.sub) ...[TextField(controller: assistCtrl, decoration: InputDecoration(labelText: type == EventType.goal ? 'Assisted By (optional)' : 'Player In', border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)))), const SizedBox(height: 10)],
-        DropdownButtonFormField<String>(value: selectedTeam,
-          items: [f.homeTeam, f.awayTeam].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
-          onChanged: (v) => setS(() => selectedTeam = v!),
-          decoration: InputDecoration(labelText: 'Team', border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)))),
-      ]),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF003087), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-          onPressed: () {
-            final p = playerCtrl.text.trim().isEmpty ? 'Unknown' : playerCtrl.text.trim();
-            switch (type) {
-              case EventType.goal: ms.recordGoal(fixtureId: f.id, team: selectedTeam, player: p, minute: _matchMinute, assistBy: assistCtrl.text.trim().isEmpty ? null : assistCtrl.text.trim()); break;
-              case EventType.assist: ms.recordAssist(fixtureId: f.id, team: selectedTeam, player: p, minute: _matchMinute); break;
-              case EventType.yellow: ms.recordCard(fixtureId: f.id, team: selectedTeam, player: p, minute: _matchMinute, isRed: false); break;
-              case EventType.red: ms.recordCard(fixtureId: f.id, team: selectedTeam, player: p, minute: _matchMinute, isRed: true); break;
-              case EventType.corner: ms.recordCorner(fixtureId: f.id, team: selectedTeam, minute: _matchMinute); break;
-              case EventType.shot: ms.recordShot(fixtureId: f.id, team: selectedTeam, player: p, minute: _matchMinute); break;
-              case EventType.penalty: ms.recordPenalty(fixtureId: f.id, team: selectedTeam, player: p, minute: _matchMinute, scored: true); break;
-              case EventType.sub: ms.recordSubstitution(fixtureId: f.id, team: selectedTeam, playerOut: p, playerIn: assistCtrl.text.trim().isEmpty ? 'Sub' : assistCtrl.text.trim(), minute: _matchMinute); break;
-            }
-            Navigator.pop(ctx);
-          }, child: const Text('Record')),
-      ])));
+    String? selectedPlayer;
+    String? selectedAssist; // for goal-assist or sub playerIn
+
+    // Helper: players for a given team name
+    List<LineupPlayer> playersFor(String team) =>
+        allPlayers.where((p) => p.team == team).toList();
+
+    showDialog(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setS) {
+          final teamPlayers = playersFor(selectedTeam);
+          // All players from both teams for assist dropdown
+          final bothTeamsPlayers = allPlayers;
+
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            title: Text(_eventTitle(type)),
+            content: SingleChildScrollView(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+
+                // ── Team selector ──────────────────────────────────────────
+                DropdownButtonFormField<String>(
+                  value: selectedTeam,
+                  items: [f.homeTeam, f.awayTeam]
+                      .map((t) => DropdownMenuItem(value: t, child: Text(t, overflow: TextOverflow.ellipsis)))
+                      .toList(),
+                  onChanged: (v) => setS(() {
+                    selectedTeam = v!;
+                    selectedPlayer = null; // reset player when team changes
+                    selectedAssist = null;
+                  }),
+                  decoration: InputDecoration(
+                    labelText: 'Team',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    prefixIcon: const Icon(Icons.groups_rounded, size: 18),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // ── Player selector (dropdown, filtered by team) ───────────
+                if (type != EventType.corner) ...[
+                  teamPlayers.isNotEmpty
+                    ? DropdownButtonFormField<String>(
+                        value: selectedPlayer,
+                        isExpanded: true,
+                        hint: const Text('Select Player'),
+                        items: teamPlayers.map((p) => DropdownMenuItem(
+                          value: p.name,
+                          child: Row(children: [
+                            Container(
+                              width: 26, height: 26,
+                              margin: const EdgeInsets.only(right: 8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF003087),
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                              child: Center(child: Text('${p.jerseyNo}',
+                                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold))),
+                            ),
+                            Expanded(child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(p.name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)),
+                                Text(p.position, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                              ],
+                            )),
+                          ]),
+                        )).toList(),
+                        onChanged: (v) => setS(() => selectedPlayer = v),
+                        decoration: InputDecoration(
+                          labelText: type == EventType.sub ? 'Player Out' : 'Player',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          prefixIcon: const Icon(Icons.person_rounded, size: 18),
+                        ),
+                      )
+                    : TextField(
+                        onChanged: (v) => selectedPlayer = v,
+                        decoration: InputDecoration(
+                          labelText: type == EventType.sub ? 'Player Out (type name)' : 'Player Name (type name)',
+                          hintText: 'No lineup loaded — type name',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          prefixIcon: const Icon(Icons.person_rounded, size: 18),
+                        ),
+                      ),
+                  const SizedBox(height: 12),
+                ],
+
+                // ── Assist / Player In selector ────────────────────────────
+                if (type == EventType.goal) ...[
+                  bothTeamsPlayers.isNotEmpty
+                    ? DropdownButtonFormField<String>(
+                        value: selectedAssist,
+                        isExpanded: true,
+                        hint: const Text('None (optional)'),
+                        items: [
+                          const DropdownMenuItem<String>(value: null, child: Text('— No assist —')),
+                          ...bothTeamsPlayers.map((p) => DropdownMenuItem(
+                            value: p.name,
+                            child: Row(children: [
+                              Container(
+                                width: 24, height: 24,
+                                margin: const EdgeInsets.only(right: 8),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade700,
+                                  borderRadius: BorderRadius.circular(5),
+                                ),
+                                child: Center(child: Text('${p.jerseyNo}',
+                                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold))),
+                              ),
+                              Expanded(child: Text(p.name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13))),
+                              const SizedBox(width: 4),
+                              Text('(${p.team.split(' ').first})', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                            ]),
+                          )),
+                        ],
+                        onChanged: (v) => setS(() => selectedAssist = v),
+                        decoration: InputDecoration(
+                          labelText: 'Assisted By (optional)',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          prefixIcon: const Icon(Icons.sports_rounded, size: 18),
+                        ),
+                      )
+                    : TextField(
+                        controller: assistCtrl,
+                        decoration: InputDecoration(
+                          labelText: 'Assisted By (optional)',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                  const SizedBox(height: 4),
+                ],
+
+                // ── Player In (for substitutions) ─────────────────────────
+                if (type == EventType.sub) ...[
+                  teamPlayers.isNotEmpty
+                    ? DropdownButtonFormField<String>(
+                        value: selectedAssist,
+                        isExpanded: true,
+                        hint: const Text('Select Player In'),
+                        items: teamPlayers.map((p) => DropdownMenuItem(
+                          value: p.name,
+                          child: Row(children: [
+                            Container(
+                              width: 26, height: 26,
+                              margin: const EdgeInsets.only(right: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.green.shade700,
+                                borderRadius: BorderRadius.circular(5),
+                              ),
+                              child: Center(child: Text('${p.jerseyNo}',
+                                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold))),
+                            ),
+                            Expanded(child: Text(p.name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13))),
+                          ]),
+                        )).toList(),
+                        onChanged: (v) => setS(() => selectedAssist = v),
+                        decoration: InputDecoration(
+                          labelText: 'Player In',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                          prefixIcon: const Icon(Icons.arrow_circle_up_rounded, size: 18),
+                        ),
+                      )
+                    : TextField(
+                        controller: assistCtrl,
+                        decoration: InputDecoration(
+                          labelText: 'Player In (type name)',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                  const SizedBox(height: 4),
+                ],
+
+              ]),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF003087),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: () {
+                  final p = (selectedPlayer ?? assistCtrl.text.trim()).isEmpty
+                      ? 'Unknown'
+                      : (selectedPlayer ?? assistCtrl.text.trim());
+                  final assist = selectedAssist ?? assistCtrl.text.trim();
+                  switch (type) {
+                    case EventType.goal:   ms.recordGoal(fixtureId: f.id, team: selectedTeam, player: p, minute: _matchMinute, assistBy: assist.isEmpty ? null : assist); break;
+                    case EventType.assist: ms.recordAssist(fixtureId: f.id, team: selectedTeam, player: p, minute: _matchMinute); break;
+                    case EventType.yellow: ms.recordCard(fixtureId: f.id, team: selectedTeam, player: p, minute: _matchMinute, isRed: false); break;
+                    case EventType.red:    ms.recordCard(fixtureId: f.id, team: selectedTeam, player: p, minute: _matchMinute, isRed: true); break;
+                    case EventType.corner: ms.recordCorner(fixtureId: f.id, team: selectedTeam, minute: _matchMinute); break;
+                    case EventType.shot:   ms.recordShot(fixtureId: f.id, team: selectedTeam, player: p, minute: _matchMinute); break;
+                    case EventType.penalty: ms.recordPenalty(fixtureId: f.id, team: selectedTeam, player: p, minute: _matchMinute, scored: true); break;
+                    case EventType.sub:    ms.recordSubstitution(fixtureId: f.id, team: selectedTeam, playerOut: p, playerIn: assist.isEmpty ? 'Sub' : assist, minute: _matchMinute); break;
+                  }
+                  Navigator.pop(ctx);
+                },
+                child: const Text('Record'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   String _eventTitle(EventType t) {
