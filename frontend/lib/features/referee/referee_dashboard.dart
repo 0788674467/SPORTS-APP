@@ -321,10 +321,28 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
             final awayScorers = goalEvents.where((e) => e.team == f.awayTeam).map((e) => '${e.playerName}  ${e.minute}\' ').toList();
             return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Expanded(child: _scoreTeam(f.homeTeam, f.homeScore, homeScorers)),
-              Padding(padding: const EdgeInsets.only(top: 28), child: Column(children: [
-                const Text('—', style: TextStyle(color: Colors.white24, fontSize: 24)),
-                Text(f.venue, style: const TextStyle(color: Colors.white30, fontSize: 9)),
-              ])),
+              // ── Centre: live clock ──────────────────────────────────────
+              Padding(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8), child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Pulsing red dot
+                  Container(width: 8, height: 8,
+                    decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle)),
+                  const SizedBox(height: 4),
+                  // Big minute counter
+                  Text("$_matchMinute'",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1,
+                    )),
+                  const SizedBox(height: 2),
+                  Text(f.venue,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white30, fontSize: 8)),
+                ],
+              )),
               Expanded(child: _scoreTeam(f.awayTeam, f.awayScore, awayScorers, alignRight: true)),
             ]);
           }),
