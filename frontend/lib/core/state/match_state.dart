@@ -527,18 +527,27 @@ class MatchState extends ChangeNotifier {
 
   // ─── Live Match Events ────────────────────────────────────────────────────
 
-  /// Sets a fixture as the currently live match.
+  /// Sets a fixture as the currently live match and persists the 'live' status to Supabase.
   void setLiveFixture(String fixtureId) {
     activeFixtureId = fixtureId;
     final idx = generatedFixtures.indexWhere((f) => f.id == fixtureId);
     if (idx != -1) {
       generatedFixtures[idx].status = 'live';
       liveFixtureIndex = idx;
+      // Persist 'live' status immediately so returning users see the match is in progress
+      _db.from('scheduled_matches').update({
+        'status': 'live',
+        'home_score': generatedFixtures[idx].homeScore,
+        'away_score': generatedFixtures[idx].awayScore,
+      }).eq('id', fixtureId).catchError((e) {
+        debugPrint('⚠️ Failed to set live status: $e');
+      });
     }
     notifyListeners();
   }
 
   /// Records a goal event and updates the score.
+  /// Score is immediately persisted to Supabase so it survives app restarts.
   void recordGoal({
     required String fixtureId,
     required String team,
@@ -548,9 +557,11 @@ class MatchState extends ChangeNotifier {
   }) {
     final f = _fixture(fixtureId);
     if (f == null) return;
-    f.events.add(MatchEvent(type: 'goal', team: team, playerName: player, minute: minute, detail: assistBy != null ? 'Assist: $assistBy' : null));
+    f.events.add(MatchEvent(type: 'goal', team: team, playerName: player, minute: minute, detail: assistBy != null ? 'Assist: \$assistBy' : null));
     if (team == f.homeTeam) f.homeScore++; else f.awayScore++;
     notifyListeners();
+    // Persist immediately so score survives app exit/re-entry during a live match
+    _persistLiveScore(f);
   }
 
   /// Records a card event (yellow or red).
@@ -597,7 +608,11 @@ class MatchState extends ChangeNotifier {
     final f = _fixture(fixtureId);
     if (f == null) return;
     f.events.add(MatchEvent(type: 'penalty', team: team, playerName: player, minute: minute, detail: scored ? 'Scored' : 'Missed'));
-    if (scored) { if (team == f.homeTeam) f.homeScore++; else f.awayScore++; }
+    if (scored) {
+      if (team == f.homeTeam) f.homeScore++; else f.awayScore++;
+      // Persist immediately so score survives app exit/re-entry during a live match
+      _persistLiveScore(f);
+    }
     notifyListeners();
   }
 
@@ -620,6 +635,20 @@ class MatchState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Persists the live score and 'live' status to Supabase during an ongoing match.
+  /// Called after every goal/penalty so the score is never lost on app restart.
+  void _persistLiveScore(GeneratedFixture f) {
+    _db.from('scheduled_matches').update({
+      'home_score': f.homeScore,
+      'away_score': f.awayScore,
+      'status': 'live',
+    }).eq('id', f.id).then((_) {
+      debugPrint('✅ Live score persisted: \${f.homeTeam} \${f.homeScore}–\${f.awayScore} \${f.awayTeam}');
+    }).catchError((e) {
+      debugPrint('⚠️ Failed to persist live score: \$e');
+    });
+  }
+
   /// Ends a match, marks it as completed, and updates standings.
   void endMatch(String fixtureId) {
     final f = _fixture(fixtureId);
@@ -630,7 +659,7 @@ class MatchState extends ChangeNotifier {
       liveFixtureIndex = null;
     }
     notifyListeners();
-    // Persist final score
+    // Persist final score and completed status
     updateFixture(fixtureId, status: 'completed', homeScore: f.homeScore, awayScore: f.awayScore);
   }
 
