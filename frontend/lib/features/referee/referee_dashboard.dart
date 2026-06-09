@@ -728,13 +728,14 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
               else const Row(children: [Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF00A651)), SizedBox(width: 4), Text('Confirmed', style: TextStyle(fontSize: 12, color: Color(0xFF00A651)))]),
             ]),
             if (f.status == 'scheduled')
-              Padding(padding: const EdgeInsets.only(top: 10), child: SizedBox(width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () { setState(() { _activeFixId = f.id; _selectedNav = 0; ms.setLiveFixture(f.id); _matchMinute = 0; _startTimer(); }); },
-                  icon: const Icon(Icons.play_circle_rounded, size: 18),
-                  label: const Text('Kick Off Match'),
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00A651), foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)))))),
+              _FixtureLineupPanel(
+                fixture: f,
+                onKickOff: () {
+                  setState(() { _activeFixId = f.id; _selectedNav = 0; _matchMinute = 0; });
+                  ms.setLiveFixture(f.id);
+                  _startTimer();
+                },
+              ),
           ]),
         );
       }).toList()));
@@ -1581,3 +1582,265 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
 }
 
 enum EventType { goal, assist, yellow, red, corner, shot, penalty, sub }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Lineup Verification Panel (shown inside each fixture card before kick-off)
+// ─────────────────────────────────────────────────────────────────────────────
+class _FixtureLineupPanel extends StatefulWidget {
+  final GeneratedFixture fixture;
+  final VoidCallback onKickOff;
+  const _FixtureLineupPanel({required this.fixture, required this.onKickOff});
+
+  @override
+  State<_FixtureLineupPanel> createState() => _FixtureLineupPanelState();
+}
+
+class _FixtureLineupPanelState extends State<_FixtureLineupPanel>
+    with SingleTickerProviderStateMixin {
+  bool _expanded = false;
+  bool _verified = false;
+  bool _loading = false;
+
+  // home → index 0, away → index 1
+  List<Map<String, dynamic>> _homePlayers = [];
+  List<Map<String, dynamic>> _awayPlayers = [];
+  String? _homeError;
+  String? _awayError;
+
+  late TabController _tab;
+
+  @override
+  void initState() {
+    super.initState();
+    _tab = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tab.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadLineups() async {
+    setState(() { _loading = true; _homeError = null; _awayError = null; });
+    final db = Supabase.instance.client;
+    try {
+      final home = await _fetchApprovedSquad(db, widget.fixture.homeTeam);
+      final away = await _fetchApprovedSquad(db, widget.fixture.awayTeam);
+      setState(() {
+        _homePlayers = home.$1;
+        _homeError = home.$2;
+        _awayPlayers = away.$1;
+        _awayError = away.$2;
+      });
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
+
+  /// Returns (players, errorMessage). errorMessage is null on success.
+  Future<(List<Map<String, dynamic>>, String?)> _fetchApprovedSquad(
+      dynamic db, String teamName) async {
+    try {
+      final result = await db
+          .from('teams')
+          .select('id, submission_status, players(full_name, jersey_number, position)')
+          .eq('name', teamName)
+          .maybeSingle();
+
+      if (result == null) return ([], 'Team "$teamName" not found.');
+      final status = result['submission_status'] as String? ?? 'draft';
+      if (status != 'approved') {
+        return ([], 'Squad not yet approved by admin (status: $status).');
+      }
+      final players = (result['players'] as List<dynamic>? ?? [])
+          .cast<Map<String, dynamic>>();
+      if (players.isEmpty) return ([], 'No players registered for $teamName.');
+      return (players, null);
+    } catch (e) {
+      return ([], 'Error loading squad: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const SizedBox(height: 12),
+      const Divider(height: 1),
+      const SizedBox(height: 10),
+
+      // ── Expand / collapse lineup preview ────────────────────────────────
+      GestureDetector(
+        onTap: () {
+          setState(() => _expanded = !_expanded);
+          if (_expanded && _homePlayers.isEmpty && _awayPlayers.isEmpty) {
+            _loadLineups();
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF003087).withOpacity(0.06),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFF003087).withOpacity(0.15)),
+          ),
+          child: Row(children: [
+            const Icon(Icons.format_list_numbered_rounded, size: 16, color: Color(0xFF003087)),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text('Verify Lineups Before Kick-Off',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF003087))),
+            ),
+            Icon(_expanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+              color: const Color(0xFF003087)),
+          ]),
+        ),
+      ),
+
+      // ── Expanded lineup tabs ─────────────────────────────────────────────
+      if (_expanded) ...[
+        const SizedBox(height: 10),
+        if (_loading)
+          const Center(child: Padding(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: CircularProgressIndicator(),
+          ))
+        else
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Column(children: [
+              // Tab bar
+              TabBar(
+                controller: _tab,
+                labelColor: const Color(0xFF003087),
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: const Color(0xFF003087),
+                indicatorWeight: 2.5,
+                labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                tabs: [
+                  Tab(text: widget.fixture.homeTeam),
+                  Tab(text: widget.fixture.awayTeam),
+                ],
+              ),
+              const Divider(height: 1),
+              SizedBox(
+                height: 220,
+                child: TabBarView(
+                  controller: _tab,
+                  children: [
+                    _buildSquadList(_homePlayers, _homeError, widget.fixture.homeTeam),
+                    _buildSquadList(_awayPlayers, _awayError, widget.fixture.awayTeam),
+                  ],
+                ),
+              ),
+            ]),
+          ),
+
+        const SizedBox(height: 10),
+
+        // ── Verified checkbox ────────────────────────────────────────────
+        if (!_loading)
+          GestureDetector(
+            onTap: () => setState(() => _verified = !_verified),
+            child: Row(children: [
+              Checkbox(
+                value: _verified,
+                onChanged: (v) => setState(() => _verified = v ?? false),
+                activeColor: const Color(0xFF00A651),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+              ),
+              const Expanded(
+                child: Text('I have verified both team lineups and confirm they are correct.',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+              ),
+            ]),
+          ),
+
+        const SizedBox(height: 8),
+
+        // ── Kick Off button (only enabled when verified) ─────────────────
+        SizedBox(width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _verified ? widget.onKickOff : null,
+            icon: const Icon(Icons.play_circle_rounded, size: 18),
+            label: const Text('Kick Off Match'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _verified ? const Color(0xFF00A651) : Colors.grey.shade300,
+              foregroundColor: _verified ? Colors.white : Colors.grey.shade500,
+              disabledBackgroundColor: Colors.grey.shade200,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+            ),
+          ),
+        ),
+      ],
+    ]);
+  }
+
+  Widget _buildSquadList(List<Map<String, dynamic>> players, String? error, String teamName) {
+    if (error != null) {
+      return Center(child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(Icons.warning_amber_rounded, color: Colors.orange.shade400, size: 32),
+          const SizedBox(height: 8),
+          Text(error, textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.orange.shade700, fontSize: 12)),
+        ]),
+      ));
+    }
+
+    if (players.isEmpty) {
+      return Center(child: Text('No players found for $teamName',
+        style: const TextStyle(color: Colors.grey, fontSize: 12)));
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+      itemCount: players.length,
+      itemBuilder: (_, i) {
+        final p = players[i];
+        final name = p['full_name'] as String? ?? '—';
+        final jersey = p['jersey_number'] as int? ?? 0;
+        final pos = p['position'] as String? ?? '—';
+        return Container(
+          margin: const EdgeInsets.only(bottom: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.shade100),
+          ),
+          child: Row(children: [
+            Container(
+              width: 28, height: 28,
+              decoration: BoxDecoration(
+                color: const Color(0xFF003087),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Center(child: Text('$jersey',
+                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))),
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Text(name,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              overflow: TextOverflow.ellipsis)),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFF003087).withOpacity(0.08),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(pos, style: const TextStyle(fontSize: 10, color: Color(0xFF003087), fontWeight: FontWeight.bold)),
+            ),
+          ]),
+        );
+      },
+    );
+  }
+}
+
