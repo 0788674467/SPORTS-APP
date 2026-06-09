@@ -314,12 +314,20 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
             ]),
           ]),
           const SizedBox(height: 16),
-          Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-            _scoreTeam(f!.homeTeam, f.homeScore),
-            Column(children: [const Text('—', style: TextStyle(color: Colors.white24, fontSize: 24)),
-              Text(f.venue, style: const TextStyle(color: Colors.white30, fontSize: 9))]),
-            _scoreTeam(f.awayTeam, f.awayScore),
-          ]),
+          Builder(builder: (_) {
+            // Collect goal events per team
+            final goalEvents = f!.events.where((e) => e.type == 'goal' || (e.type == 'penalty' && (e.detail ?? '').contains('Scored'))).toList();
+            final homeScorers = goalEvents.where((e) => e.team == f.homeTeam).map((e) => '${e.playerName}  ${e.minute}\' ').toList();
+            final awayScorers = goalEvents.where((e) => e.team == f.awayTeam).map((e) => '${e.playerName}  ${e.minute}\' ').toList();
+            return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Expanded(child: _scoreTeam(f.homeTeam, f.homeScore, homeScorers)),
+              Padding(padding: const EdgeInsets.only(top: 28), child: Column(children: [
+                const Text('—', style: TextStyle(color: Colors.white24, fontSize: 24)),
+                Text(f.venue, style: const TextStyle(color: Colors.white30, fontSize: 9)),
+              ])),
+              Expanded(child: _scoreTeam(f.awayTeam, f.awayScore, awayScorers, alignRight: true)),
+            ]);
+          }),
           const SizedBox(height: 14),
           // Match duration + set time
           Row(children: [
@@ -632,32 +640,50 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
     }
   }
 
-  Widget _scoreTeam(String name, int score) {
+  Widget _scoreTeam(String name, int score, List<String> scorers, {bool alignRight = false}) {
     final logoUrl = _teamLogoFor(name);
-    return Column(children: [
-      if (logoUrl != null)
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Image.network(logoUrl, width: 36, height: 36, fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => const SizedBox.shrink()),
-        )
-      else
-        Container(
-          width: 36, height: 36,
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Center(
-            child: Text(name.isNotEmpty ? name[0] : '?',
-              style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 16)),
-          ),
-        ),
-      const SizedBox(height: 4),
-      Text(name, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+    final align = alignRight ? CrossAxisAlignment.end : CrossAxisAlignment.start;
+    final textAlign = alignRight ? TextAlign.right : TextAlign.left;
+    return Column(crossAxisAlignment: align, children: [
+      // Logo + team name row
+      Row(
+        mainAxisAlignment: alignRight ? MainAxisAlignment.end : MainAxisAlignment.start,
+        children: [
+          if (!alignRight) ...[_teamBadge(name, logoUrl), const SizedBox(width: 6)],
+          Flexible(child: Text(name, style: const TextStyle(color: Colors.white70, fontSize: 12), overflow: TextOverflow.ellipsis)),
+          if (alignRight) ...[const SizedBox(width: 6), _teamBadge(name, logoUrl)],
+        ],
+      ),
+      // Big score number
       Text('$score', style: const TextStyle(color: Colors.white, fontSize: 52, fontWeight: FontWeight.w900)),
+      // Goal scorers list
+      if (scorers.isNotEmpty)
+        ...scorers.map((s) => Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Text('⚽ $s',
+            textAlign: textAlign,
+            style: const TextStyle(color: Colors.greenAccent, fontSize: 10, fontWeight: FontWeight.w500)),
+        )),
     ]);
   }
+
+  Widget _teamBadge(String name, String? logoUrl) {
+    if (logoUrl != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: Image.network(logoUrl, width: 28, height: 28, fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _badgeFallback(name)),
+      );
+    }
+    return _badgeFallback(name);
+  }
+
+  Widget _badgeFallback(String name) => Container(
+    width: 28, height: 28,
+    decoration: BoxDecoration(color: Colors.white.withOpacity(0.12), borderRadius: BorderRadius.circular(6)),
+    child: Center(child: Text(name.isNotEmpty ? name[0] : '?',
+      style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 13))),
+  );
 
   Widget _eventBtn(String label, Color color, VoidCallback onTap) {
     return Material(color: color, borderRadius: BorderRadius.circular(14),
