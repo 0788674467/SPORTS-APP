@@ -317,8 +317,8 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
           Builder(builder: (_) {
             // Collect goal events per team
             final goalEvents = f!.events.where((e) => e.type == 'goal' || (e.type == 'penalty' && (e.detail ?? '').contains('Scored'))).toList();
-            final homeScorers = goalEvents.where((e) => e.team == f.homeTeam).map((e) => '${e.playerName}  ${e.minute}\' ').toList();
-            final awayScorers = goalEvents.where((e) => e.team == f.awayTeam).map((e) => '${e.playerName}  ${e.minute}\' ').toList();
+            final homeScorers = goalEvents.where((e) => e.team == f!.homeTeam).map((e) => '${e.playerName}  ${e.minute}\' ').toList();
+            final awayScorers = goalEvents.where((e) => e.team == f!.awayTeam).map((e) => '${e.playerName}  ${e.minute}\' ').toList();
             return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Expanded(child: _scoreTeam(f.homeTeam, f.homeScore, homeScorers)),
               // ── Centre: live clock ──────────────────────────────────────
@@ -1874,17 +1874,17 @@ class _FixtureLineupPanelState extends State<_FixtureLineupPanel>
           .eq('name', teamName)
           .maybeSingle();
 
-      if (result == null) return ([], 'Team "$teamName" not found.');
+      if (result == null) return (<Map<String, dynamic>>[], 'Team "$teamName" not found.');
       final status = result['submission_status'] as String? ?? 'draft';
       if (status != 'approved') {
-        return ([], 'Squad not yet approved by admin (status: $status).');
+        return (<Map<String, dynamic>>[], 'Squad not yet approved by admin (status: $status).');
       }
       final players = (result['players'] as List<dynamic>? ?? [])
           .cast<Map<String, dynamic>>();
-      if (players.isEmpty) return ([], 'No players registered for $teamName.');
+      if (players.isEmpty) return (<Map<String, dynamic>>[], 'No players registered for $teamName.');
       return (players, null);
     } catch (e) {
-      return ([], 'Error loading squad: $e');
+      return (<Map<String, dynamic>>[], 'Error loading squad: $e');
     }
   }
 
