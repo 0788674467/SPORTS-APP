@@ -808,9 +808,6 @@ class MatchState extends ChangeNotifier {
   // Set of fixture IDs that have had their lineups verified by the referee
   final Set<String> verifiedFixtures = {};
 
-  // For UI: to highlight the live fixture in a list
-  int? liveFixtureIndex;
-  
   /// Match duration in minutes (default: 90)
   int matchDurationMinutes = 90;
   
