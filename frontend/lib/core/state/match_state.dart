@@ -245,7 +245,21 @@ class MatchState extends ChangeNotifier {
   void _handleUpdate(Map<String, dynamic> data) {
     final idx = generatedFixtures.indexWhere((f) => f.id == data['id']);
     if (idx == -1) return;
-    generatedFixtures[idx] = GeneratedFixture.fromRow(data);
+    
+    // Preserve events if any existed before the update
+    final existingEvents = generatedFixtures[idx].events;
+    final updatedFixture = GeneratedFixture.fromRow(data);
+    updatedFixture.events = existingEvents;
+    
+    generatedFixtures[idx] = updatedFixture;
+    
+    // Update live fixture index if status changed
+    if (updatedFixture.status == 'live') {
+      liveFixtureIndex = idx;
+    } else if (updatedFixture.status == 'completed' && liveFixtureIndex == idx) {
+      liveFixtureIndex = null;
+    }
+    
     notifyListeners();
   }
 
@@ -297,6 +311,11 @@ class MatchState extends ChangeNotifier {
       generatedFixtures = (rows as List)
           .map((r) => GeneratedFixture.fromRow(r as Map<String, dynamic>))
           .toList();
+          
+      // Restore live fixture index if a match is currently live
+      final liveIdx = generatedFixtures.indexWhere((f) => f.status == 'live');
+      liveFixtureIndex = liveIdx != -1 ? liveIdx : null;
+      
       // Rebuild standings from completed fixtures
       _rebuildStandings();
     } catch (e) {
