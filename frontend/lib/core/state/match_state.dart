@@ -27,6 +27,22 @@ class MatchEvent {
     required this.minute,
     this.detail,
   });
+
+  Map<String, dynamic> toJson() => {
+        'type': type,
+        'team': team,
+        'player_name': playerName,
+        'minute': minute,
+        'detail': detail,
+      };
+
+  static MatchEvent fromJson(Map<String, dynamic> json) => MatchEvent(
+        type: json['type'] as String? ?? 'unknown',
+        team: json['team'] as String? ?? 'Unknown',
+        playerName: json['player_name'] as String? ?? 'Unknown',
+        minute: json['minute'] as int? ?? 0,
+        detail: json['detail'] as String?,
+      );
 }
 
 /// Represents a player in a match lineup.
@@ -96,6 +112,9 @@ class GeneratedFixture {
   /// Away team score
   int awayScore;
   
+  /// Current minute of the live match
+  int currentMinute;
+
   /// Match status ('scheduled', 'live', 'completed', 'postponed')
   String status;
   
@@ -112,8 +131,10 @@ class GeneratedFixture {
     this.venueConfirmed = false,
     this.homeScore = 0,
     this.awayScore = 0,
+    this.currentMinute = 0,
     this.status = 'scheduled',
-  }) : events = [];
+    List<MatchEvent>? events,
+  }) : events = events ?? [];
 
   // ── Serialization ─────────────────────────────────────────────────────────
   
@@ -128,6 +149,8 @@ class GeneratedFixture {
         'status': status,
         'home_score': homeScore,
         'away_score': awayScore,
+        'current_minute': currentMinute,
+        'events': events.map((e) => e.toJson()).toList(),
       };
 
   /// Creates a fixture from a database row.
@@ -141,6 +164,11 @@ class GeneratedFixture {
         status: r['status'] as String? ?? 'scheduled',
         homeScore: r['home_score'] as int? ?? 0,
         awayScore: r['away_score'] as int? ?? 0,
+        currentMinute: r['current_minute'] as int? ?? 0,
+        events: (r['events'] as List<dynamic>?)
+                ?.map((e) => MatchEvent.fromJson(e as Map<String, dynamic>))
+                .toList() ??
+            [],
       );
 }
 
@@ -246,17 +274,13 @@ class MatchState extends ChangeNotifier {
     final idx = generatedFixtures.indexWhere((f) => f.id == data['id']);
     if (idx == -1) return;
     
-    // Preserve events if any existed before the update
-    final existingEvents = generatedFixtures[idx].events;
-    final updatedFixture = GeneratedFixture.fromRow(data);
-    updatedFixture.events = existingEvents;
-    
-    generatedFixtures[idx] = updatedFixture;
+    // Reconstruct fixture from DB data — events and currentMinute now come from DB
+    generatedFixtures[idx] = GeneratedFixture.fromRow(data);
     
     // Update live fixture index if status changed
-    if (updatedFixture.status == 'live') {
+    if (generatedFixtures[idx].status == 'live') {
       liveFixtureIndex = idx;
-    } else if (updatedFixture.status == 'completed' && liveFixtureIndex == idx) {
+    } else if (generatedFixtures[idx].status == 'completed' && liveFixtureIndex == idx) {
       liveFixtureIndex = null;
     }
     
@@ -580,7 +604,7 @@ class MatchState extends ChangeNotifier {
     if (team == f.homeTeam) f.homeScore++; else f.awayScore++;
     notifyListeners();
     // Persist immediately so score survives app exit/re-entry during a live match
-    _persistLiveScore(f);
+    _persistLiveMatchState(f);
   }
 
   /// Records a card event (yellow or red).
@@ -600,6 +624,7 @@ class MatchState extends ChangeNotifier {
       if (lp.name.isNotEmpty) { if (isRed) lp.hasRed = true; else lp.hasYellow = true; }
     }
     notifyListeners();
+    _persistLiveMatchState(f);
   }
 
   void recordAssist({required String fixtureId, required String team, required String player, required int minute}) {
@@ -607,6 +632,7 @@ class MatchState extends ChangeNotifier {
     if (f == null) return;
     f.events.add(MatchEvent(type: 'assist', team: team, playerName: player, minute: minute));
     notifyListeners();
+    _persistLiveMatchState(f);
   }
 
   void recordCorner({required String fixtureId, required String team, required int minute}) {
@@ -614,6 +640,7 @@ class MatchState extends ChangeNotifier {
     if (f == null) return;
     f.events.add(MatchEvent(type: 'corner', team: team, playerName: '', minute: minute));
     notifyListeners();
+    _persistLiveMatchState(f);
   }
 
   void recordShot({required String fixtureId, required String team, required String player, required int minute}) {
@@ -621,6 +648,7 @@ class MatchState extends ChangeNotifier {
     if (f == null) return;
     f.events.add(MatchEvent(type: 'shot', team: team, playerName: player, minute: minute));
     notifyListeners();
+    _persistLiveMatchState(f);
   }
 
   void recordPenalty({required String fixtureId, required String team, required String player, required int minute, required bool scored}) {
@@ -629,10 +657,9 @@ class MatchState extends ChangeNotifier {
     f.events.add(MatchEvent(type: 'penalty', team: team, playerName: player, minute: minute, detail: scored ? 'Scored' : 'Missed'));
     if (scored) {
       if (team == f.homeTeam) f.homeScore++; else f.awayScore++;
-      // Persist immediately so score survives app exit/re-entry during a live match
-      _persistLiveScore(f);
     }
     notifyListeners();
+    _persistLiveMatchState(f);
   }
 
   /// Records a substitution event.
@@ -652,19 +679,22 @@ class MatchState extends ChangeNotifier {
       if (out.name.isNotEmpty) out.isSubstituted = true;
     }
     notifyListeners();
+    _persistLiveMatchState(f);
   }
 
-  /// Persists the live score and 'live' status to Supabase during an ongoing match.
-  /// Called after every goal/penalty so the score is never lost on app restart.
-  void _persistLiveScore(GeneratedFixture f) {
+  /// Persists the live score, events, and minute to Supabase during an ongoing match.
+  /// Called after every event so data is never lost on app restart.
+  void _persistLiveMatchState(GeneratedFixture f) {
     _db.from('scheduled_matches').update({
       'home_score': f.homeScore,
       'away_score': f.awayScore,
+      'current_minute': f.currentMinute,
+      'events': f.events.map((e) => e.toJson()).toList(),
       'status': 'live',
     }).eq('id', f.id).then((_) {
-      debugPrint('✅ Live score persisted: \${f.homeTeam} \${f.homeScore}–\${f.awayScore} \${f.awayTeam}');
+      debugPrint('✅ Live match state persisted: \${f.homeTeam} \${f.homeScore}–\${f.awayScore} \${f.awayTeam} (\${f.events.length} events)');
     }).catchError((e) {
-      debugPrint('⚠️ Failed to persist live score: \$e');
+      debugPrint('⚠️ Failed to persist live match state: $e');
     });
   }
 

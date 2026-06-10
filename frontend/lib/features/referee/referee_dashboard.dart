@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:typed_data';
+import 'package:collection/collection.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -49,8 +50,19 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
       final ap = context.read<auth.AuthProvider>();
       await ap.fetchProfile();
       debugPrint('🔍 Referee Dashboard: Profile fetched');
-      debugPrint('🔍 Avatar URL: ${ap.profile?['avatar_url']}');
-      debugPrint('🔍 Full Name: ${ap.profile?['full_name']}');
+
+      // ── Restore any in-progress live match ──────────────────────────
+      // If the referee exited mid-match, find it in MatchState and resume
+      final ms = context.read<MatchState>();
+      final liveF = ms.liveFixture;
+      if (liveF != null && _activeFixId == null) {
+        setState(() {
+          _activeFixId = liveF.id;
+          _matchMinute = liveF.currentMinute;
+          _matchRunning = false; // don't auto-start: let referee press play
+        });
+        debugPrint('▶️ Resumed live match: ${liveF.homeTeam} vs ${liveF.awayTeam} at ${liveF.currentMinute}\' ');
+      }
     });
     // Subscribe to teams table for live name/logo updates
     _teamsStreamSub = Supabase.instance.client
@@ -74,8 +86,25 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
     _matchTimer = Timer.periodic(const Duration(minutes: 1), (_) {
       if (!mounted) return;
       setState(() {
-        if (_matchMinute < _matchDuration) { _matchMinute++; }
-        else { _matchTimer?.cancel(); _matchRunning = false; }
+        if (_matchMinute < _matchDuration) {
+          _matchMinute++;
+          // ── Persist current minute to DB every tick so spectators see live clock ──
+          if (_activeFixId != null) {
+            final ms = context.read<MatchState>();
+            final f = ms.generatedFixtures.firstWhereOrNull((x) => x.id == _activeFixId);
+            if (f != null) {
+              f.currentMinute = _matchMinute;
+              Supabase.instance.client
+                  .from('scheduled_matches')
+                  .update({'current_minute': _matchMinute})
+                  .eq('id', _activeFixId!)
+                  .catchError((e) => debugPrint('⚠️ Minute save failed: $e'));
+            }
+          }
+        } else {
+          _matchTimer?.cancel();
+          _matchRunning = false;
+        }
       });
     });
   }
