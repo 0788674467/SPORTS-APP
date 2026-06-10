@@ -800,15 +800,6 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
                   style: TextButton.styleFrom(foregroundColor: const Color(0xFF003087)))
               else const Row(children: [Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF00A651)), SizedBox(width: 4), Text('Confirmed', style: TextStyle(fontSize: 12, color: Color(0xFF00A651)))]),
             ]),
-            if (f.status == 'scheduled')
-              _FixtureLineupPanel(
-                fixture: f,
-                onKickOff: () {
-                  setState(() { _activeFixId = f.id; _selectedNav = 0; _matchMinute = 0; });
-                  ms.setLiveFixture(f.id);
-                  _startTimer();
-                },
-              ),
           ]),
         );
       }).toList()));
@@ -825,13 +816,60 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
   Widget _buildLineupView() {
     final ms = context.watch<MatchState>();
     
-    // Auto-load lineups if not already loaded
-    if (_activeFixId != null && !ms.lineups.containsKey(_activeFixId)) {
-      ms.loadLineupsForFixture(_activeFixId!);
+    // If no match is currently active, show scheduled matches for lineup verification
+    if (_activeFixId == null) {
+      final scheduledFixtures = ms.generatedFixtures.where((f) => f.status == 'scheduled').toList();
+      if (scheduledFixtures.isEmpty) {
+        return _empty(Icons.grid_view_rounded, 'No Lineups to Verify', 'There are no scheduled matches waiting for lineup verification.');
+      }
+      
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: scheduledFixtures.map((f) => Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade200),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)],
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Expanded(child: Text(f.homeTeam, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), textAlign: TextAlign.right)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(color: const Color(0xFF003087), borderRadius: BorderRadius.circular(6)),
+                        child: const Text('VS', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    Expanded(child: Text(f.awayTeam, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), textAlign: TextAlign.left)),
+                  ],
+                ),
+              ),
+              _FixtureLineupPanel(
+                fixture: f,
+                onKickOff: () {
+                  setState(() { _activeFixId = f.id; _selectedNav = 0; _matchMinute = 0; });
+                  ms.setLiveFixture(f.id);
+                  _startTimer();
+                },
+              ),
+            ],
+          ),
+        )).toList(),
+      );
     }
     
-    if (_activeFixId == null || !ms.lineups.containsKey(_activeFixId)) {
-      return _empty(Icons.grid_view_rounded, 'No Lineup Yet', 'Start a match and wait for the coach to submit a lineup.');
+    // Auto-load lineups if not already loaded for the active match
+    if (!ms.lineups.containsKey(_activeFixId)) {
+      ms.loadLineupsForFixture(_activeFixId!);
+      return _empty(Icons.grid_view_rounded, 'Loading Lineup...', 'Fetching the lineup for the active match.');
     }
     
     GeneratedFixture? f;
