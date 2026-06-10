@@ -885,7 +885,7 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
           const SizedBox(height: 10),
           ...starters.map((p) => GestureDetector(
             onTap: () => _showCardAssignDialog(p),
-            onLongPress: () => _onLongPressLineupPlayer(p),
+            onLongPress: () => _showPlayerOptionsSheet(p),
             child: Container(margin: const EdgeInsets.only(bottom: 8), padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: p.hasRed ? Colors.red.shade50 : (p.hasYellow ? Colors.amber.shade50 : Colors.white),
@@ -917,7 +917,7 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
             const Text('Bench / Substituted', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             ...bench.map((p) => GestureDetector(
-              onLongPress: () => _onLongPressLineupPlayer(p),
+              onLongPress: () => _showPlayerOptionsSheet(p),
               child: Container(margin: const EdgeInsets.only(bottom: 6), padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(10)),
                 child: Row(children: [
@@ -934,7 +934,7 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
             )),
           ],
           const SizedBox(height: 12),
-          Text('Tap a player to assign a card. Long press to remove.', style: TextStyle(fontSize: 11, color: Colors.grey.shade400, fontStyle: FontStyle.italic)),
+          Text('Tap a player to assign a card', style: TextStyle(fontSize: 11, color: Colors.grey.shade400, fontStyle: FontStyle.italic)),
         ],
       ),
     );
@@ -951,7 +951,7 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
       child: Text('${p.jerseyNo}', style: TextStyle(fontSize: radius * 0.6, fontWeight: FontWeight.bold, color: const Color(0xFF003087))));
   }
 
-  void _onLongPressLineupPlayer(LineupPlayer p) {
+  void _showPlayerOptionsSheet(LineupPlayer p) {
     if (_activeFixId == null) return;
     showModalBottomSheet(
       context: context,
@@ -967,35 +967,50 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
           children: [
             // Handle
             Container(
-              margin: const EdgeInsets.only(top: 10, bottom: 16),
+              margin: const EdgeInsets.only(top: 10, bottom: 6),
               width: 36, height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
+              decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+            ),
+            // Player Profile Info
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 16),
+              child: Row(
+                children: [
+                  _playerAvatar(p, radius: 28),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(p.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Text(p.team, style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500)),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(color: const Color(0xFF003087).withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                              child: Text('#${p.jerseyNo} • ${p.position}', style: const TextStyle(color: Color(0xFF003087), fontSize: 10, fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            // Player info
-            _playerAvatar(p, radius: 28),
-            const SizedBox(height: 12),
-            Text(p.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF003087))),
-            Text('${p.position} · #${p.jerseyNo}', style: const TextStyle(fontSize: 13, color: Colors.grey)),
-            const SizedBox(height: 16),
             const Divider(height: 1),
-            // Delete option
+            // Remove Option
             ListTile(
               leading: const Icon(Icons.person_remove_rounded, color: Colors.red),
-              title: const Text('Remove from Lineup',
-                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600)),
+              title: const Text('Remove from Lineup', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600)),
               onTap: () {
-                Navigator.pop(context); // close sheet
-                final ms = context.read<MatchState>();
-                ms.removePlayerFromLineup(_activeFixId!, p.team, p.name);
+                Navigator.pop(context);
+                context.read<MatchState>().removePlayerFromLineup(_activeFixId!, p.name);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('${p.name} removed from lineup'),
-                    backgroundColor: Colors.black87,
-                    duration: const Duration(seconds: 2),
-                  ),
+                  SnackBar(content: Text('${p.name} removed from lineup.'), backgroundColor: Colors.red),
                 );
               },
             ),
@@ -1005,8 +1020,6 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
       ),
     );
   }
-
-
 
   void _showCardAssignDialog(LineupPlayer p) {
     if (_activeFixId == null) return;

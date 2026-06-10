@@ -540,10 +540,10 @@ class MatchState extends ChangeNotifier {
     }
   }
 
-  /// Removes a player from the active match lineup (local state for this match).
-  void removePlayerFromLineup(String fixtureId, String teamName, String playerName) {
+  /// Removes a player from the local match lineup
+  void removePlayerFromLineup(String fixtureId, String playerName) {
     if (lineups.containsKey(fixtureId)) {
-      lineups[fixtureId]!.removeWhere((p) => p.team == teamName && p.name == playerName);
+      lineups[fixtureId]!.removeWhere((p) => p.name == playerName);
       notifyListeners();
     }
   }
