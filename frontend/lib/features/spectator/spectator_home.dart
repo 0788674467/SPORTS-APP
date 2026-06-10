@@ -1282,88 +1282,173 @@ class _SpectatorHomeState extends State<SpectatorHome>
     final replyPreview = m['reply_to_preview'] as String?;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return _SwipeToReplyWrapper(
-      onReply: () => setState(() => _replyingTo = m),
-      isMe: isMe,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        decoration: BoxDecoration(
-          color: isMe ? AppColors.mmwNavy.withOpacity(0.07) : Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(16),
-          border: isMe
-              ? Border.all(color: AppColors.mmwNavy.withOpacity(0.15))
-              : Border.all(color: AppColors.divider),
-          boxShadow: isMe ? null : [
-            BoxShadow(
-              color: AppColors.mmwNavy.withOpacity(0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Reply preview ──────────────────────────────────────
-            if (replyPreview != null)
-              Container(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? Colors.white.withOpacity(0.06)
-                      : AppColors.mmwNavy.withOpacity(0.06),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  border: Border(
-                    left: BorderSide(color: AppColors.mmwGold, width: 3),
-                  ),
-                ),
-                child: Text(
-                  replyPreview.length > 80 ? '${replyPreview.substring(0, 80)}…' : replyPreview,
-                  style: TextStyle(
-                    color: isDark ? Colors.white60 : AppColors.textMid,
-                    fontSize: 11,
-                    fontStyle: FontStyle.italic,
-                    height: 1.3,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+    return GestureDetector(
+      onLongPress: () => _onLongPressMessage(m, isMe),
+      child: _SwipeToReplyWrapper(
+        onReply: () => setState(() => _replyingTo = m),
+        isMe: isMe,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          decoration: BoxDecoration(
+            color: isMe ? AppColors.mmwNavy.withOpacity(0.07) : Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(16),
+            border: isMe
+                ? Border.all(color: AppColors.mmwNavy.withOpacity(0.15))
+                : Border.all(color: AppColors.divider),
+            boxShadow: isMe ? null : [
+              BoxShadow(
+                color: AppColors.mmwNavy.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
-            // ── Main message body ──────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(userDisp,
-                          style: TextStyle(
-                            color: isMe ? AppColors.mmwNavy : AppColors.mmwGreen,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
-                          )),
-                      const Spacer(),
-                      Text(timeStr, style: const TextStyle(color: AppColors.textLight, fontSize: 10)),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    m['message']!,
-                    style: TextStyle(
-                      color: isDark ? Colors.white : AppColors.textDark,
-                      fontSize: 13,
-                      height: 1.4,
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Reply preview ──────────────────────────────────────
+              if (replyPreview != null)
+                Container(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withOpacity(0.06)
+                        : AppColors.mmwNavy.withOpacity(0.06),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                    border: Border(
+                      left: BorderSide(color: AppColors.mmwGold, width: 3),
                     ),
                   ),
-                ],
+                  child: Text(
+                    replyPreview.length > 80 ? '${replyPreview.substring(0, 80)}…' : replyPreview,
+                    style: TextStyle(
+                      color: isDark ? Colors.white60 : AppColors.textMid,
+                      fontSize: 11,
+                      fontStyle: FontStyle.italic,
+                      height: 1.3,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              // ── Main message body ──────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(userDisp,
+                            style: TextStyle(
+                              color: isMe ? AppColors.mmwNavy : AppColors.mmwGreen,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                            )),
+                        const Spacer(),
+                        Text(timeStr, style: const TextStyle(color: AppColors.textLight, fontSize: 10)),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      m['message']!,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : AppColors.textDark,
+                        fontSize: 13,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _onLongPressMessage(Map<String, dynamic> m, bool isMe) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        margin: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle
+            Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 6),
+              width: 36, height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
+            // Message preview
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 6, 20, 4),
+              child: Text(
+                (m['message'] as String? ?? '').length > 60
+                    ? '${(m['message'] as String).substring(0, 60)}…'
+                    : (m['message'] as String? ?? ''),
+                style: const TextStyle(color: AppColors.textMid, fontSize: 12),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const Divider(height: 1),
+            // Reply option (always available)
+            ListTile(
+              leading: const Icon(Icons.reply_rounded, color: AppColors.mmwNavy),
+              title: const Text('Reply', style: TextStyle(fontWeight: FontWeight.w600)),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() => _replyingTo = m);
+              },
+            ),
+            // Delete option (only own messages)
+            if (isMe) ...[
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                title: const Text('Delete Message',
+                    style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600)),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await _deleteMessage(m['id'] as String);
+                },
+              ),
+            ],
+            const SizedBox(height: 8),
           ],
         ),
       ),
     );
   }
+
+  Future<void> _deleteMessage(String messageId) async {
+    try {
+      await Supabase.instance.client
+          .from('spectator_chats')
+          .delete()
+          .eq('id', messageId);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not delete message: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
