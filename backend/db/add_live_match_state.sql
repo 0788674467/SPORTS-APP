@@ -22,7 +22,4 @@ CREATE POLICY "referee update live match"
     (auth.jwt() -> 'user_metadata' ->> 'role') IN ('admin', 'referee')
   );
 
--- 4. Make sure realtime is still enabled
-ALTER PUBLICATION supabase_realtime ADD TABLE public.scheduled_matches;
-
 -- Done! Now the Flutter app can save and restore events + minute across all devices.
