@@ -800,6 +800,27 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
                   style: TextButton.styleFrom(foregroundColor: const Color(0xFF003087)))
               else const Row(children: [Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF00A651)), SizedBox(width: 4), Text('Confirmed', style: TextStyle(fontSize: 12, color: Color(0xFF00A651)))]),
             ]),
+            if (f.status == 'scheduled') ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: ms.verifiedFixtures.contains(f.id) ? () {
+                    setState(() { _activeFixId = f.id; _selectedNav = 0; _matchMinute = 0; });
+                    ms.setLiveFixture(f.id);
+                    _startTimer();
+                  } : null,
+                  icon: const Icon(Icons.play_circle_rounded, size: 18),
+                  label: Text(ms.verifiedFixtures.contains(f.id) ? 'Kick Off Match' : 'Verify Lineup First'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ms.verifiedFixtures.contains(f.id) ? const Color(0xFF00A651) : Colors.grey.shade300,
+                    foregroundColor: ms.verifiedFixtures.contains(f.id) ? Colors.white : Colors.grey.shade600,
+                    disabledBackgroundColor: Colors.grey.shade200,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+            ]
           ]),
         );
       }).toList()));
@@ -854,10 +875,12 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
               ),
               _FixtureLineupPanel(
                 fixture: f,
-                onKickOff: () {
-                  setState(() { _activeFixId = f.id; _selectedNav = 0; _matchMinute = 0; });
-                  ms.setLiveFixture(f.id);
-                  _startTimer();
+                isVerificationMode: true,
+                onVerify: () {
+                  ms.verifyFixtureLineup(f.id);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Lineup verified! You can now Kick Off in My Fixtures.'), backgroundColor: Color(0xFF00A651)),
+                  );
                 },
               ),
             ],
@@ -1998,8 +2021,17 @@ enum EventType { goal, assist, yellow, red, corner, shot, penalty, sub }
 // ─────────────────────────────────────────────────────────────────────────────
 class _FixtureLineupPanel extends StatefulWidget {
   final GeneratedFixture fixture;
-  final VoidCallback onKickOff;
-  const _FixtureLineupPanel({required this.fixture, required this.onKickOff});
+  final VoidCallback? onKickOff;
+  final VoidCallback? onVerify;
+  final bool isVerificationMode;
+
+  const _FixtureLineupPanel({
+    Key? key,
+    required this.fixture,
+    this.onKickOff,
+    this.onVerify,
+    this.isVerificationMode = false,
+  }) : super(key: key);
 
   @override
   State<_FixtureLineupPanel> createState() => _FixtureLineupPanelState();
@@ -2172,12 +2204,12 @@ class _FixtureLineupPanelState extends State<_FixtureLineupPanel>
 
         const SizedBox(height: 8),
 
-        // ── Kick Off button (only enabled when verified) ─────────────────
+        // ── Kick Off or Verify button (only enabled when verified checkbox is checked) ─────────────────
         SizedBox(width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed: _verified ? widget.onKickOff : null,
-            icon: const Icon(Icons.play_circle_rounded, size: 18),
-            label: const Text('Kick Off Match'),
+            onPressed: _verified ? (widget.isVerificationMode ? widget.onVerify : widget.onKickOff) : null,
+            icon: Icon(widget.isVerificationMode ? Icons.verified_user_rounded : Icons.play_circle_rounded, size: 18),
+            label: Text(widget.isVerificationMode ? 'Mark Lineup as Verified' : 'Kick Off Match'),
             style: ElevatedButton.styleFrom(
               backgroundColor: _verified ? const Color(0xFF00A651) : Colors.grey.shade300,
               foregroundColor: _verified ? Colors.white : Colors.grey.shade500,

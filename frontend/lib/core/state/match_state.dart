@@ -578,6 +578,12 @@ class MatchState extends ChangeNotifier {
 
   // ─── Live Match Events ────────────────────────────────────────────────────
 
+  /// Marks a scheduled fixture's lineup as verified
+  void verifyFixtureLineup(String fixtureId) {
+    verifiedFixtures.add(fixtureId);
+    notifyListeners();
+  }
+
   /// Sets a fixture as the currently live match and persists the 'live' status to Supabase.
   void setLiveFixture(String fixtureId) {
     activeFixtureId = fixtureId;
@@ -796,8 +802,14 @@ class MatchState extends ChangeNotifier {
 
   // ─── Helpers ──────────────────────────────────────────────────────────────
 
-  /// Currently active fixture ID
+  // The currently active live fixture
   String? activeFixtureId;
+  
+  // Set of fixture IDs that have had their lineups verified by the referee
+  final Set<String> verifiedFixtures = {};
+
+  // For UI: to highlight the live fixture in a list
+  int? liveFixtureIndex;
   
   /// Match duration in minutes (default: 90)
   int matchDurationMinutes = 90;
