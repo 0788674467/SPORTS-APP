@@ -540,6 +540,14 @@ class MatchState extends ChangeNotifier {
     }
   }
 
+  /// Removes a player from the active match lineup (local state for this match).
+  void removePlayerFromLineup(String fixtureId, String teamName, String playerName) {
+    if (lineups.containsKey(fixtureId)) {
+      lineups[fixtureId]!.removeWhere((p) => p.team == teamName && p.name == playerName);
+      notifyListeners();
+    }
+  }
+
   /// Loads squad players for a specific team
   Future<List<LineupPlayer>?> _loadTeamSquad(String teamName) async {
     try {
