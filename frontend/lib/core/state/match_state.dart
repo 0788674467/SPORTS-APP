@@ -551,21 +551,36 @@ class MatchState extends ChangeNotifier {
   /// Loads squad players for a specific team
   Future<List<LineupPlayer>?> _loadTeamSquad(String teamName) async {
     try {
+      // First try approved squads
       final teamResponse = await _db
           .from('teams')
-          .select('id, players(*)')
+          .select('id, submission_status, players(full_name, jersey_number, position, photo_url)')
           .eq('name', teamName)
-          .eq('submission_status', 'approved')
-          .single();
+          .maybeSingle();
 
+      if (teamResponse == null) {
+        debugPrint('⚠️ No team found with name: $teamName');
+        return null;
+      }
+
+      final submissionStatus = teamResponse['submission_status'] as String? ?? 'draft';
       final players = (teamResponse['players'] as List<dynamic>? ?? [])
           .cast<Map<String, dynamic>>();
 
-      if (players.isEmpty) return null;
+      if (players.isEmpty) {
+        debugPrint('⚠️ No players found for team: $teamName (status: $submissionStatus)');
+        return null;
+      }
+
+      // Allow approved OR submitted squads to show (submitted = coach done, waiting admin)
+      if (submissionStatus != 'approved' && submissionStatus != 'submitted') {
+        debugPrint('⚠️ Squad for $teamName is still in draft — cannot show lineup');
+        return null;
+      }
 
       return players.map((p) => LineupPlayer(
         name: p['full_name'] as String? ?? 'Unknown',
-        position: p['position'] as String? ?? 'Unknown',
+        position: p['position'] as String? ?? '—',
         jerseyNo: p['jersey_number'] as int? ?? 0,
         team: teamName,
         photoUrl: p['photo_url'] as String?,

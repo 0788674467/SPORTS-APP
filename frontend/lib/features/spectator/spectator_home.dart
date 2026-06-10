@@ -2678,17 +2678,40 @@ class _SpectatorHomeState extends State<SpectatorHome>
     );
   }
 
-  void _showLineupModal(BuildContext context) {
+  void _showLineupModal(BuildContext context) async {
     final ms = context.read<MatchState>();
     final liveF = ms.liveFixture;
-    
-    // Load lineups for the live fixture if available
-    if (liveF != null && !ms.lineups.containsKey(liveF.id)) {
-      ms.loadLineupsForFixture(liveF.id);
+
+    if (liveF == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No live match right now.'), backgroundColor: Colors.orange),
+      );
+      return;
     }
-    
-    final homeLineup = liveF != null ? ms.lineups[liveF.id]?.where((p) => p.team == liveF.homeTeam).toList() : null;
-    final awayLineup = liveF != null ? ms.lineups[liveF.id]?.where((p) => p.team == liveF.awayTeam).toList() : null;
+
+    // Await lineup load if not already in state
+    if (!ms.lineups.containsKey(liveF.id)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(children: [
+              SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+              SizedBox(width: 12),
+              Text('Loading lineups...'),
+            ]),
+            duration: Duration(seconds: 3),
+            backgroundColor: Color(0xFF003087),
+          ),
+        );
+      }
+      await ms.loadLineupsForFixture(liveF.id);
+      if (mounted) ScaffoldMessenger.of(context).clearSnackBars();
+    }
+
+    if (!mounted) return;
+
+    final homeLineup = ms.lineups[liveF.id]?.where((p) => p.team == liveF.homeTeam).toList();
+    final awayLineup = ms.lineups[liveF.id]?.where((p) => p.team == liveF.awayTeam).toList();
 
     showModalBottomSheet(
       context: context,
@@ -2706,16 +2729,16 @@ class _SpectatorHomeState extends State<SpectatorHome>
                 labelColor: AppColors.mmwGold,
                 unselectedLabelColor: Colors.white54,
                 tabs: [
-                  Tab(text: liveF?.homeTeam.toUpperCase() ?? 'HOME'),
-                  Tab(text: liveF?.awayTeam.toUpperCase() ?? 'AWAY')
+                  Tab(text: liveF.homeTeam.toUpperCase()),
+                  Tab(text: liveF.awayTeam.toUpperCase()),
                 ],
               ),
               SizedBox(
                 height: MediaQuery.of(context).size.height * 0.5,
                 child: TabBarView(
                   children: [
-                    _buildSingleTeamLineup(context, liveF?.homeTeam ?? 'HOME', '4-3-3', AppColors.mmwNavy, _homePinsFull, true, homeLineup),
-                    _buildSingleTeamLineup(context, liveF?.awayTeam ?? 'AWAY', '4-4-2', AppColors.mmwGreen, _awayPinsFull, false, awayLineup),
+                    _buildSingleTeamLineup(context, liveF.homeTeam, '4-3-3', AppColors.mmwNavy, _homePinsFull, true, homeLineup),
+                    _buildSingleTeamLineup(context, liveF.awayTeam, '4-4-2', AppColors.mmwGreen, _awayPinsFull, false, awayLineup),
                   ],
                 ),
               ),
@@ -2725,6 +2748,7 @@ class _SpectatorHomeState extends State<SpectatorHome>
       ),
     );
   }
+
 
   Widget _buildSingleTeamLineup(
     BuildContext context,
