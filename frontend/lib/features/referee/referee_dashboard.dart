@@ -1784,8 +1784,24 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
     }
   }
 
-  void _promptEvent(EventType type, GeneratedFixture f) {
+  void _promptEvent(EventType type, GeneratedFixture f) async {
     final ms = context.read<MatchState>();
+    
+    // If lineup not loaded yet, load it first then re-open
+    if (_activeFixId != null && !ms.lineups.containsKey(_activeFixId)) {
+      // Show brief loading snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Row(children: [
+          SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+          SizedBox(width: 12),
+          Text('Loading lineup...'),
+        ]), duration: Duration(seconds: 2), backgroundColor: Color(0xFF003087)),
+      );
+      await ms.loadLineupsForFixture(_activeFixId!);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).clearSnackBars();
+    }
+
     final assistCtrl = TextEditingController();
 
     // Get all players from the loaded lineups (keyed by fixtureId)
