@@ -8,7 +8,8 @@ import '../../core/state/match_state.dart';
 class LineupBuilder extends StatefulWidget {
   final bool darkMode;
   final List<Map<String, dynamic>> squad; // Passed in from coach dashboard
-  const LineupBuilder({super.key, this.darkMode = false, this.squad = const []});
+  final String? teamId; // Coach's team UUID for persistence
+  const LineupBuilder({super.key, this.darkMode = false, this.squad = const [], this.teamId});
   @override
   State<LineupBuilder> createState() => _LineupBuilderState();
 }
@@ -16,6 +17,7 @@ class LineupBuilder extends StatefulWidget {
 class _LineupBuilderState extends State<LineupBuilder> {
   String _formation = '4-3-3';
   bool _shared = false;
+  bool _loadingLineup = false;
 
   static const _formations = ['4-3-3', '4-4-2', '3-5-2', '5-3-2'];
 
@@ -29,16 +31,39 @@ class _LineupBuilderState extends State<LineupBuilder> {
   @override
   void initState() {
     super.initState();
-    _rebuildFromSquad(widget.squad);
+    if (widget.squad.isNotEmpty) {
+      _rebuildFromSquad(widget.squad);
+    }
+    _loadExistingLineup();
   }
 
   @override
   void didUpdateWidget(LineupBuilder old) {
     super.didUpdateWidget(old);
-    if (old.squad != widget.squad) {
+    if (old.squad != widget.squad && widget.squad.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _rebuildFromSquad(widget.squad);
       });
+    }
+  }
+
+  /// If a lineup was already saved for this fixture+team, restore it.
+  Future<void> _loadExistingLineup() async {
+    if (widget.teamId == null) return;
+    final ms = context.read<MatchState>();
+    final lf = ms.liveFixture ?? (ms.generatedFixtures.isNotEmpty ? ms.generatedFixtures.first : null);
+    if (lf == null) return;
+
+    setState(() => _loadingLineup = true);
+    final saved = await ms.loadSavedLineup(lf.id, widget.teamId!);
+    if (saved.isNotEmpty && mounted) {
+      setState(() {
+        _allPlayers = saved;
+        _shared = true;
+        _loadingLineup = false;
+      });
+    } else {
+      if (mounted) setState(() => _loadingLineup = false);
     }
   }
 
@@ -105,6 +130,10 @@ class _LineupBuilderState extends State<LineupBuilder> {
     // Debug: Print squad data to see what's being passed
     debugPrint('LineupBuilder: Squad data: ${widget.squad}');
     
+    if (_loadingLineup) {
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF00A651)));
+    }
+
     if (widget.squad.isEmpty) {
       return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
         Icon(Icons.group_add_rounded, size: 64, color: Colors.grey.shade300),
@@ -387,7 +416,7 @@ class _LineupBuilderState extends State<LineupBuilder> {
         ])),
         const SizedBox(width: 12),
         ElevatedButton.icon(
-          onPressed: _starters.length < 11 ? null : () {
+          onPressed: (_starters.length < 11 || widget.teamId == null) ? null : () async {
             final ms = context.read<MatchState>();
             final lf = ms.liveFixture ?? (ms.generatedFixtures.isNotEmpty ? ms.generatedFixtures.first : null);
             if (lf != null) {
@@ -399,13 +428,17 @@ class _LineupBuilderState extends State<LineupBuilder> {
                 photoUrl: p['photoUrl'] ?? _bytesToDataUri(p['photoBytes'] as Uint8List?),
               )).toList();
               ms.submitLineup(lf.id, lineupPlayers);
+              // Persist to Supabase
+              await ms.saveLineup(lf.id, widget.teamId!, _allPlayers);
             }
             setState(() => _shared = true);
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: const Row(children: [Icon(Icons.check_circle_rounded, color: Colors.white), SizedBox(width: 8), Text('Lineup shared with referee!')]),
-              backgroundColor: const Color(0xFF00A651), behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), margin: const EdgeInsets.all(16),
-            ));
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: const Row(children: [Icon(Icons.check_circle_rounded, color: Colors.white), SizedBox(width: 8), Text('Lineup shared with referee!')]),
+                backgroundColor: const Color(0xFF00A651), behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), margin: EdgeInsets.all(16),
+              ));
+            }
           },
           icon: Icon(_shared ? Icons.check_rounded : Icons.share_rounded, size: 16),
           label: Text(_shared ? 'Shared ✓' : 'Share with Ref'),

@@ -47,6 +47,49 @@ export const analyticsService = {
             .sort((a, b) => b.points - a.points || b.gd - a.gd || b.gf - a.gf);
     },
 
+    /**
+     * Computes league standings from the scheduled_matches table (current schema).
+     * Returns teams sorted by points, then goal difference, then goals scored.
+     */
+    async getStandingsFromScheduled(): Promise<StandingEntry[]> {
+        const { data: matches, error } = await supabaseAdmin
+            .from('scheduled_matches')
+            .select('home_team, away_team, home_score, away_score, status')
+            .eq('status', 'completed');
+        if (error) throw new Error(error.message);
+
+        const table = new Map<
+            string,
+            { played: number; won: number; drawn: number; lost: number; gf: number; ga: number; points: number }
+        >();
+
+        const getRow = (team: string) => {
+            if (!table.has(team))
+                table.set(team, { played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, points: 0 });
+            return table.get(team)!;
+        };
+
+        for (const m of matches ?? []) {
+            const home = getRow(m.home_team);
+            const away = getRow(m.away_team);
+            const hs = m.home_score ?? 0;
+            const as = m.away_score ?? 0;
+
+            home.played++;
+            away.played++;
+            home.gf += hs; home.ga += as;
+            away.gf += as; away.ga += hs;
+
+            if (hs > as) { home.won++; home.points += 3; away.lost++; }
+            else if (hs < as) { away.won++; away.points += 3; home.lost++; }
+            else { home.drawn++; away.drawn++; home.points++; away.points++; }
+        }
+
+        return Array.from(table.entries())
+            .map(([team, stats]) => ({ team, ...stats, gd: stats.gf - stats.ga }))
+            .sort((a, b) => b.points - a.points || b.gd - a.gd || b.gf - a.gf);
+    },
+
     async getTopScorers(fixtureId: string, limit = 10) {
         const { data, error } = await supabaseAdmin
             .from('match_events')

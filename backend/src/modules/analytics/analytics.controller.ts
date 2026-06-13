@@ -10,6 +10,13 @@ export const analyticsController = {
         } catch (err) { next(err); }
     },
 
+    async getStandingsFromScheduled(req: AuthRequest, res: Response, next: NextFunction) {
+        try {
+            const data = await analyticsService.getStandingsFromScheduled();
+            res.json({ success: true, data });
+        } catch (err) { next(err); }
+    },
+
     async getTopScorers(req: AuthRequest, res: Response, next: NextFunction) {
         try {
             const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;

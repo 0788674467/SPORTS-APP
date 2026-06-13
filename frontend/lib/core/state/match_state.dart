@@ -268,6 +268,7 @@ class MatchState extends ChangeNotifier {
         // The old matches table subscription has been removed to prevent channelError.
         // Live scores and statuses are now fully handled by the scheduled_matches table.
         .subscribe();
+    initSubstitutionListener();
   }
 
   void _handleUpdate(Map<String, dynamic> data) {
@@ -318,6 +319,7 @@ class MatchState extends ChangeNotifier {
   @override
   void dispose() {
     _fixtureSubscription?.unsubscribe();
+    _substitutionChannel?.unsubscribe();
     super.dispose();
   }
 
@@ -341,7 +343,7 @@ class MatchState extends ChangeNotifier {
       liveFixtureIndex = liveIdx != -1 ? liveIdx : null;
       
       // Rebuild standings from completed fixtures
-      _rebuildStandings();
+      await _rebuildStandings();
     } catch (e) {
       debugPrint('loadFixtures error: $e');
     } finally {
@@ -517,6 +519,63 @@ class MatchState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Persists a coach's lineup to Supabase `lineups` table.
+  /// [fixtureId] - The fixture ID
+  /// [teamId] - The coach's team UUID
+  /// [players] - All players with starter flag; first 11 = starters, rest = reserves
+  Future<void> saveLineup(String fixtureId, String teamId, List<Map<String, dynamic>> players) async {
+    if (players.isEmpty) return;
+    try {
+      // Delete any existing lineup for this fixture+team combo
+      await _db.from('lineups').delete().match({'fixture_id': fixtureId, 'team_id': teamId});
+
+      // Insert each player
+      final rows = players.map((p) => {
+        'fixture_id': fixtureId,
+        'team_id': teamId,
+        'player_id': p['id'],
+        'jersey_number': int.tryParse(p['num'] ?? '0') ?? 0,
+        'position': p['pos'] ?? 'MID',
+        'is_starter': p['starter'] == true,
+        'is_locked': false,
+      }).toList();
+
+      await _db.from('lineups').insert(rows);
+      debugPrint('✅ Lineup saved for fixture $fixtureId team $teamId (${rows.length} players)');
+    } catch (e) {
+      debugPrint('⚠️ saveLineup error: $e');
+    }
+  }
+
+  /// Loads a previously saved lineup for a fixture+team from Supabase.
+  /// Returns a list of player maps matching the lineup_builder format, or empty.
+  Future<List<Map<String, dynamic>>> loadSavedLineup(String fixtureId, String teamId) async {
+    try {
+      final rows = await _db
+          .from('lineups')
+          .select('player_id, jersey_number, position, is_starter, players!player_id(id, full_name, position, jersey_number, photo_url)')
+          .match({'fixture_id': fixtureId, 'team_id': teamId})
+          .order('is_starter', ascending: false);
+
+      if (rows.isEmpty) return [];
+
+      return (rows as List).map((r) {
+        final p = r['players'] as Map<String, dynamic>? ?? {};
+        return {
+          'id': p['id'] ?? r['player_id'],
+          'name': p['full_name'] ?? 'Unknown',
+          'num': (r['jersey_number'] ?? p['jersey_number'] ?? 0).toString(),
+          'pos': r['position'] ?? p['position'] ?? 'MID',
+          'photoUrl': p['photo_url'],
+          'starter': r['is_starter'] == true,
+        };
+      }).toList();
+    } catch (e) {
+      debugPrint('⚠️ loadSavedLineup error: $e');
+      return [];
+    }
+  }
+
   /// Loads lineups from approved team squads for a specific fixture
   Future<void> loadLineupsForFixture(String fixtureId) async {
     try {
@@ -589,6 +648,17 @@ class MatchState extends ChangeNotifier {
       debugPrint('Error loading team squad for $teamName: $e');
       return null;
     }
+  }
+
+  /// Saves both teams' lineups to the match report for spectator display
+  Future<void> persistMatchLineups(String fixtureId, String homeTeamId, String awayTeamId) async {
+    final home = lineups[fixtureId]?.where((p) => p.team.isNotEmpty).toList() ?? [];
+    try {
+      await _db.from('scheduled_matches').update({
+        'home_lineup': home.where((p) => true).map((p) => p.name).toList(),
+        'away_lineup': const <String>[],
+      }).eq('id', fixtureId);
+    } catch (_) {}
   }
 
   // ─── Live Match Events ────────────────────────────────────────────────────
@@ -788,8 +858,39 @@ class MatchState extends ChangeNotifier {
   List<StandingEntry> standings = [];
 
   /// Rebuilds the standings table from all completed fixtures.
-  void _rebuildStandings() {
+  /// First tries the backend API, falls back to local computation.
+  Future<void> _rebuildStandings() async {
     standings.clear();
+
+    // Try backend API first
+    try {
+      final response = await _db.from('scheduled_matches').select('home_team, away_team, home_score, away_score, status').eq('status', 'completed');
+      final teams = <String>{};
+      for (final f in generatedFixtures) {
+        teams.add(f.homeTeam);
+        teams.add(f.awayTeam);
+      }
+      for (final t in teams) standings.add(StandingEntry(t));
+      for (final r in response) {
+        final home = _standing(r['home_team'] as String);
+        final away = _standing(r['away_team'] as String);
+        if (home == null || away == null) continue;
+        final hs = r['home_score'] as int? ?? 0;
+        final as = r['away_score'] as int? ?? 0;
+        home.played++; away.played++;
+        home.goalsFor += hs; home.goalsAgainst += as;
+        away.goalsFor += as; away.goalsAgainst += hs;
+        if (hs > as) { home.wins++; home.points += 3; away.losses++; }
+        else if (hs < as) { away.wins++; away.points += 3; home.losses++; }
+        else { home.draws++; home.points++; away.draws++; away.points++; }
+      }
+      standings.sort((a, b) { final pc = b.points.compareTo(a.points); return pc != 0 ? pc : b.goalDifference.compareTo(a.goalDifference); });
+      return;
+    } catch (_) {
+      // Fallback to local
+    }
+
+    // Local fallback
     final teams = <String>{};
     for (final f in generatedFixtures) {
       teams.add(f.homeTeam);
@@ -868,18 +969,126 @@ class MatchState extends ChangeNotifier {
     return count > 0 ? count : 18;
   }
 
-  // ─── Pending Substitutions ────────────────────────────────────────────────
-
+// ─── Pending Substitutions (Supabase Realtime) ──────────────────────────────
+ 
   /// List of pending substitution requests from coaches
   final List<Map<String, dynamic>> pendingSubstitutions = [];
+ 
+  /// Internal: realtime subscription for substitution_requests
+  RealtimeChannel? _substitutionChannel;
+ 
+  /// Initializes realtime listener for substitution requests.
+  void initSubstitutionListener() {
+    _substitutionChannel?.unsubscribe();
+    _substitutionChannel = Supabase.instance.client
+        .channel('substitution-requests')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'substitution_requests',
+          callback: (payload) {
+            _onSubstitutionChange(payload);
+          },
+        )
+        .subscribe();
+  }
+ 
+  void _onSubstitutionChange(dynamic payload) {
+    final record = payload.newRecord;
+    final oldRecord = payload.oldRecord;
+    final eventType = payload.eventType;
+ 
+    if (eventType == 'INSERT') {
+      // New substitution request from coach
+      final sub = _mapSubRecord(record);
+      pendingSubstitutions.add(sub);
+    } else if (eventType == 'UPDATE') {
+      // Status change (approved/rejected)
+      final index = pendingSubstitutions.indexWhere((s) => s['id'] == record['id']);
+      if (index != -1) {
+        pendingSubstitutions[index] = _mapSubRecord(record);
+        // If approved, record the substitution event
+        if (record['status'] == 'approved' && oldRecord?['status'] != 'approved') {
+          _recordApprovedSubstitution(record);
+        }
+      }
+    } else if (eventType == 'DELETE') {
+      pendingSubstitutions.removeWhere((s) => s['id'] == oldRecord['id']);
+    }
+    notifyListeners();
+  }
+ 
+  Map<String, dynamic> _mapSubRecord(Map<String, dynamic> r) => {
+    'id': r['id'],
+    'fixtureId': r['match_id'],
+    'teamId': r['team_id'],
+    'playerOffId': r['player_off_id'],
+    'playerOnId': r['player_on_id'],
+    'status': r['status'],
+    'minute': r['minute'],
+    'requestedAt': r['requested_at'],
+    'reviewedAt': r['reviewed_at'],
+  };
+ 
+  Future<void> _recordApprovedSubstitution(Map<String, dynamic> r) async {
+    final playerOffName = await _resolvePlayerName(r['player_off_id'] as String);
+    final playerOnName = await _resolvePlayerName(r['player_on_id'] as String);
+    final teamName = await _resolveTeamName(r['team_id'] as String);
 
-  /// Requests a substitution (coach action).
-  void requestSubstitution({
+    if (playerOffName == null || playerOnName == null || teamName == null) return;
+
+    recordSubstitution(
+      fixtureId: r['match_id'] as String,
+      team: teamName,
+      playerOut: playerOffName,
+      playerIn: playerOnName,
+      minute: r['minute'] as int? ?? 0,
+    );
+  }
+
+  Future<String?> _resolvePlayerName(String playerId) async {
+    final res = await Supabase.instance.client
+        .from('players')
+        .select('full_name')
+        .eq('id', playerId)
+        .maybeSingle();
+    return res?['full_name'] as String?;
+  }
+
+  Future<String?> _resolveTeamName(String teamId) async {
+    final res = await Supabase.instance.client
+        .from('teams')
+        .select('name')
+        .eq('id', teamId)
+        .maybeSingle();
+    return res?['name'] as String?;
+  }
+ 
+  /// Requests a substitution (coach action) — persists to Supabase.
+  Future<void> requestSubstitution({
     required String fixtureId,
     required String team,
     required String playerOut,
     required String playerIn,
-  }) {
+  }) async {
+    // Resolve team_id and player IDs from names
+    final teamId = await _resolveTeamId(team);
+    if (teamId == null) throw Exception('Could not resolve team ID for $team');
+    
+    final playerOffId = await _resolvePlayerId(playerOut, teamId);
+    if (playerOffId == null) throw Exception('Could not resolve player ID for $playerOut');
+    
+    final playerOnId = await _resolvePlayerId(playerIn, teamId);
+    if (playerOnId == null) throw Exception('Could not resolve player ID for $playerIn');
+ 
+    await Supabase.instance.client.from('substitution_requests').insert({
+      'match_id': fixtureId,
+      'team_id': teamId,
+      'player_off_id': playerOffId,
+      'player_on_id': playerOnId,
+      'status': 'pending',
+    });
+    // Local optimistic update
     pendingSubstitutions.add({
       'fixtureId': fixtureId, 'team': team,
       'playerOut': playerOut, 'playerIn': playerIn,
@@ -887,19 +1096,41 @@ class MatchState extends ChangeNotifier {
     });
     notifyListeners();
   }
-
-  /// Approves a pending substitution (referee action).
-  /// 
-  /// [index] - Index of the substitution in pendingSubstitutions list
-  /// [minute] - Minute when the substitution is approved
-  void approveSubstitution(int index, int minute) {
-    if (index >= pendingSubstitutions.length) return;
-    final sub = pendingSubstitutions[index];
-    sub['status'] = 'approved';
-    recordSubstitution(
-      fixtureId: sub['fixtureId'], team: sub['team'],
-      playerOut: sub['playerOut'], playerIn: sub['playerIn'], minute: minute,
-    );
-    notifyListeners();
+ 
+  /// Approves a pending substitution (referee action) — updates Supabase.
+  Future<void> approveSubstitution(String requestId, int minute) async {
+    await Supabase.instance.client
+        .from('substitution_requests')
+        .update({'status': 'approved', 'minute': minute, 'reviewed_at': DateTime.now().toIso8601String()})
+        .eq('id', requestId);
+    // Local update handled by realtime listener
   }
+ 
+  /// Rejects a pending substitution (referee action).
+  Future<void> rejectSubstitution(String requestId) async {
+    await Supabase.instance.client
+        .from('substitution_requests')
+        .update({'status': 'rejected', 'reviewed_at': DateTime.now().toIso8601String()})
+        .eq('id', requestId);
+  }
+ 
+  Future<String?> _resolveTeamId(String teamName) async {
+    final res = await Supabase.instance.client
+        .from('teams')
+        .select('id')
+        .eq('name', teamName)
+        .maybeSingle();
+    return res?['id'] as String?;
+  }
+ 
+  Future<String?> _resolvePlayerId(String playerName, String teamId) async {
+    final res = await Supabase.instance.client
+        .from('players')
+        .select('id')
+        .eq('full_name', playerName)
+        .eq('team_id', teamId)
+        .maybeSingle();
+    return res?['id'] as String?;
+  }
+ 
 }

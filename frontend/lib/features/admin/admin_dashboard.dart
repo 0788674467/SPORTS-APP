@@ -149,6 +149,8 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   String _venuesSortCol   = 'name';   bool _venuesSortAsc   = true;
   // Role filter for approvals
   String _approvalsRoleFilter = 'all';
+  // Position filter for players table
+  String _playersPositionFilter = 'all';
 
   // ─── Loading States ─────────────────────────────────────────────────────────
   bool _isLoadingPending = false;
@@ -777,20 +779,25 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
 
   // ─── Enhanced Notifications ─────────────────────────────────────────────────
   Widget _buildNotifications() {
-    final filteredNotifications = _searchQuery.isEmpty 
-        ? _liveNotifications
-        : _liveNotifications.where((n) => 
-            n.title.toLowerCase().contains(_searchQuery) ||
-            n.message.toLowerCase().contains(_searchQuery) ||
-            n.type.toLowerCase().contains(_searchQuery)
-          ).toList();
+    var filteredNotifications = _liveNotifications;
+    // Apply type filter
+    if (_selectedNotificationFilter.isNotEmpty) {
+      filteredNotifications = filteredNotifications.where((n) => n.type == _selectedNotificationFilter).toList();
+    }
+    // Apply search filter
+    if (_searchQuery.isNotEmpty) {
+      filteredNotifications = filteredNotifications.where((n) =>
+        n.title.toLowerCase().contains(_searchQuery) ||
+        n.message.toLowerCase().contains(_searchQuery) ||
+        n.type.toLowerCase().contains(_searchQuery)
+      ).toList();
+    }
 
     return Stack(children: [
       RefreshIndicator(
         onRefresh: () async {
           setState(() => _isLoadingNotifications = true);
-          // Simulate API call
-          await Future.delayed(const Duration(seconds: 1));
+          await _loadNotifications();
           setState(() => _isLoadingNotifications = false);
         },
         color: const Color(0xFF003087),
@@ -1858,7 +1865,17 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             onPressed: () async {
               final ap = Provider.of<auth.AuthProvider>(context, listen: false);
               await ap.approveUser(userId);
+              // Mark the pending registration notification as read
+              try {
+                await Supabase.instance.client
+                    .from('notifications')
+                    .update({'is_read': true})
+                    .eq('type', 'approval')
+                    .ilike('title', '%$userId%');
+              } catch (_) {}
+              _sendNotification(title: '$name Approved', message: '$name ($role) has been approved and given access.', type: 'approval');
               _fetchPending(); // Refresh list
+              _loadNotifications();
               if (!mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                 content: Row(children: [const Icon(Icons.check_circle_rounded, color: Colors.white), const SizedBox(width: 8), Expanded(child: Text('$name approved! Access granted.'))]),
@@ -3231,8 +3248,12 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   Widget _buildPlayers() {
     if (_isLoadingManagement) return const Center(child: CircularProgressIndicator(color: Color(0xFF00A651)));
 
-    // Search filter
+    // Position + search filter
     var players = _dynamicPlayers.where((p) {
+      if (_playersPositionFilter != 'all') {
+        final pos = (p['position'] as String? ?? '').toUpperCase();
+        if (pos != _playersPositionFilter.toUpperCase()) return false;
+      }
       if (_searchQuery.isEmpty) return true;
       return (p['full_name'] as String? ?? '').toLowerCase().contains(_searchQuery) ||
              (p['teams']?['name'] as String? ?? '').toLowerCase().contains(_searchQuery) ||
@@ -3264,7 +3285,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         child: Column(children: [
           // Toolbar
           Row(children: [
-            _filterChips(['all', 'gk', 'def', 'mid', 'fw'], 'all', (_) {}),
+            _filterChips(['all', 'gk', 'def', 'mid', 'fw'], _playersPositionFilter, (v) => setState(() => _playersPositionFilter = v)),
             const Spacer(),
             _resultCount(players.length, _dynamicPlayers.length),
           ]),

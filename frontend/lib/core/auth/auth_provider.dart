@@ -438,7 +438,7 @@ class AuthProvider extends ChangeNotifier {
           .from('players')
           .select('id, full_name, position, jersey_number, photo_url, team_id, '
                   'goals, assists, yellow_cards, red_cards, matches_played, '
-                  'teams!team_id(name)');
+                  'is_eligible, teams!team_id(name)');
       return List<Map<String, dynamic>>.from(res);
     } catch (e) {
       debugPrint('AuthProvider: Error fetching players (with stats): $e');

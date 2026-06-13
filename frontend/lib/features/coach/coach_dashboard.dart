@@ -337,7 +337,7 @@ class _CoachDashboardState extends State<CoachDashboard> with TickerProviderStat
   Widget _buildContent() {
     switch (_selectedNav) {
       case 1: return _buildMyMatches();
-      case 2: return LineupBuilder(darkMode: _darkMode, squad: _squad);
+      case 2: return LineupBuilder(darkMode: _darkMode, squad: _squad, teamId: _teamId);
       case 3: return const SubstitutionRequest();
       case 4: return _buildSquad();
       case 5: return _buildChatPlaceholder();
@@ -1123,7 +1123,13 @@ class _CoachDashboardState extends State<CoachDashboard> with TickerProviderStat
                 _squadTabController?.animateTo(0);
               } catch (e) {
                 debugPrint('Registration error: $e');
-                ScaffoldMessenger.of(context).showSnackBar(_snack('Error registering player', Colors.red));
+                String msg = 'Error registering player';
+                if (e.toString().contains('duplicate key') && e.toString().contains('jersey_number')) {
+                  msg = 'Jersey number ${_formJersey.text} is already taken on your team.';
+                } else if (e.toString().contains('duplicate key')) {
+                  msg = 'A player with these details already exists.';
+                }
+                ScaffoldMessenger.of(context).showSnackBar(_snack(msg, Colors.red));
               } finally {
                 setState(() => _isSquadLoading = false);
               }

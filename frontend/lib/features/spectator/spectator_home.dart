@@ -352,9 +352,10 @@ class _SpectatorHomeState extends State<SpectatorHome>
     final awayTeam = liveF?.awayTeam ?? 'Eagles Utd';
     final homeScore = liveF?.homeScore ?? 0;
     final awayScore = liveF?.awayScore ?? 0;
-    // Derive current minute from the last recorded event (MatchEvent has the minute field)
-    final lastEvent = (liveF != null && liveF.events.isNotEmpty) ? liveF.events.last : null;
-    final minuteLabel = lastEvent != null ? "${lastEvent.minute}'" : (liveF != null ? "LIVE" : "FT");
+    // Show live minute from fixture's currentMinute (updated by referee)
+    final currentMin = liveF?.currentMinute ?? 0;
+    final remaining = (90 - currentMin).clamp(0, 90);
+    final minuteLabel = liveF != null ? "${currentMin}'" : "FT";
 
     return SafeArea(
       child: AnimatedContainer(
@@ -502,6 +503,10 @@ class _SpectatorHomeState extends State<SpectatorHome>
                             ),
                             const SizedBox(height: 2),
                             Text('(0-0)', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 9)),
+                            if (liveF != null && liveF.status == 'live') ...[
+                              const SizedBox(height: 3),
+                              Text('$remaining remaining', style: TextStyle(color: AppColors.mmwGreen.withOpacity(0.8), fontSize: 9, fontWeight: FontWeight.w600)),
+                            ],
                           ],
                         ),
                       ),

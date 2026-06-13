@@ -41,36 +41,46 @@ class _SubstitutionRequestState extends State<SubstitutionRequest> {
     });
   }
 
-  void _tapBench(BuildContext context, LineupPlayer benchPlayer, MatchState ms, String teamName) {
+  Future<void> _tapBench(BuildContext context, LineupPlayer benchPlayer, MatchState ms, String teamName) async {
     if (_selectedStarter == null || _selectedFixId == null) return;
 
     final playerOut = _selectedStarter!.name;
     final playerIn  = benchPlayer.name;
-
-    // MatchState.requestSubstitution recorded for the referee to approve
-    ms.requestSubstitution(
-      fixtureId: _selectedFixId!,
-      team: teamName,
-      playerOut: playerOut,
-      playerIn: playerIn,
-    );
 
     setState(() {
       _selectedStarter = null;
       _showBench = false;
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Row(children: [
-        const Icon(Icons.swap_horiz_rounded, color: Colors.white),
-        const SizedBox(width: 8),
-        Expanded(child: Text('$playerOut ➜ $playerIn · Sent to referee!')),
-      ]),
-      backgroundColor: const Color(0xFF00A651),
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      margin: const EdgeInsets.all(16),
-    ));
+    try {
+      await ms.requestSubstitution(
+        fixtureId: _selectedFixId!,
+        team: teamName,
+        playerOut: playerOut,
+        playerIn: playerIn,
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Row(children: [
+            const Icon(Icons.swap_horiz_rounded, color: Colors.white),
+            const SizedBox(width: 8),
+            Expanded(child: Text('$playerOut ➜ $playerIn · Sent to referee!')),
+          ]),
+          backgroundColor: const Color(0xFF00A651),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(16),
+        ));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Failed to send request: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ));
+      }
+    }
   }
 
   @override

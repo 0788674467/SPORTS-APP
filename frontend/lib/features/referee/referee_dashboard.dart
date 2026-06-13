@@ -10,6 +10,8 @@ import '../../core/state/match_state.dart';
 import '../../shared/pitch_background.dart';
 import '../../shared/profile_dropdown.dart';
 import '../../shared/officials_chat.dart';
+import 'match_console.dart';
+import 'event_recorder.dart';
 
 class RefereeDashboard extends StatefulWidget {
   const RefereeDashboard({super.key});
@@ -83,29 +85,21 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
   void _startTimer() {
     _matchTimer?.cancel();
     _matchRunning = true;
-    _matchTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+    // ── Persist current minute from MatchConsole to DB so spectators see live clock ──
+    _matchTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (!mounted) return;
-      setState(() {
-        if (_matchMinute < _matchDuration) {
-          _matchMinute++;
-          // ── Persist current minute to DB every tick so spectators see live clock ──
-          if (_activeFixId != null) {
-            final ms = context.read<MatchState>();
-            final f = ms.generatedFixtures.firstWhereOrNull((x) => x.id == _activeFixId);
-            if (f != null) {
-              f.currentMinute = _matchMinute;
-              Supabase.instance.client
-                  .from('scheduled_matches')
-                  .update({'current_minute': _matchMinute})
-                  .eq('id', _activeFixId!)
-                  .catchError((e) => debugPrint('⚠️ Minute save failed: $e'));
-            }
-          }
-        } else {
-          _matchTimer?.cancel();
-          _matchRunning = false;
+      if (_activeFixId != null) {
+        final ms = context.read<MatchState>();
+        final f = ms.generatedFixtures.firstWhereOrNull((x) => x.id == _activeFixId);
+        if (f != null) {
+          _matchMinute = f.currentMinute;
+          Supabase.instance.client
+              .from('scheduled_matches')
+              .update({'current_minute': f.currentMinute})
+              .eq('id', _activeFixId!)
+              .catchError((e) => debugPrint('Minute save failed: $e'));
         }
-      });
+      }
     });
   }
 
@@ -310,98 +304,7 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
     f ??= ms.liveFixture;
     if (f == null) return _buildConsoleEmpty(ms);
 
-    return SingleChildScrollView(padding: const EdgeInsets.all(16), child: Column(children: [
-      // Scoreboard
-      Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: [Color(0xFF0D0F2A), Color(0xFF1A0835)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: [BoxShadow(color: const Color(0xFF003087).withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 8))]),
-        child: Column(children: [
-          Row(children: [
-            Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(color: Colors.red.shade900.withOpacity(0.6), borderRadius: BorderRadius.circular(20)),
-              child: Row(children: [
-                Container(width: 6, height: 6, decoration: BoxDecoration(color: Colors.red.shade300, shape: BoxShape.circle)),
-                const SizedBox(width: 6),
-                const Text('LIVE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10, letterSpacing: 1)),
-              ])),
-            const Spacer(),
-            // Timer controls
-            Row(children: [
-              GestureDetector(onTap: _matchRunning ? _stopTimer : _startTimer,
-                child: Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(color: _matchRunning ? Colors.red.withOpacity(0.2) : Colors.green.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20)),
-                  child: Row(children: [
-                    Icon(_matchRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                      color: _matchRunning ? Colors.red : Colors.green, size: 16),
-                    const SizedBox(width: 4),
-                    Text('$_matchMinute\'', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-                  ]))),
-            ]),
-          ]),
-          const SizedBox(height: 16),
-          Builder(builder: (_) {
-            // Collect goal events per team
-            final goalEvents = f!.events.where((e) => e.type == 'goal' || (e.type == 'penalty' && (e.detail ?? '').contains('Scored'))).toList();
-            final homeScorers = goalEvents.where((e) => e.team == f!.homeTeam).map((e) => '${e.playerName}  ${e.minute}\' ').toList();
-            final awayScorers = goalEvents.where((e) => e.team == f!.awayTeam).map((e) => '${e.playerName}  ${e.minute}\' ').toList();
-            return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Expanded(child: _scoreTeam(f.homeTeam, f.homeScore, homeScorers)),
-              // ── Centre: live clock ──────────────────────────────────────
-              Padding(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8), child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Pulsing red dot
-                  Container(width: 8, height: 8,
-                    decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle)),
-                  const SizedBox(height: 4),
-                  // Big minute counter
-                  Text("$_matchMinute'",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1,
-                    )),
-                  const SizedBox(height: 2),
-                  Text(f.venue,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white30, fontSize: 8)),
-                ],
-              )),
-              Expanded(child: _scoreTeam(f.awayTeam, f.awayScore, awayScorers, alignRight: true)),
-            ]);
-          }),
-          const SizedBox(height: 14),
-          // Match duration + set time
-          Row(children: [
-            const Icon(Icons.timer_rounded, color: Colors.white38, size: 15),
-            const SizedBox(width: 6),
-            Text('Match duration: $_matchDuration min', style: const TextStyle(color: Colors.white54, fontSize: 11)),
-            const Spacer(),
-            TextButton(onPressed: () => _showDurationDialog(ms), child: Text('Edit', style: TextStyle(color: _accent, fontSize: 11))),
-          ]),
-        ]),
-      ),
-      const SizedBox(height: 16),
-      // Event buttons
-      GridView.count(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-        crossAxisCount: 3, mainAxisSpacing: 10, crossAxisSpacing: 10, childAspectRatio: 1.5,
-        children: [
-          _eventBtn('⚽ GOAL', const Color(0xFF00A651), () => _promptEvent(EventType.goal, f!)),
-          _eventBtn('🅰️ ASSIST', const Color(0xFF003087), () => _promptEvent(EventType.assist, f!)),
-          _eventBtn('🟡 YELLOW', const Color(0xFFF9A825), () => _promptEvent(EventType.yellow, f!)),
-          _eventBtn('🔴 RED CARD', const Color(0xFFC62828), () => _promptEvent(EventType.red, f!)),
-          _eventBtn('↩ CORNER', const Color(0xFF003087), () => _promptEvent(EventType.corner, f!)),
-          _eventBtn('🎯 SHOT', const Color(0xFF00695C), () => _promptEvent(EventType.shot, f!)),
-          _eventBtn('⚠️ PENALTY', const Color(0xFFF5A500), () => _promptEvent(EventType.penalty, f!)),
-          _eventBtn('🏆 PKS', const Color(0xFF37474F), () => _showPenaltyShootout(f!)),
-          _eventBtn('⏹ END', const Color(0xFF263238), () { ms.endMatch(f!.id); setState(() { _activeFixId = null; _matchMinute = 0; _matchRunning = false; _matchTimer?.cancel(); }); }),
-        ]),
-    ]));
+    return MatchConsole(fixtureId: f.id, onPenaltyShootout: _showPenaltyShootout);
   }
 
   Widget _buildConsoleEmpty(MatchState ms) {
@@ -674,88 +577,6 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
         ),
       ),
     );
-  }
-
-  /// Returns the logo_url for [teamName] from the live Supabase stream, or null.
-  String? _teamLogoFor(String teamName) {
-    try {
-      return _liveTeams.firstWhere(
-        (t) => (t['name'] as String?)?.toLowerCase() == teamName.toLowerCase(),
-      )['logo_url'] as String?;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Widget _scoreTeam(String name, int score, List<String> scorers, {bool alignRight = false}) {
-    final logoUrl = _teamLogoFor(name);
-    final align = alignRight ? CrossAxisAlignment.end : CrossAxisAlignment.start;
-    final textAlign = alignRight ? TextAlign.right : TextAlign.left;
-    return Column(crossAxisAlignment: align, children: [
-      // Logo + team name row
-      Row(
-        mainAxisAlignment: alignRight ? MainAxisAlignment.end : MainAxisAlignment.start,
-        children: [
-          if (!alignRight) ...[_teamBadge(name, logoUrl), const SizedBox(width: 6)],
-          Flexible(child: Text(name, style: const TextStyle(color: Colors.white70, fontSize: 12), overflow: TextOverflow.ellipsis)),
-          if (alignRight) ...[const SizedBox(width: 6), _teamBadge(name, logoUrl)],
-        ],
-      ),
-      // Big score number
-      Text('$score', style: const TextStyle(color: Colors.white, fontSize: 52, fontWeight: FontWeight.w900)),
-      // Goal scorers list
-      if (scorers.isNotEmpty)
-        ...scorers.map((s) => Padding(
-          padding: const EdgeInsets.only(top: 2),
-          child: Text('⚽ $s',
-            textAlign: textAlign,
-            style: const TextStyle(color: Colors.greenAccent, fontSize: 10, fontWeight: FontWeight.w500)),
-        )),
-    ]);
-  }
-
-  Widget _teamBadge(String name, String? logoUrl) {
-    if (logoUrl != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(6),
-        child: Image.network(logoUrl, width: 28, height: 28, fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _badgeFallback(name)),
-      );
-    }
-    return _badgeFallback(name);
-  }
-
-  Widget _badgeFallback(String name) => Container(
-    width: 28, height: 28,
-    decoration: BoxDecoration(color: Colors.white.withOpacity(0.12), borderRadius: BorderRadius.circular(6)),
-    child: Center(child: Text(name.isNotEmpty ? name[0] : '?',
-      style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 13))),
-  );
-
-  Widget _eventBtn(String label, Color color, VoidCallback onTap) {
-    return Material(color: color, borderRadius: BorderRadius.circular(14),
-      child: InkWell(onTap: onTap, borderRadius: BorderRadius.circular(14),
-        child: Center(child: Text(label, textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11, height: 1.3)))));
-  }
-
-  void _showDurationDialog(MatchState ms) {
-    final ctrl = TextEditingController(text: '$_matchDuration');
-    showDialog(context: context, builder: (ctx) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      title: const Text('Set Match Duration'),
-      content: TextField(controller: ctrl, keyboardType: TextInputType.number,
-        decoration: const InputDecoration(labelText: 'Minutes', suffixText: 'min')),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-        ElevatedButton(onPressed: () {
-          final m = int.tryParse(ctrl.text) ?? 90;
-          setState(() => _matchDuration = m);
-          ms.setMatchDuration(m);
-          Navigator.pop(ctx);
-        }, child: const Text('Set')),
-      ],
-    ));
   }
 
   // ─── My Fixtures ────────────────────────────────────────────────────────────
@@ -1137,15 +958,15 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
               Text(sub['playerIn'] ?? '', style: const TextStyle(fontWeight: FontWeight.w600)),
             ])),
           ]),
-          if (isPending) ...[
+            if (isPending) ...[
             const SizedBox(height: 12),
             Row(children: [
-              Expanded(child: OutlinedButton(onPressed: () { setState(() => subs[i]['status'] = 'rejected'); },
+              Expanded(child: OutlinedButton(onPressed: () => ms.rejectSubstitution(sub['id'] as String),
                 style: OutlinedButton.styleFrom(foregroundColor: Colors.red, side: BorderSide(color: Colors.red.shade300),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
                 child: const Text('Reject'))),
               const SizedBox(width: 10),
-              Expanded(child: ElevatedButton(onPressed: () => ms.approveSubstitution(i, _matchMinute),
+              Expanded(child: ElevatedButton(onPressed: () => ms.approveSubstitution(sub['id'] as String, _matchMinute),
                 style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00A651), foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
                 child: const Text('Approve'))),
@@ -1161,27 +982,96 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
     final ms = context.watch<MatchState>();
     GeneratedFixture? f;
     if (_activeFixId != null) try { f = ms.generatedFixtures.firstWhere((x) => x.id == _activeFixId); } catch (_) {}
+    f ??= ms.liveFixture;
     final events = f?.events ?? [];
-    if (events.isEmpty) return _empty(Icons.receipt_long_outlined, 'No Events', 'Record events during a live match.');
 
-    return ListView.separated(padding: const EdgeInsets.all(16), itemCount: events.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 6),
-      itemBuilder: (_, i) {
-        final e = events[i];
-        return Container(padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6)]),
-          child: Row(children: [
-            Text(_eventEmoji(e.type), style: const TextStyle(fontSize: 20)),
-            const SizedBox(width: 12),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('${e.playerName.isEmpty ? e.team : e.playerName}  ${e.detail ?? ''}',
-                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-              Text(e.team, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-            ])),
-            Text("${e.minute}'", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 13)),
-          ]));
-      });
+    return Column(children: [
+      if (f != null)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.add_circle_outline, color: Colors.white),
+              label: const Text('Record Event', style: TextStyle(fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF003087),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: () => _showEventTypePicker(f!),
+            ),
+          ),
+        ),
+      if (events.isEmpty)
+        Expanded(child: _empty(Icons.receipt_long_outlined, 'No Events', 'Record events during a live match.'))
+      else
+        Expanded(
+          child: ListView.separated(padding: const EdgeInsets.all(16), itemCount: events.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 6),
+            itemBuilder: (_, i) {
+              final e = events[i];
+              return Container(padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6)]),
+                child: Row(children: [
+                  Text(_eventEmoji(e.type), style: const TextStyle(fontSize: 20)),
+                  const SizedBox(width: 12),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('${e.playerName.isEmpty ? e.team : e.playerName}  ${e.detail ?? ''}',
+                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                    Text(e.team, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                  ])),
+                  Text("${e.minute}'", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 13)),
+                ]));
+            }),
+        ),
+    ]);
+  }
+
+  void _showEventTypePicker(GeneratedFixture f) {
+    final eventTypes = [
+      ('goal', 'Goal', const Color(0xFF00A651)),
+      ('yellow', 'Yellow Card', const Color(0xFFF9A825)),
+      ('red', 'Red Card', const Color(0xFFC62828)),
+      ('sub', 'Substitution', const Color(0xFF1565C0)),
+      ('corner', 'Corner', const Color(0xFF003087)),
+      ('penalty', 'Penalty', const Color(0xFFF5A500)),
+      ('shot', 'Shot', const Color(0xFF00695C)),
+    ];
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Select Event Type', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
+          ...eventTypes.map((e) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                icon: Icon(Icons.sports_soccer, color: Colors.white, size: 20),
+                label: Text(e.$2, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: e.$3,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.push(context, MaterialPageRoute(
+                    builder: (_) => EventRecorder(fixtureId: f.id, eventType: e.$1),
+                  ));
+                },
+              ),
+            ),
+          )),
+        ]),
+      ),
+    );
   }
 
   String _eventEmoji(String type) {
@@ -1784,245 +1674,6 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
     }
   }
 
-  void _promptEvent(EventType type, GeneratedFixture f) async {
-    final ms = context.read<MatchState>();
-    
-    // If lineup not loaded yet, load it first then re-open
-    if (_activeFixId != null && !ms.lineups.containsKey(_activeFixId)) {
-      // Show brief loading snackbar
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Row(children: [
-          SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
-          SizedBox(width: 12),
-          Text('Loading lineup...'),
-        ]), duration: Duration(seconds: 2), backgroundColor: Color(0xFF003087)),
-      );
-      await ms.loadLineupsForFixture(_activeFixId!);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).clearSnackBars();
-    }
-
-    final assistCtrl = TextEditingController();
-
-    // Get all players from the loaded lineups (keyed by fixtureId)
-    final allPlayers = ms.lineups[_activeFixId] ?? [];
-
-    String selectedTeam = f.homeTeam;
-    String? selectedPlayer;
-    String? selectedAssist; // for goal-assist or sub playerIn
-
-    // Helper: players for a given team name
-    List<LineupPlayer> playersFor(String team) =>
-        allPlayers.where((p) => p.team == team).toList();
-
-    showDialog(
-      context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (ctx, setS) {
-          final teamPlayers = playersFor(selectedTeam);
-          // All players from both teams for assist dropdown
-          final bothTeamsPlayers = allPlayers;
-
-          return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-            title: Text(_eventTitle(type)),
-            content: SingleChildScrollView(
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-
-                // ── Team selector ──────────────────────────────────────────
-                DropdownButtonFormField<String>(
-                  value: selectedTeam,
-                  items: [f.homeTeam, f.awayTeam]
-                      .map((t) => DropdownMenuItem(value: t, child: Text(t, overflow: TextOverflow.ellipsis)))
-                      .toList(),
-                  onChanged: (v) => setS(() {
-                    selectedTeam = v!;
-                    selectedPlayer = null; // reset player when team changes
-                    selectedAssist = null;
-                  }),
-                  decoration: InputDecoration(
-                    labelText: 'Team',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    prefixIcon: const Icon(Icons.groups_rounded, size: 18),
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                // ── Player selector (dropdown, filtered by team) ───────────
-                if (type != EventType.corner) ...[
-                  teamPlayers.isNotEmpty
-                    ? DropdownButtonFormField<String>(
-                        value: selectedPlayer,
-                        isExpanded: true,
-                        hint: const Text('Select Player'),
-                        items: teamPlayers.map((p) => DropdownMenuItem(
-                          value: p.name,
-                          child: Row(children: [
-                            Container(
-                              width: 26, height: 26,
-                              margin: const EdgeInsets.only(right: 8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF003087),
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                              child: Center(child: Text('${p.jerseyNo}',
-                                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold))),
-                            ),
-                            Expanded(child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(p.name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)),
-                                Text(p.position, style: const TextStyle(fontSize: 10, color: Colors.grey)),
-                              ],
-                            )),
-                          ]),
-                        )).toList(),
-                        onChanged: (v) => setS(() => selectedPlayer = v),
-                        decoration: InputDecoration(
-                          labelText: type == EventType.sub ? 'Player Out' : 'Player',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                          prefixIcon: const Icon(Icons.person_rounded, size: 18),
-                        ),
-                      )
-                    : TextField(
-                        onChanged: (v) => selectedPlayer = v,
-                        decoration: InputDecoration(
-                          labelText: type == EventType.sub ? 'Player Out (type name)' : 'Player Name (type name)',
-                          hintText: 'No lineup loaded — type name',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                          prefixIcon: const Icon(Icons.person_rounded, size: 18),
-                        ),
-                      ),
-                  const SizedBox(height: 12),
-                ],
-
-                // ── Assist / Player In selector ────────────────────────────
-                if (type == EventType.goal) ...[
-                  bothTeamsPlayers.isNotEmpty
-                    ? DropdownButtonFormField<String>(
-                        value: selectedAssist,
-                        isExpanded: true,
-                        hint: const Text('None (optional)'),
-                        items: [
-                          const DropdownMenuItem<String>(value: null, child: Text('— No assist —')),
-                          ...bothTeamsPlayers.map((p) => DropdownMenuItem(
-                            value: p.name,
-                            child: Row(children: [
-                              Container(
-                                width: 24, height: 24,
-                                margin: const EdgeInsets.only(right: 8),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.shade700,
-                                  borderRadius: BorderRadius.circular(5),
-                                ),
-                                child: Center(child: Text('${p.jerseyNo}',
-                                  style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold))),
-                              ),
-                              Expanded(child: Text(p.name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13))),
-                              const SizedBox(width: 4),
-                              Text('(${p.team.split(' ').first})', style: const TextStyle(fontSize: 10, color: Colors.grey)),
-                            ]),
-                          )),
-                        ],
-                        onChanged: (v) => setS(() => selectedAssist = v),
-                        decoration: InputDecoration(
-                          labelText: 'Assisted By (optional)',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                          prefixIcon: const Icon(Icons.sports_rounded, size: 18),
-                        ),
-                      )
-                    : TextField(
-                        controller: assistCtrl,
-                        decoration: InputDecoration(
-                          labelText: 'Assisted By (optional)',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                      ),
-                  const SizedBox(height: 4),
-                ],
-
-                // ── Player In (for substitutions) ─────────────────────────
-                if (type == EventType.sub) ...[
-                  teamPlayers.isNotEmpty
-                    ? DropdownButtonFormField<String>(
-                        value: selectedAssist,
-                        isExpanded: true,
-                        hint: const Text('Select Player In'),
-                        items: teamPlayers.map((p) => DropdownMenuItem(
-                          value: p.name,
-                          child: Row(children: [
-                            Container(
-                              width: 26, height: 26,
-                              margin: const EdgeInsets.only(right: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.green.shade700,
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                              child: Center(child: Text('${p.jerseyNo}',
-                                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold))),
-                            ),
-                            Expanded(child: Text(p.name, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13))),
-                          ]),
-                        )).toList(),
-                        onChanged: (v) => setS(() => selectedAssist = v),
-                        decoration: InputDecoration(
-                          labelText: 'Player In',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                          prefixIcon: const Icon(Icons.arrow_circle_up_rounded, size: 18),
-                        ),
-                      )
-                    : TextField(
-                        controller: assistCtrl,
-                        decoration: InputDecoration(
-                          labelText: 'Player In (type name)',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                      ),
-                  const SizedBox(height: 4),
-                ],
-
-              ]),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF003087),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                onPressed: () {
-                  final p = (selectedPlayer ?? assistCtrl.text.trim()).isEmpty
-                      ? 'Unknown'
-                      : (selectedPlayer ?? assistCtrl.text.trim());
-                  final assist = selectedAssist ?? assistCtrl.text.trim();
-                  switch (type) {
-                    case EventType.goal:   ms.recordGoal(fixtureId: f.id, team: selectedTeam, player: p, minute: _matchMinute, assistBy: assist.isEmpty ? null : assist); break;
-                    case EventType.assist: ms.recordAssist(fixtureId: f.id, team: selectedTeam, player: p, minute: _matchMinute); break;
-                    case EventType.yellow: ms.recordCard(fixtureId: f.id, team: selectedTeam, player: p, minute: _matchMinute, isRed: false); break;
-                    case EventType.red:    ms.recordCard(fixtureId: f.id, team: selectedTeam, player: p, minute: _matchMinute, isRed: true); break;
-                    case EventType.corner: ms.recordCorner(fixtureId: f.id, team: selectedTeam, minute: _matchMinute); break;
-                    case EventType.shot:   ms.recordShot(fixtureId: f.id, team: selectedTeam, player: p, minute: _matchMinute); break;
-                    case EventType.penalty: ms.recordPenalty(fixtureId: f.id, team: selectedTeam, player: p, minute: _matchMinute, scored: true); break;
-                    case EventType.sub:    ms.recordSubstitution(fixtureId: f.id, team: selectedTeam, playerOut: p, playerIn: assist.isEmpty ? 'Sub' : assist, minute: _matchMinute); break;
-                  }
-                  Navigator.pop(ctx);
-                },
-                child: const Text('Record'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  String _eventTitle(EventType t) {
-    const m = {EventType.goal:'⚽ Record Goal', EventType.assist:'🅰️ Record Assist', EventType.yellow:'🟡 Yellow Card', EventType.red:'🔴 Red Card', EventType.corner:'↩ Corner', EventType.shot:'🎯 Shot on Target', EventType.penalty:'⚠️ Penalty', EventType.sub:'↔️ Substitution'};
-    return m[t]!;
-  }
-
   Widget _empty(IconData icon, String title, String sub) => Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
     Icon(icon, size: 52, color: Colors.grey.shade300), const SizedBox(height: 12),
     Text(title, style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.grey.shade400)), const SizedBox(height: 4),
@@ -2030,7 +1681,6 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
   ]));
 }
 
-enum EventType { goal, assist, yellow, red, corner, shot, penalty, sub }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Lineup Verification Panel (shown inside each fixture card before kick-off)
