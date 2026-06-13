@@ -39,19 +39,19 @@ jobs:
       
       - name: 🔨 Build APK
         working-directory: frontend
-        run: flutter build apk --release
+        run: flutter build apk --debug
       
       - name: 📊 Get APK info
         working-directory: frontend
         run: |
           ls -lh build/app/outputs/flutter-apk/
-          echo "APK Size: $(du -h build/app/outputs/flutter-apk/app-release.apk | cut -f1)"
+          echo "APK Size: $(du -h build/app/outputs/flutter-apk/app-debug.apk | cut -f1)"
       
       - name: 📤 Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-apk
-          path: frontend/build/app/outputs/flutter-apk/app-release.apk
+          name: app-debug-apk
+          path: frontend/build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 30
       
       - name: 📤 Upload Split APKs (if exist)
@@ -59,6 +59,6 @@ jobs:
         if: always()
         with:
           name: split-apks
-          path: frontend/build/app/outputs/flutter-apk/app-*-release.apk
+          path: frontend/build/app/outputs/flutter-apk/app-*-debug.apk
           retention-days: 30
           if-no-files-found: ignore
