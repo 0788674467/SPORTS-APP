@@ -133,6 +133,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   // Real-time match data
   List<Map<String, dynamic>> _liveMatches = [];
   List<Map<String, dynamic>> _recentResults = [];
+  List<Map<String, dynamic>> _matchReportsList = [];
   StreamSubscription<List<Map<String, dynamic>>>? _matchesSubscription;
   StreamSubscription<List<Map<String, dynamic>>>? _fixturesSubscription;
   
@@ -408,6 +409,20 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     }
   }
 
+  Future<void> _loadMatchReports() async {
+    try {
+      final response = await Supabase.instance.client
+          .from('match_reports')
+          .select('*')
+          .order('submitted_at', ascending: false);
+      if (mounted) {
+        setState(() => _matchReportsList = List<Map<String, dynamic>>.from(response));
+      }
+    } catch (e) {
+      debugPrint('Error loading match reports: $e');
+    }
+  }
+
   String _sectionTitle(String id) {
     const map = {
       'dashboard': 'Dashboard', 'approvals': 'Pending Approvals', 'notifications': 'Notifications',
@@ -415,7 +430,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       'fixtures': 'Fixtures', 'venues': 'Venues', 'leagues': 'Leagues', 'standings': 'Standings', 'results': 'Match Results',
       'squad_approvals': 'Squad Approvals',
       'teams': 'Teams', 'players': 'Players', 'coaches': 'Coaches', 'referees': 'Referees',
-      'player_stats': 'Player Statistics', 'season_report': 'MMU Report Centre', 'live_scores': 'Live Scores',
+      'player_stats': 'Player Statistics', 'season_report': 'MMU Report Centre', 'live_scores': 'Live Scores', 'match_reports': 'Match Reports',
       'profile': 'My Profile', 'settings': 'Settings',
     };
     return map[id] ?? id;
@@ -492,6 +507,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       _loadRecentResults();
     }
     if (id == 'notifications') _loadNotifications();
+    if (id == 'match_reports') _loadMatchReports();
   }
 
   @override
@@ -535,6 +551,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       case 'season_report': return _buildSeasonReport();
       case 'live_scores': return _buildLiveScores();
       case 'notifications': return _buildNotifications();
+      case 'match_reports': return _buildMatchReports();
       case 'communications': return const OfficialsChatWidget();
       case 'profile': return _buildProfile();
       case 'settings': return _buildSettings();
@@ -3162,6 +3179,296 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     );
   }
 
+
+  // ─── Match Reports ───────────────────────────────────────────────────────────
+  String _reportFilter = 'all';
+  Widget _buildMatchReports() {
+    final reports = _matchReportsList.where((r) {
+      if (_reportFilter == 'all') return true;
+      return (r['status'] as String? ?? '') == _reportFilter;
+    }).toList();
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: _card(title: 'Match Reports', subtitle: 'Submitted by referees — review and approve', child: Column(children: [
+        // Filter chips
+        Row(children: [
+          _reportChip('All', 'all'),
+          const SizedBox(width: 6),
+          _reportChip('Pending', 'submitted'),
+          const SizedBox(width: 6),
+          _reportChip('Approved', 'approved'),
+          const SizedBox(width: 6),
+          _reportChip('Rejected', 'rejected'),
+        ]),
+        const SizedBox(height: 16),
+        if (_matchReportsList.isEmpty)
+          const Padding(
+            padding: EdgeInsets.all(30),
+            child: Column(children: [
+              Icon(Icons.receipt_long_outlined, size: 48, color: Colors.grey),
+              SizedBox(height: 12),
+              Text('No match reports yet', style: TextStyle(color: Colors.grey, fontSize: 16)),
+              SizedBox(height: 4),
+              Text('Reports appear here after referees submit them.', style: TextStyle(color: Colors.grey, fontSize: 12)),
+            ]),
+          )
+        else if (reports.isEmpty)
+          const Padding(
+            padding: EdgeInsets.all(20),
+            child: Text('No reports match the selected filter.', style: TextStyle(color: Colors.grey, fontSize: 14)),
+          )
+        else
+          ...reports.map((r) => _reportCard(r)),
+      ])),
+    );
+  }
+
+  Widget _reportChip(String label, String value) {
+    final active = _reportFilter == value;
+    return ChoiceChip(
+      label: Text(label, style: TextStyle(fontSize: 12, color: active ? Colors.white : Colors.black87)),
+      selected: active,
+      selectedColor: const Color(0xFF003087),
+      onSelected: (_) => setState(() => _reportFilter = value),
+      visualDensity: VisualDensity.compact,
+    );
+  }
+
+  Widget _reportCard(Map<String, dynamic> r) {
+    final status = r['status'] as String? ?? 'submitted';
+    final events = r['events'] as List? ?? [];
+    final goalEvents = events.where((e) => e is Map && e['type'] == 'goal').toList();
+    final Color statusColor;
+    final String statusLabel;
+    switch (status) {
+      case 'approved': statusColor = Colors.green; statusLabel = 'Approved'; break;
+      case 'rejected': statusColor = Colors.red; statusLabel = 'Rejected'; break;
+      default: statusColor = Colors.orange; statusLabel = 'Pending'; break;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(children: [
+        Row(children: [
+          Expanded(flex: 3, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('${r['home_team'] ?? '?'} vs ${r['away_team'] ?? '?'}',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            const SizedBox(height: 2),
+            Text('Referee: ${r['referee'] ?? 'N/A'}', style: TextStyle(color: Colors.grey.shade600, fontSize: 11)),
+          ])),
+          Column(children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFF003087),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text('${r['home_score'] ?? 0} – ${r['away_score'] ?? 0}',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+            ),
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(color: statusColor.withOpacity(0.15), borderRadius: BorderRadius.circular(6)),
+              child: Text(statusLabel, style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.w600)),
+            ),
+          ]),
+        ]),
+        const SizedBox(height: 10),
+        Row(children: [
+          if (r['submitted_at'] != null)
+            Text('Submitted: ${_formatDate(r['submitted_at'])}', style: TextStyle(color: Colors.grey.shade500, fontSize: 10)),
+          const Spacer(),
+          if (r['reviewed_at'] != null)
+            Text('Reviewed: ${_formatDate(r['reviewed_at'])}', style: TextStyle(color: Colors.grey.shade500, fontSize: 10)),
+          const SizedBox(width: 8),
+          Text('${goalEvents.length} goal${goalEvents.length == 1 ? '' : 's'} · ${events.length} events',
+            style: TextStyle(color: Colors.grey.shade500, fontSize: 10)),
+          const SizedBox(width: 8),
+          TextButton.icon(
+            onPressed: () => _showReportDetail(r),
+            icon: const Icon(Icons.visibility, size: 16),
+            label: const Text('View', style: TextStyle(fontSize: 12)),
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFF003087), padding: const EdgeInsets.symmetric(horizontal: 8)),
+          ),
+          if (status == 'submitted') ...[
+            TextButton.icon(
+              onPressed: () => _approveReport(r['id']),
+              icon: const Icon(Icons.check_circle, size: 16, color: Colors.green),
+              label: const Text('Approve', style: TextStyle(fontSize: 12, color: Colors.green)),
+              style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
+            ),
+            TextButton.icon(
+              onPressed: () => _rejectReport(r['id']),
+              icon: const Icon(Icons.cancel, size: 16, color: Colors.red),
+              label: const Text('Reject', style: TextStyle(fontSize: 12, color: Colors.red)),
+              style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
+            ),
+          ],
+        ]),
+      ]),
+    );
+  }
+
+  Future<void> _updateReportStatus(String reportId, String status) async {
+    try {
+      await Supabase.instance.client
+          .from('match_reports')
+          .update({
+            'status': status,
+            'reviewed_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', reportId);
+      await _loadMatchReports();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Report ${status}ed successfully'),
+          backgroundColor: status == 'approved' ? Colors.green : Colors.red,
+        ));
+      }
+    } catch (e) {
+      debugPrint('Error updating report: $e');
+    }
+  }
+
+  Future<void> _approveReport(String id) async => _updateReportStatus(id, 'approved');
+  Future<void> _rejectReport(String id) async => _updateReportStatus(id, 'rejected');
+
+  void _showReportDetail(Map<String, dynamic> r) {
+    final events = r['events'] as List? ?? [];
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+        contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+        title: Row(children: [
+          Expanded(child: Text('${r['home_team']} vs ${r['away_team']}',
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold))),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF003087),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text('${r['home_score']} – ${r['away_score']}',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ]),
+        content: SizedBox(
+          width: 500,
+          child: SingleChildScrollView(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _detailRow('Referee', r['referee'] ?? 'N/A'),
+              _detailRow('Venue', r['venue'] ?? 'N/A'),
+              _detailRow('Status', (r['status'] as String? ?? 'submitted').toUpperCase()),
+              if (r['submitted_at'] != null)
+                _detailRow('Submitted', _formatDate(r['submitted_at'])),
+              if (r['reviewed_at'] != null)
+                _detailRow('Reviewed', _formatDate(r['reviewed_at'])),
+              const Divider(height: 20),
+              const Text('Match Events', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              const SizedBox(height: 8),
+              if (events.isEmpty)
+                const Text('No events recorded', style: TextStyle(color: Colors.grey, fontSize: 12))
+              else
+                ...events.map((e) {
+                  final m = e is Map ? e : {};
+                  final icon = _eventIcon(m['type'] ?? '');
+                  final color = _eventColor(m['type'] ?? '');
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Row(children: [
+                      Icon(icon, size: 14, color: color),
+                      const SizedBox(width: 8),
+                      Text('${m['minute']}\'', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey.shade600)),
+                      const SizedBox(width: 8),
+                      Text('${m['player_name'] ?? ''}', style: const TextStyle(fontSize: 12)),
+                      if ((m['team'] ?? '').isNotEmpty) ...[
+                        const SizedBox(width: 4),
+                        Text('(${m['team']})', style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
+                      ],
+                      if ((m['detail'] ?? '').isNotEmpty) ...[
+                        const SizedBox(width: 4),
+                        Text('- ${m['detail']}', style: TextStyle(fontSize: 10, color: Colors.grey.shade500)),
+                      ],
+                    ]),
+                  );
+                }),
+            ],
+          )),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          if ((r['status'] as String? ?? '') == 'submitted') ...[
+            ElevatedButton.icon(
+              icon: const Icon(Icons.check_circle, size: 16),
+              label: const Text('Approve'),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+              onPressed: () {
+                Navigator.pop(ctx);
+                _approveReport(r['id']);
+              },
+            ),
+            ElevatedButton.icon(
+              icon: const Icon(Icons.cancel, size: 16),
+              label: const Text('Reject'),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+              onPressed: () {
+                Navigator.pop(ctx);
+                _rejectReport(r['id']);
+              },
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  IconData _eventIcon(String type) {
+    switch (type) {
+      case 'goal': return Icons.sports_soccer;
+      case 'yellow': return Icons.rectangle;
+      case 'red': return Icons.rectangle;
+      case 'sub': return Icons.swap_horiz;
+      case 'corner': return Icons.flag;
+      case 'penalty': return Icons.warning;
+      case 'shot': return Icons.my_location;
+      default: return Icons.circle;
+    }
+  }
+
+  Color _eventColor(String type) {
+    switch (type) {
+      case 'goal': return const Color(0xFF00A651);
+      case 'yellow': return const Color(0xFFF9A825);
+      case 'red': return const Color(0xFFC62828);
+      case 'sub': return const Color(0xFF1565C0);
+      case 'corner': return const Color(0xFF003087);
+      case 'penalty': return const Color(0xFFF5A500);
+      case 'shot': return const Color(0xFF00695C);
+      default: return Colors.grey;
+    }
+  }
+
+  Widget _detailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(children: [
+        Text('$label: ', style: TextStyle(color: Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.w500)),
+        Text(value, style: const TextStyle(fontSize: 12)),
+      ]),
+    );
+  }
 
   // ─── Teams ──────────────────────────────────────────────────────────────────
   Widget _buildTeams() {

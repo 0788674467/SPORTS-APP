@@ -93,6 +93,7 @@ class DashboardSidebar extends StatelessWidget {
         SidebarItem('player_stats', Icons.bar_chart_rounded, 'Player Stats'),
         SidebarItem('season_report', Icons.analytics_rounded, 'Season Reports'),
         SidebarItem('live_scores', Icons.live_tv_rounded, 'Live Scores'),
+        SidebarItem('match_reports', Icons.receipt_long_rounded, 'Match Reports'),
       ],
     },
     {

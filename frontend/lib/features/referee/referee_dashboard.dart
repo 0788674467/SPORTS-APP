@@ -31,6 +31,9 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
   List<Map<String, dynamic>> _liveTeams = [];
   StreamSubscription<List<Map<String, dynamic>>>? _teamsStreamSub;
 
+  // ─ Past match reports ─────────────────────────────────────────────────────
+  List<Map<String, dynamic>> _pastReports = [];
+
   static const _navItems = [
     {'icon': Icons.sports_rounded, 'label': 'Console'},
     {'icon': Icons.calendar_today_rounded, 'label': 'My Fixtures'},
@@ -104,6 +107,29 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
   }
 
   void _stopTimer() { _matchTimer?.cancel(); setState(() => _matchRunning = false); }
+
+  bool _pastReportsFetched = false;
+  Future<void> _fetchPastReports() async {
+    if (_pastReportsFetched) return;
+    try {
+      final ap = context.read<auth.AuthProvider>();
+      final refName = ap.user?.userMetadata?['full_name'] ?? '';
+      if (refName.isEmpty) return;
+      final response = await Supabase.instance.client
+          .from('match_reports')
+          .select('*')
+          .eq('referee', refName)
+          .order('submitted_at', ascending: false);
+      if (mounted) {
+        setState(() {
+          _pastReports = List<Map<String, dynamic>>.from(response);
+          _pastReportsFetched = true;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching past reports: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1081,6 +1107,7 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
 
   // ─── Report ─────────────────────────────────────────────────────────────────
   Widget _buildReport() {
+    _fetchPastReports();
     final ms = context.watch<MatchState>();
     GeneratedFixture? f;
     if (_activeFixId != null) try { f = ms.generatedFixtures.firstWhere((x) => x.id == _activeFixId); } catch (_) {}
@@ -1088,140 +1115,261 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
     final ap = context.read<auth.AuthProvider>();
     final refName = ap.user?.userMetadata?['full_name'] ?? 'Referee';
 
-    return SingleChildScrollView(padding: const EdgeInsets.all(16), child: Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // University header
-        Center(child: Column(children: [
-          const Text('MMU UNIVERSITY', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 2)),
-          Text('Department of Sports • Season 2026', style: TextStyle(color: Colors.grey.shade600, fontSize: 11)),
-          const SizedBox(height: 4),
-          Container(height: 2, width: 120, decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF003087), Color(0xFF42A5F5)]))),
-        ])),
-        const SizedBox(height: 16),
-        const Text('OFFICIAL MATCH REPORT', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1)),
-        const SizedBox(height: 4),
-        Text('Referee: $refName', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-        const SizedBox(height: 16),
-        if (f != null) ...[
-          _rRow('Match', '${f.homeTeam} vs ${f.awayTeam}'),
-          _rRow('Final Score', '${f.homeScore} – ${f.awayScore}'),
-          _rRow('Venue', f.venue),
-          _rRow('Duration', '$_matchDuration minutes'),
-          _rRow('Total Events', '${events.length}'),
-          _rRow('Goals', '${events.where((e) => e.type == 'goal').length}'),
-          _rRow('Yellow Cards', '${events.where((e) => e.type == 'yellow').length}'),
-          _rRow('Red Cards', '${events.where((e) => e.type == 'red').length}'),
-          _rRow('Corners', '${events.where((e) => e.type == 'corner').length}'),
-          _rRow('Penalties', '${events.where((e) => e.type == 'penalty').length}'),
-          _rRow('Substitutions', '${events.where((e) => e.type == 'sub').length}'),
-          if (events.where((e) => e.type == 'goal').isNotEmpty) ...[
-            const SizedBox(height: 12),
-            const Text('Goal Scorers', style: TextStyle(fontWeight: FontWeight.bold)),
-            ...events.where((e) => e.type == 'goal').map((e) => Padding(padding: const EdgeInsets.only(top: 4),
-              child: Text('• ${e.playerName} (${e.team}) ${e.minute}\'', style: const TextStyle(fontSize: 12)))),
-          ],
-        ] else const Text('No match selected. Start a match from My Fixtures.', style: TextStyle(color: Colors.grey)),
-        const SizedBox(height: 20),
-        SizedBox(width: double.infinity, child: ElevatedButton.icon(
-          onPressed: f == null ? null : () async {
-            // ── Confirm before submitting ──────────────────────────────────
-            final confirmed = await showDialog<bool>(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                title: const Text('Submit Match Report?'),
-                content: Text(
-                  'This will finalise ${f!.homeTeam} ${f.homeScore} – ${f.awayScore} ${f.awayTeam} '
-                  'and automatically update all player stats. This cannot be undone.',
-                ),
-                actions: [
-                  TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF003087), foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                    onPressed: () => Navigator.pop(ctx, true),
-                    child: const Text('Submit'),
-                  ),
-                ],
-              ),
-            );
-            if (confirmed != true || !mounted) return;
-
-            // ── 1. Save match result to Supabase ──────────────────────────
-            final ms2 = context.read<MatchState>();
-            await ms2.submitMatchReport(f!.id);
-
-            // ── 2. Aggregate events → per-player stat deltas ──────────────
-            final Map<String, Map<String, int>> deltas = {};
-            void add(String playerName, String key) {
-              final k = playerName.trim().toLowerCase();
-              if (k.isEmpty) return;
-              deltas.putIfAbsent(playerName.trim(), () => {'goals': 0, 'assists': 0, 'yellow': 0, 'red': 0});
-              deltas[playerName.trim()]![key] = (deltas[playerName.trim()]![key] ?? 0) + 1;
-            }
-            for (final e in events) {
-              if (e.type == 'goal'   && e.playerName.isNotEmpty) add(e.playerName, 'goals');
-              if (e.type == 'assist' && e.playerName.isNotEmpty) add(e.playerName, 'assists');
-              if (e.type == 'yellow' && e.playerName.isNotEmpty) add(e.playerName, 'yellow');
-              if (e.type == 'red'    && e.playerName.isNotEmpty) add(e.playerName, 'red');
-              // Also credit the assist from goal events' detail field
-              if (e.type == 'goal' && (e.detail ?? '').isNotEmpty) add(e.detail!, 'assists');
-            }
-
-            // ── 3. Fetch players to match names → IDs ─────────────────────
-            if (deltas.isNotEmpty) {
-              try {
-                final supabase = Supabase.instance.client;
-                final allPlayers = await supabase.from('players').select('id, full_name');
-                for (final entry in deltas.entries) {
-                  final pName  = entry.key.toLowerCase();
-                  final delta  = entry.value;
-                  // Fuzzy name match (case-insensitive)
-                  final match = (allPlayers as List).cast<Map<String, dynamic>>().where(
-                    (p) => (p['full_name'] as String? ?? '').toLowerCase() == pName,
-                  ).toList();
-                  if (match.isEmpty) continue;
-                  final pid = match.first['id'].toString();
-                  // Fetch current values and increment
-                  final cur = await supabase.from('players').select(
-                    'goals, assists, yellow_cards, red_cards, matches_played'
-                  ).eq('id', pid).single();
-                  await supabase.from('players').update({
-                    'goals':         ((cur['goals']         as int?) ?? 0) + (delta['goals']   ?? 0),
-                    'assists':       ((cur['assists']        as int?) ?? 0) + (delta['assists'] ?? 0),
-                    'yellow_cards':  ((cur['yellow_cards']   as int?) ?? 0) + (delta['yellow']  ?? 0),
-                    'red_cards':     ((cur['red_cards']      as int?) ?? 0) + (delta['red']     ?? 0),
-                    'matches_played':((cur['matches_played'] as int?) ?? 0) + 1,
-                  }).eq('id', pid);
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(children: [
+        // ── Past Reports ────────────────────────────────────────────────────
+        if (_pastReports.isNotEmpty) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                const Icon(Icons.history, size: 16),
+                const SizedBox(width: 6),
+                const Text('Submitted Reports', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                const Spacer(),
+                Text('${_pastReports.length} report${_pastReports.length == 1 ? '' : 's'}',
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
+              ]),
+              const SizedBox(height: 8),
+              ..._pastReports.map((r) {
+                final st = r['status'] as String? ?? 'submitted';
+                final Color c;
+                final String lbl;
+                switch (st) {
+                  case 'approved': c = Colors.green; lbl = 'Approved'; break;
+                  case 'rejected': c = Colors.red; lbl = 'Rejected'; break;
+                  default: c = Colors.orange; lbl = 'Pending';
                 }
-              } catch (err) {
-                debugPrint('⚠️ Player stats update error: $err');
-              }
-            }
-
-            // ── 4. Show confirmation ───────────────────────────────────────
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: const Text('✅ Match report submitted! Player stats updated automatically.'),
-                backgroundColor: Colors.green,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                margin: const EdgeInsets.all(16),
-                duration: const Duration(seconds: 4),
-              ));
-            }
-          },
-          icon: const Icon(Icons.send_rounded, size: 18),
-          label: const Text('Submit to Admin'),
-          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF003087), foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(vertical: 14)),
-        )),
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Row(children: [
+                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text('${r['home_team']} ${r['home_score']} – ${r['away_score']} ${r['away_team']}',
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                      if (r['submitted_at'] != null)
+                        Text(_formatShortDate(r['submitted_at']),
+                          style: TextStyle(color: Colors.grey.shade500, fontSize: 10)),
+                    ])),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(color: c.withOpacity(0.15), borderRadius: BorderRadius.circular(6)),
+                      child: Text(lbl, style: TextStyle(color: c, fontSize: 10, fontWeight: FontWeight.w600)),
+                    ),
+                    const SizedBox(width: 8),
+                    if (st == 'rejected')
+                      TextButton(
+                        onPressed: () => _resendReport(r),
+                        child: const Text('Resend', style: TextStyle(fontSize: 11)),
+                      )
+                    else if (st == 'submitted')
+                      TextButton(
+                        onPressed: () => _resendReport(r),
+                        child: const Text('Resend', style: TextStyle(fontSize: 11)),
+                      ),
+                  ]),
+                );
+              }),
+            ]),
+          ),
+          const SizedBox(height: 12),
+        ],
+        // ── Current Match Report Form ──────────────────────────────────────
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18)),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Center(child: Column(children: [
+              const Text('MMU UNIVERSITY', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 2)),
+              Text('Department of Sports • Season 2026', style: TextStyle(color: Colors.grey.shade600, fontSize: 11)),
+              const SizedBox(height: 4),
+              Container(height: 2, width: 120, decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF003087), Color(0xFF42A5F5)]))),
+            ])),
+            const SizedBox(height: 16),
+            const Text('OFFICIAL MATCH REPORT', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, letterSpacing: 1)),
+            const SizedBox(height: 4),
+            Text('Referee: $refName', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+            const SizedBox(height: 16),
+            if (f != null) ...[
+              _rRow('Match', '${f.homeTeam} vs ${f.awayTeam}'),
+              _rRow('Final Score', '${f.homeScore} – ${f.awayScore}'),
+              _rRow('Venue', f.venue),
+              _rRow('Duration', '$_matchDuration minutes'),
+              _rRow('Total Events', '${events.length}'),
+              _rRow('Goals', '${events.where((e) => e.type == 'goal').length}'),
+              _rRow('Yellow Cards', '${events.where((e) => e.type == 'yellow').length}'),
+              _rRow('Red Cards', '${events.where((e) => e.type == 'red').length}'),
+              _rRow('Corners', '${events.where((e) => e.type == 'corner').length}'),
+              _rRow('Penalties', '${events.where((e) => e.type == 'penalty').length}'),
+              _rRow('Substitutions', '${events.where((e) => e.type == 'sub').length}'),
+              if (events.where((e) => e.type == 'goal').isNotEmpty) ...[
+                const SizedBox(height: 12),
+                const Text('Goal Scorers', style: TextStyle(fontWeight: FontWeight.bold)),
+                ...events.where((e) => e.type == 'goal').map((e) => Padding(padding: const EdgeInsets.only(top: 4),
+                  child: Text('• ${e.playerName} (${e.team}) ${e.minute}\'', style: const TextStyle(fontSize: 12)))),
+              ],
+            ] else const Text('No match selected. Start a match from My Fixtures.', style: TextStyle(color: Colors.grey)),
+            const SizedBox(height: 20),
+            SizedBox(width: double.infinity, child: ElevatedButton.icon(
+              onPressed: f == null ? null : () => _submitReport(f, events, refName),
+              icon: const Icon(Icons.send_rounded, size: 18),
+              label: const Text('Submit to Admin'),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF003087), foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(vertical: 14)),
+            )),
+          ]),
+        ),
       ]),
-    ));
+    );
+  }
+
+  Future<void> _submitReport(GeneratedFixture f, List<MatchEvent> events, String refName) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Text('Submit Match Report?'),
+        content: Text(
+          'This will finalise ${f.homeTeam} ${f.homeScore} – ${f.awayScore} ${f.awayTeam} '
+          'and automatically update all player stats. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF003087), foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Submit'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final ms = context.read<MatchState>();
+    await ms.submitMatchReport(f.id);
+
+    final Map<String, Map<String, int>> deltas = {};
+    void add(String playerName, String key) {
+      final k = playerName.trim().toLowerCase();
+      if (k.isEmpty) return;
+      deltas.putIfAbsent(playerName.trim(), () => {'goals': 0, 'assists': 0, 'yellow': 0, 'red': 0});
+      deltas[playerName.trim()]![key] = (deltas[playerName.trim()]![key] ?? 0) + 1;
+    }
+    for (final e in events) {
+      if (e.type == 'goal'   && e.playerName.isNotEmpty) add(e.playerName, 'goals');
+      if (e.type == 'assist' && e.playerName.isNotEmpty) add(e.playerName, 'assists');
+      if (e.type == 'yellow' && e.playerName.isNotEmpty) add(e.playerName, 'yellow');
+      if (e.type == 'red'    && e.playerName.isNotEmpty) add(e.playerName, 'red');
+      if (e.type == 'goal' && (e.detail ?? '').isNotEmpty) add(e.detail!, 'assists');
+    }
+
+    if (deltas.isNotEmpty) {
+      try {
+        final supabase = Supabase.instance.client;
+        final allPlayers = await supabase.from('players').select('id, full_name');
+        for (final entry in deltas.entries) {
+          final pName  = entry.key.toLowerCase();
+          final delta  = entry.value;
+          final match = (allPlayers as List).cast<Map<String, dynamic>>().where(
+            (p) => (p['full_name'] as String? ?? '').toLowerCase() == pName,
+          ).toList();
+          if (match.isEmpty) continue;
+          final pid = match.first['id'].toString();
+          final cur = await supabase.from('players').select(
+            'goals, assists, yellow_cards, red_cards, matches_played'
+          ).eq('id', pid).single();
+          await supabase.from('players').update({
+            'goals':         ((cur['goals']         as int?) ?? 0) + (delta['goals']   ?? 0),
+            'assists':       ((cur['assists']        as int?) ?? 0) + (delta['assists'] ?? 0),
+            'yellow_cards':  ((cur['yellow_cards']   as int?) ?? 0) + (delta['yellow']  ?? 0),
+            'red_cards':     ((cur['red_cards']      as int?) ?? 0) + (delta['red']     ?? 0),
+            'matches_played':((cur['matches_played'] as int?) ?? 0) + 1,
+          }).eq('id', pid);
+        }
+      } catch (err) {
+        debugPrint('Player stats update error: $err');
+      }
+    }
+
+    setState(() => _pastReportsFetched = false);
+    await _fetchPastReports();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Text('Match report submitted! Player stats updated automatically.'),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 4),
+      ));
+    }
+  }
+
+  Future<void> _resendReport(Map<String, dynamic> report) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Text('Resend Match Report?'),
+        content: Text(
+          'This will resubmit the report for ${report['home_team']} vs ${report['away_team']}.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF003087), foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Resend'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await Supabase.instance.client
+          .from('match_reports')
+          .update({
+            'status': 'submitted',
+            'submitted_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', report['id']);
+      setState(() => _pastReportsFetched = false);
+      await _fetchPastReports();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Report resent to admin'),
+          backgroundColor: Colors.green,
+        ));
+      }
+    } catch (e) {
+      debugPrint('Resend error: $e');
+    }
+  }
+
+  String _formatShortDate(String? dt) {
+    if (dt == null) return '';
+    try {
+      final d = DateTime.parse(dt);
+      return '${d.day}/${d.month}/${d.year}';
+    } catch (_) {
+      return dt.length > 10 ? dt.substring(0, 10) : dt;
+    }
   }
 
   Widget _rRow(String k, String v) => Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: Row(children: [
