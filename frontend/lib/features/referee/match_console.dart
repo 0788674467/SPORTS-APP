@@ -64,7 +64,7 @@ class _MatchConsoleState extends State<MatchConsole> {
 
   void _startTimer() {
     _matchTimer?.cancel();
-    _matchRunning = true;
+    setState(() => _matchRunning = true);
     _matchTimer = Timer.periodic(Duration(seconds: _tickSeconds), (_) {
       if (!mounted) return;
       setState(() {
@@ -91,7 +91,7 @@ class _MatchConsoleState extends State<MatchConsole> {
 
   void _stopTimer() {
     _matchTimer?.cancel();
-    _matchRunning = false;
+    setState(() => _matchRunning = false);
   }
 
   void _addExtraTime(int minutes) {
@@ -161,16 +161,16 @@ class _MatchConsoleState extends State<MatchConsole> {
                 const Spacer(),
                 Row(children: [
                   GestureDetector(
-                    onTap: _matchRunning ? _stopTimer : _startTimer,
+                    onTap: f.status == 'completed' ? null : (_matchRunning ? _stopTimer : _startTimer),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: _matchRunning ? Colors.red.withOpacity(0.2) : Colors.green.withOpacity(0.2),
+                        color: f.status == 'completed' ? Colors.grey.withOpacity(0.2) : (_matchRunning ? Colors.red.withOpacity(0.2) : Colors.green.withOpacity(0.2)),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(children: [
-                        Icon(_matchRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                          color: _matchRunning ? Colors.red : Colors.green, size: 16),
+                        Icon(f.status == 'completed' ? Icons.stop : (_matchRunning ? Icons.pause_rounded : Icons.play_arrow_rounded),
+                          color: f.status == 'completed' ? Colors.grey : (_matchRunning ? Colors.red : Colors.green), size: 16),
                         const SizedBox(width: 4),
                         Text(_timeDisplay, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
                       ]),
@@ -233,15 +233,15 @@ class _MatchConsoleState extends State<MatchConsole> {
             crossAxisSpacing: 10,
             childAspectRatio: 1.5,
             children: [
-              _eventBtn('GOAL', const Color(0xFF00A651), Icons.sports_soccer, () => _recordEvent(ms, f, 'goal')),
-              _eventBtn('YELLOW', const Color(0xFFF9A825), Icons.rectangle, () => _recordEvent(ms, f, 'yellow')),
-              _eventBtn('RED', const Color(0xFFC62828), Icons.rectangle, () => _recordEvent(ms, f, 'red')),
-              _eventBtn('SUB', const Color(0xFF1565C0), Icons.swap_horiz, () => _recordEvent(ms, f, 'sub')),
-              _eventBtn('CORNER', const Color(0xFF003087), Icons.flag, () => ms.recordCorner(fixtureId: f.id, team: f.homeTeam, minute: _matchMinute)),
-              _eventBtn('PENALTY', const Color(0xFFF5A500), Icons.warning, () => _recordEvent(ms, f, 'penalty')),
-              _eventBtn('SHOT', const Color(0xFF00695C), Icons.my_location, () => _recordEvent(ms, f, 'shot')),
-              _eventBtn('HALF', const Color(0xFF7B1FA2), Icons.pause_circle, _halfTime),
-              _eventBtn('END', const Color(0xFF263238), Icons.stop, () {
+              _eventBtn('GOAL', const Color(0xFF00A651), Icons.sports_soccer, f.status == 'completed' ? null : () => _recordEvent(ms, f, 'goal')),
+              _eventBtn('YELLOW', const Color(0xFFF9A825), Icons.rectangle, f.status == 'completed' ? null : () => _recordEvent(ms, f, 'yellow')),
+              _eventBtn('RED', const Color(0xFFC62828), Icons.rectangle, f.status == 'completed' ? null : () => _recordEvent(ms, f, 'red')),
+              _eventBtn('SUB', const Color(0xFF1565C0), Icons.swap_horiz, f.status == 'completed' ? null : () => _recordEvent(ms, f, 'sub')),
+              _eventBtn('CORNER', const Color(0xFF003087), Icons.flag, f.status == 'completed' ? null : () => ms.recordCorner(fixtureId: f.id, team: f.homeTeam, minute: _matchMinute)),
+              _eventBtn('PENALTY', const Color(0xFFF5A500), Icons.warning, f.status == 'completed' ? null : () => _recordEvent(ms, f, 'penalty')),
+              _eventBtn('SHOT', const Color(0xFF00695C), Icons.my_location, f.status == 'completed' ? null : () => _recordEvent(ms, f, 'shot')),
+              _eventBtn('HALF', const Color(0xFF7B1FA2), Icons.pause_circle, f.status == 'completed' ? null : _halfTime),
+              _eventBtn('END', const Color(0xFF263238), Icons.stop, f.status == 'completed' ? null : () {
                 ms.endMatch(f.id);
                 _stopTimer();
               }),
@@ -325,11 +325,11 @@ class _MatchConsoleState extends State<MatchConsole> {
       );
   }
 
-  Widget _eventBtn(String label, Color bgColor, IconData icon, VoidCallback onTap) {
+  Widget _eventBtn(String label, Color bgColor, IconData icon, VoidCallback? onTap) {
     return ElevatedButton(
       onPressed: onTap,
       style: ElevatedButton.styleFrom(
-        backgroundColor: bgColor,
+        backgroundColor: onTap == null ? Colors.grey.shade400 : bgColor,
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         padding: const EdgeInsets.all(8),
