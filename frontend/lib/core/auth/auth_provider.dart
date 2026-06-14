@@ -409,7 +409,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Update team details in the database and synchronize with profile.
-  Future<String?> updateTeam(String teamId, {String? name, String? logoUrl}) async {
+  Future<String?> updateTeam(String teamId, {String? name, String? logoUrl, bool? isActive}) async {
     try {
       final updates = <String, dynamic>{};
       if (name != null && name.isNotEmpty) {
@@ -420,6 +420,7 @@ class AuthProvider extends ChangeNotifier {
         await _supabase.auth.updateUser(UserAttributes(data: {'team_name': name}));
       }
       if (logoUrl != null) updates['logo_url'] = logoUrl;
+      if (isActive != null) updates['is_active'] = isActive;
 
       if (updates.isNotEmpty) {
         await _supabase.from('teams').update(updates).eq('id', teamId);

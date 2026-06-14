@@ -813,15 +813,17 @@ class MatchState extends ChangeNotifier {
 
   /// Submits the final match report to Supabase.
   /// 
-  /// Marks the fixture completed, persists the final score, and saves a
+  /// Marks the fixture completed (if [isFinal] is true), persists the final score, and saves a
   /// detailed report row (with all events as JSON) to `match_reports`.
   /// Player stats are then aggregated by the referee dashboard UI.
-  Future<void> submitMatchReport(String fixtureId) async {
+  Future<void> submitMatchReport(String fixtureId, {bool isFinal = true}) async {
     final f = _fixture(fixtureId);
     if (f == null) return;
 
-    // 1. End the match (marks completed, updates standings & persists score)
-    endMatch(fixtureId);
+    // 1. End the match if final (marks completed, updates standings & persists score)
+    if (isFinal) {
+      endMatch(fixtureId);
+    }
 
     // 2. Save detailed report to match_reports table
     try {
@@ -845,7 +847,7 @@ class MatchState extends ChangeNotifier {
         'submitted_at': DateTime.now().toIso8601String(),
         'status':       'submitted',
       });
-      debugPrint('✅ Match report saved for $fixtureId');
+      debugPrint('✅ Match report saved for $fixtureId (isFinal: $isFinal)');
     } catch (e) {
       debugPrint('⚠️ submitMatchReport DB error: $e');
       // Non-fatal — player stat update in the UI still proceeds

@@ -347,6 +347,7 @@ class _SpectatorHomeState extends State<SpectatorHome>
 
   // ── Floating Live Score Panel ──────────────────────────────────────────────
   Widget _buildFloatingLiveScore(MatchState ms) {
+    final appState = context.read<AppState>();
     final liveF = ms.liveFixture;
     final homeTeam = liveF?.homeTeam ?? 'Lions FC';
     final awayTeam = liveF?.awayTeam ?? 'Eagles Utd';
@@ -530,6 +531,41 @@ class _SpectatorHomeState extends State<SpectatorHome>
                   ),
                 ),
 
+              // ── Goal Scorers ──
+              if (_liveOverlayExpanded && liveF != null)
+                Builder(
+                  builder: (context) {
+                    final goalEvents = liveF.events.where((e) => e.type == 'goal' || (e.type == 'penalty' && e.detail == 'Scored')).toList();
+                    if (goalEvents.isEmpty) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                      child: Column(
+                        children: goalEvents.map((e) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 3),
+                          child: Row(
+                            mainAxisAlignment: e.team == homeTeam ? MainAxisAlignment.start : MainAxisAlignment.end,
+                            children: [
+                              if (e.team == homeTeam) ...[
+                                const Text('⚽', style: TextStyle(fontSize: 11)),
+                                const SizedBox(width: 6),
+                                Text(e.playerName.isEmpty ? e.team : e.playerName, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                                const SizedBox(width: 6),
+                                Text("${e.minute}'", style: const TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold)),
+                              ] else ...[
+                                Text("${e.minute}'", style: const TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold)),
+                                const SizedBox(width: 6),
+                                Text(e.playerName.isEmpty ? e.team : e.playerName, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                                const SizedBox(width: 6),
+                                const Text('⚽', style: TextStyle(fontSize: 11)),
+                              ],
+                            ],
+                          ),
+                        )).toList(),
+                      ),
+                    );
+                  }
+                ),
+
               // ── Footer: venue + date (only when expanded) ──
               if (_liveOverlayExpanded)
                 Container(
@@ -541,7 +577,7 @@ class _SpectatorHomeState extends State<SpectatorHome>
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _liveInfoChip(Icons.calendar_today_rounded, 'Season 2026'),
+                      _liveInfoChip(Icons.calendar_today_rounded, appState.seasonLabel),
                       _liveInfoChip(Icons.location_on_rounded, liveF?.venue ?? 'MMU Main Ground'),
                       _liveInfoChip(Icons.sports_soccer_rounded, 'Live'),
                     ],
@@ -2589,38 +2625,88 @@ class _SpectatorHomeState extends State<SpectatorHome>
             : ListView(
                 shrinkWrap: true,
                 padding: const EdgeInsets.all(16),
-                children: ms.generatedFixtures.map(
-                  (f) => Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.04),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(f.homeTeam,
-                              textAlign: TextAlign.right,
-                              style: const TextStyle(color: Colors.white, fontSize: 12)),
+                children: ms.generatedFixtures.map((f) {
+                  bool isExpanded = false;
+                  return StatefulBuilder(
+                    builder: (context, setState) {
+                      return GestureDetector(
+                        onTap: () => setState(() => isExpanded = !isExpanded),
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.04),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: AnimatedSize(
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeInOut,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(f.homeTeam,
+                                          textAlign: TextAlign.right,
+                                          style: const TextStyle(color: Colors.white, fontSize: 12)),
+                                    ),
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(horizontal: 10),
+                                      child: Text('vs', style: TextStyle(color: Colors.white38, fontSize: 10)),
+                                    ),
+                                    Expanded(
+                                      child: Text(f.awayTeam,
+                                          style: const TextStyle(color: Colors.white, fontSize: 12)),
+                                    ),
+                                    Text(
+                                      '${f.dateTime.hour.toString().padLeft(2, '0')}:${f.dateTime.minute.toString().padLeft(2, '0')}',
+                                      style: const TextStyle(
+                                          color: AppColors.mmwGold, fontSize: 10, fontWeight: FontWeight.w700),
+                                    ),
+                                  ],
+                                ),
+                                if (isExpanded) ...[
+                                  const SizedBox(height: 12),
+                                  const Divider(color: Colors.white24, height: 1),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.calendar_today_rounded, color: Colors.white54, size: 14),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        '${f.dateTime.day.toString().padLeft(2, '0')}/${f.dateTime.month.toString().padLeft(2, '0')}/${f.dateTime.year}',
+                                        style: const TextStyle(color: Colors.white70, fontSize: 11),
+                                      ),
+                                      const Spacer(),
+                                      const Icon(Icons.location_on_rounded, color: Colors.white54, size: 14),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        f.venue.isNotEmpty ? f.venue : 'TBD',
+                                        style: const TextStyle(color: Colors.white70, fontSize: 11),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.sports_rounded, color: Colors.white54, size: 14),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        f.assignedReferee?.isNotEmpty == true ? f.assignedReferee! : 'TBD (Referee)',
+                                        style: const TextStyle(color: Colors.white70, fontSize: 11),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
                         ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 10),
-                          child: Text('vs', style: TextStyle(color: Colors.white38, fontSize: 10)),
-                        ),
-                        Expanded(
-                          child: Text(f.awayTeam,
-                              style: const TextStyle(color: Colors.white, fontSize: 12)),
-                        ),
-                        Text(
-                          '${f.dateTime.hour.toString().padLeft(2, '0')}:${f.dateTime.minute.toString().padLeft(2, '0')}',
-                          style: const TextStyle(
-                              color: AppColors.mmwGold, fontSize: 10, fontWeight: FontWeight.w700),
-                        ),
-                      ],
-                    ),
-                  ),
-                ).toList(),
+                      );
+                    },
+                  );
+                }).toList(),
               ),
       ),
     );
@@ -2642,42 +2728,96 @@ class _SpectatorHomeState extends State<SpectatorHome>
             : ListView(
                 shrinkWrap: true,
                 padding: const EdgeInsets.all(16),
-                children: res.map(
-                  (f) => Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.04),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(f.homeTeam,
-                              textAlign: TextAlign.right,
-                              style: const TextStyle(color: Colors.white, fontSize: 12)),
-                        ),
-                        Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 12),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                children: res.map((f) {
+                  final goalEvents = f.events.where((e) => e.type == 'goal' || (e.type == 'penalty' && e.detail == 'Scored')).toList();
+                  bool isExpanded = false;
+                  return StatefulBuilder(
+                    builder: (context, setState) {
+                      return GestureDetector(
+                        onTap: () {
+                          if (goalEvents.isNotEmpty) {
+                            setState(() => isExpanded = !isExpanded);
+                          }
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppColors.mmwNavy,
-                            borderRadius: BorderRadius.circular(8),
+                            color: Colors.white.withOpacity(0.04),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Text(
-                            '${f.homeScore} – ${f.awayScore}',
-                            style: const TextStyle(
-                                color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13),
+                          child: AnimatedSize(
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeInOut,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(f.homeTeam,
+                                          textAlign: TextAlign.right,
+                                          style: const TextStyle(color: Colors.white, fontSize: 12)),
+                                    ),
+                                    Container(
+                                      margin: const EdgeInsets.symmetric(horizontal: 12),
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.mmwNavy,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        '${f.homeScore} – ${f.awayScore}',
+                                        style: const TextStyle(
+                                            color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Text(f.awayTeam,
+                                          style: const TextStyle(color: Colors.white, fontSize: 12)),
+                                    ),
+                                  ],
+                                ),
+                                if (isExpanded && goalEvents.isNotEmpty) ...[
+                                  const SizedBox(height: 12),
+                                  const Divider(color: Colors.white24, height: 1),
+                                  const SizedBox(height: 8),
+                                  ...goalEvents.map((e) => Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 4),
+                                        child: Row(
+                                          mainAxisAlignment: e.team == f.homeTeam
+                                              ? MainAxisAlignment.start
+                                              : MainAxisAlignment.end,
+                                          children: [
+                                            if (e.team == f.homeTeam) ...[
+                                              const Text('⚽', style: TextStyle(fontSize: 12)),
+                                              const SizedBox(width: 6),
+                                              Text(e.playerName.isEmpty ? e.team : e.playerName,
+                                                  style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                                              const SizedBox(width: 4),
+                                              Text("${e.minute}'",
+                                                  style: const TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold)),
+                                            ] else ...[
+                                              Text("${e.minute}'",
+                                                  style: const TextStyle(color: Colors.white38, fontSize: 10, fontWeight: FontWeight.bold)),
+                                              const SizedBox(width: 4),
+                                              Text(e.playerName.isEmpty ? e.team : e.playerName,
+                                                  style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                                              const SizedBox(width: 6),
+                                              const Text('⚽', style: TextStyle(fontSize: 12)),
+                                            ],
+                                          ],
+                                        ),
+                                      )),
+                                ]
+                              ],
+                            ),
                           ),
                         ),
-                        Expanded(
-                          child: Text(f.awayTeam,
-                              style: const TextStyle(color: Colors.white, fontSize: 12)),
-                        ),
-                      ],
-                    ),
-                  ),
-                ).toList(),
+                      );
+                    },
+                  );
+                }).toList(),
               ),
       ),
     );

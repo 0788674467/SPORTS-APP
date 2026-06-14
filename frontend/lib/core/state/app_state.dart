@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Supported application languages.
 enum AppLanguage {
@@ -16,6 +17,22 @@ class AppState extends ChangeNotifier {
 
   // ── Season label — admin-controlled, shown in spectator hero ─────────────
   String _seasonLabel = 'Season 2026 underway';
+
+  AppState() {
+    _fetchSeasonSettings();
+  }
+
+  Future<void> _fetchSeasonSettings() async {
+    try {
+      final res = await Supabase.instance.client.from('season_settings').select('name').eq('id', 1).maybeSingle();
+      if (res != null && res['name'] != null) {
+        _seasonLabel = res['name'];
+        notifyListeners();
+      }
+    } catch (_) {
+      // Ignore if table doesn't exist yet
+    }
+  }
 
   /// The current season label shown in the spectator hero and standings subtitle.
   String get seasonLabel => _seasonLabel;

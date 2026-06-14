@@ -272,6 +272,22 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     if (mounted) setState(() { _venues = v; _isLoadingVenues = false; });
   }
 
+  Future<void> _fetchSeasonSettings() async {
+    try {
+      final res = await Supabase.instance.client.from('season_settings').select().eq('id', 1).maybeSingle();
+      if (res != null && mounted) {
+        setState(() {
+          _seasonNameCtrl.text = res['name'] ?? 'MMU Soccer League 2026';
+          _seasonStartCtrl.text = res['start_date'] ?? '01 Jan 2026';
+          _seasonEndCtrl.text = res['end_date'] ?? '30 Jun 2026';
+        });
+        context.read<AppState>().setSeasonLabel(_seasonNameCtrl.text);
+      }
+    } catch (_) {
+      // Table might not exist yet
+    }
+  }
+
   // ─── Real-time Notifications Loading ────────────────────────────────────────
   Future<void> _loadNotifications() async {
     if (!mounted) return;
@@ -451,6 +467,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     _fetchSquadSubmissions();
     _fetchVenues();
     _fetchLeagues();
+    _fetchSeasonSettings();
     _loadNotifications();
     _loadLiveMatches();
     _loadRecentResults();
@@ -2165,9 +2182,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         // ── Generator panel ─────────────────────────────────────────────────
         FixtureGeneratorPanel(
-          teams: _dynamicTeams.map((t) => t['name'] as String).toList(),
+          teams: _dynamicTeams.where((t) => t['is_active'] == true).map((t) => t['name'] as String).toList(),
           referees: _dynamicReferees.map((r) => r['full_name'] as String).toList(),
-          teamMaps: _dynamicTeams,
+          teamMaps: _dynamicTeams.where((t) => t['is_active'] == true).toList(),
           venues: _venues,
           leagues: _leagues,
         ),
@@ -3282,37 +3299,51 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           ]),
         ]),
         const SizedBox(height: 10),
-        Row(children: [
-          if (r['submitted_at'] != null)
-            Text('Submitted: ${_formatDate(r['submitted_at'])}', style: TextStyle(color: Colors.grey.shade500, fontSize: 10)),
-          const Spacer(),
-          if (r['reviewed_at'] != null)
-            Text('Reviewed: ${_formatDate(r['reviewed_at'])}', style: TextStyle(color: Colors.grey.shade500, fontSize: 10)),
-          const SizedBox(width: 8),
-          Text('${goalEvents.length} goal${goalEvents.length == 1 ? '' : 's'} · ${events.length} events',
-            style: TextStyle(color: Colors.grey.shade500, fontSize: 10)),
-          const SizedBox(width: 8),
-          TextButton.icon(
-            onPressed: () => _showReportDetail(r),
-            icon: const Icon(Icons.visibility, size: 16),
-            label: const Text('View', style: TextStyle(fontSize: 12)),
-            style: TextButton.styleFrom(foregroundColor: const Color(0xFF003087), padding: const EdgeInsets.symmetric(horizontal: 8)),
-          ),
-          if (status == 'submitted') ...[
-            TextButton.icon(
-              onPressed: () => _approveReport(r['id']),
-              icon: const Icon(Icons.check_circle, size: 16, color: Colors.green),
-              label: const Text('Approve', style: TextStyle(fontSize: 12, color: Colors.green)),
-              style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          runSpacing: 4,
+          children: [
+            Wrap(
+              spacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                if (r['submitted_at'] != null)
+                  Text('Submitted: ${_formatDate(r['submitted_at'])}', style: TextStyle(color: Colors.grey.shade500, fontSize: 10)),
+                if (r['reviewed_at'] != null)
+                  Text('Reviewed: ${_formatDate(r['reviewed_at'])}', style: TextStyle(color: Colors.grey.shade500, fontSize: 10)),
+                Text('${goalEvents.length} goal${goalEvents.length == 1 ? '' : 's'} · ${events.length} events',
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 10)),
+              ],
             ),
-            TextButton.icon(
-              onPressed: () => _rejectReport(r['id']),
-              icon: const Icon(Icons.cancel, size: 16, color: Colors.red),
-              label: const Text('Reject', style: TextStyle(fontSize: 12, color: Colors.red)),
-              style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8)),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextButton.icon(
+                  onPressed: () => _showReportDetail(r),
+                  icon: const Icon(Icons.visibility, size: 16),
+                  label: const Text('View', style: TextStyle(fontSize: 12)),
+                  style: TextButton.styleFrom(foregroundColor: const Color(0xFF003087), padding: const EdgeInsets.symmetric(horizontal: 4)),
+                ),
+                if (status == 'submitted') ...[
+                  TextButton.icon(
+                    onPressed: () => _approveReport(r['id']),
+                    icon: const Icon(Icons.check_circle, size: 16, color: Colors.green),
+                    label: const Text('Approve', style: TextStyle(fontSize: 12, color: Colors.green)),
+                    style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 4)),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => _rejectReport(r['id']),
+                    icon: const Icon(Icons.cancel, size: 16, color: Colors.red),
+                    label: const Text('Reject', style: TextStyle(fontSize: 12, color: Colors.red)),
+                    style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 4)),
+                  ),
+                ],
+              ],
             ),
           ],
-        ]),
+        ),
       ]),
     );
   }
@@ -3460,16 +3491,6 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     }
   }
 
-  Widget _detailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(children: [
-        Text('$label: ', style: TextStyle(color: Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.w500)),
-        Text(value, style: const TextStyle(fontSize: 12)),
-      ]),
-    );
-  }
-
   // ─── Teams ──────────────────────────────────────────────────────────────────
   Widget _buildTeams() {
     if (_isLoadingManagement) return const Center(child: CircularProgressIndicator(color: Color(0xFF00A651)));
@@ -3510,9 +3531,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
             decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
             child: Row(children: [
-              Expanded(flex: 3, child: _sortableColHeader('Team', 'name', _teamsSortCol, _teamsSortAsc, () => toggleSort('name'))),
+              Expanded(flex: 4, child: _sortableColHeader('Team', 'name', _teamsSortCol, _teamsSortAsc, () => toggleSort('name'))),
               Expanded(flex: 3, child: _sortableColHeader('Coach', 'coach', _teamsSortCol, _teamsSortAsc, () => toggleSort('coach'))),
-              Expanded(flex: 2, child: _sortableColHeader('Status', 'status', _teamsSortCol, _teamsSortAsc, () => toggleSort('status'))),
+              Expanded(flex: 3, child: _sortableColHeader('Status', 'status', _teamsSortCol, _teamsSortAsc, () => toggleSort('status'))),
             ]),
           ),
           const SizedBox(height: 4),
@@ -3531,18 +3552,27 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                   border: Border.all(color: Colors.grey.shade100),
                 ),
                 child: Row(children: [
-                  Expanded(flex: 3, child: Text(t['name'] ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
-                  Expanded(flex: 3, child: Text(t['profiles']?['full_name'] ?? 'No Coach', style: TextStyle(fontSize: 12, color: Colors.grey.shade600))),
-                  Expanded(flex: 2, child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: isActive ? Colors.green.shade50 : Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(8),
+                  Expanded(flex: 4, child: Text(t['name'] ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13), overflow: TextOverflow.ellipsis)),
+                  Expanded(flex: 3, child: Text(t['profiles']?['full_name'] ?? 'No Coach', style: TextStyle(fontSize: 12, color: Colors.grey.shade600), overflow: TextOverflow.ellipsis)),
+                  Expanded(flex: 3, child: Row(children: [
+                    Transform.scale(
+                      scale: 0.8,
+                      child: Switch(
+                        value: isActive,
+                        activeColor: Colors.green,
+                        inactiveThumbColor: Colors.red.shade400,
+                        inactiveTrackColor: Colors.red.shade100,
+                        onChanged: (val) async {
+                          final ap = Provider.of<auth.AuthProvider>(context, listen: false);
+                          await ap.updateTeam(t['id'], isActive: val);
+                          _fetchManagementData();
+                        },
+                      ),
                     ),
-                    child: Text(isActive ? 'Active' : 'Inactive',
+                    Text(isActive ? 'Active' : 'Inactive',
                         style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold,
                             color: isActive ? Colors.green.shade700 : Colors.red.shade700)),
-                  )),
+                  ])),
                 ]),
               );
             }),

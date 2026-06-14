@@ -1164,17 +1164,12 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
                       decoration: BoxDecoration(color: c.withOpacity(0.15), borderRadius: BorderRadius.circular(6)),
                       child: Text(lbl, style: TextStyle(color: c, fontSize: 10, fontWeight: FontWeight.w600)),
                     ),
-                    const SizedBox(width: 8),
-                    if (st == 'rejected')
-                      TextButton(
-                        onPressed: () => _resendReport(r),
-                        child: const Text('Resend', style: TextStyle(fontSize: 11)),
-                      )
-                    else if (st == 'submitted')
-                      TextButton(
-                        onPressed: () => _resendReport(r),
-                        child: const Text('Resend', style: TextStyle(fontSize: 11)),
-                      ),
+                    TextButton.icon(
+                      onPressed: () => _resendReport(r),
+                      icon: const Icon(Icons.refresh_rounded, size: 14),
+                      label: const Text('Resend', style: TextStyle(fontSize: 11)),
+                      style: TextButton.styleFrom(foregroundColor: Colors.orange, padding: const EdgeInsets.symmetric(horizontal: 6)),
+                    ),
                   ]),
                 );
               }),
@@ -1218,28 +1213,60 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
               ],
             ] else const Text('No match selected. Start a match from My Fixtures.', style: TextStyle(color: Colors.grey)),
             const SizedBox(height: 20),
-            SizedBox(width: double.infinity, child: ElevatedButton.icon(
-              onPressed: f == null ? null : () => _submitReport(f, events, refName),
-              icon: const Icon(Icons.send_rounded, size: 18),
-              label: const Text('Submit to Admin'),
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF003087), foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(vertical: 14)),
-            )),
+            Row(
+              children: [
+                if (f != null && f.status == 'live') ...[
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        _submitReport(f!, events, refName, isFinal: false);
+                      },
+                      icon: const Icon(Icons.sync_rounded, size: 18),
+                      label: const Text('Send Live Update'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF003087),
+                        side: const BorderSide(color: Color(0xFF003087)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                ],
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: f == null ? null : () {
+                      _submitReport(f!, events, refName, isFinal: true);
+                    },
+                    icon: const Icon(Icons.send_rounded, size: 18),
+                    label: const Text('Finalize & Submit'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF003087),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ]),
         ),
       ]),
     );
   }
 
-  Future<void> _submitReport(GeneratedFixture f, List<MatchEvent> events, String refName) async {
+  Future<void> _submitReport(GeneratedFixture f, List<MatchEvent> events, String refName, {bool isFinal = true}) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: const Text('Submit Match Report?'),
+        title: Text(isFinal ? 'Submit Final Match Report?' : 'Send Live Update?'),
         content: Text(
-          'This will finalise ${f.homeTeam} ${f.homeScore} – ${f.awayScore} ${f.awayTeam} '
-          'and automatically update all player stats. This cannot be undone.',
+          isFinal
+            ? 'This will finalise ${f.homeTeam} ${f.homeScore} – ${f.awayScore} ${f.awayTeam} '
+              'and automatically update all player stats. This cannot be undone.'
+            : 'This will send the current match events and score to the admin without ending the match.',
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
@@ -1249,7 +1276,7 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Submit'),
+            child: Text(isFinal ? 'Submit' : 'Send Update'),
           ),
         ],
       ),
@@ -1257,7 +1284,9 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
     if (confirmed != true || !mounted) return;
 
     final ms = context.read<MatchState>();
-    await ms.submitMatchReport(f.id);
+    await ms.submitMatchReport(f.id, isFinal: isFinal);
+
+    if (isFinal) {
 
     final Map<String, Map<String, int>> deltas = {};
     void add(String playerName, String key) {
@@ -1302,12 +1331,14 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
       }
     }
 
+    } // end if(isFinal)
+
     setState(() => _pastReportsFetched = false);
     await _fetchPastReports();
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: const Text('Match report submitted! Player stats updated automatically.'),
+        content: Text(isFinal ? 'Match report submitted! Player stats updated automatically.' : 'Live update sent to Admin.'),
         backgroundColor: Colors.green,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1359,6 +1390,93 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
       }
     } catch (e) {
       debugPrint('Resend error: $e');
+    }
+  }
+
+  void _viewReport(Map<String, dynamic> report) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(child: Text('${report['home_team']} vs ${report['away_team']}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold))),
+                IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+              ],
+            ),
+            Text('${report['home_score']} - ${report['away_score']}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 16),
+            const Text('Match Details', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 8),
+            _rRow('Status', report['status'] ?? 'Unknown'),
+            _rRow('Venue', report['venue'] ?? ''),
+            _rRow('Submitted', _formatShortDate(report['submitted_at'])),
+            const Divider(height: 24),
+            const Text('Events', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 8),
+            Expanded(
+              child: (report['events'] as List?)?.isEmpty ?? true
+                  ? const Text('No events recorded.', style: TextStyle(color: Colors.grey))
+                  : ListView(
+                      children: (report['events'] as List).map((e) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              SizedBox(width: 30, child: Text('${e['minute']}\'', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey))),
+                              Text(_eventEmoji(e['type'] ?? '')),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text('${e['player_name']} (${e['team']})', style: const TextStyle(fontWeight: FontWeight.w500))),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _deleteReport(Map<String, dynamic> report) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Text('Delete Report?'),
+        content: const Text('Are you sure you want to delete this match report? This cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await Supabase.instance.client.from('match_reports').delete().eq('id', report['id']);
+      setState(() => _pastReportsFetched = false);
+      await _fetchPastReports();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Report deleted'), backgroundColor: Colors.green));
+      }
+    } catch (e) {
+      debugPrint('Delete error: $e');
     }
   }
 

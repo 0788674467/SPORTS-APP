@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/auth/auth_provider.dart' as auth;
+import '../../core/state/app_state.dart';
 import '../../core/theme/app_theme.dart';
 import 'signup_screen.dart';
 
@@ -181,7 +182,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                   fontWeight: FontWeight.w900,
                                   fontSize: (sw * 0.035).clamp(10.0, 18.0),
                                   letterSpacing: full ? 2.5 : 1.5))),
-                          Text('2026 Season • Premier Grade',
+                          Text(context.watch<AppState>().seasonLabel,
                               style: TextStyle(
                                   color: AppColors.mmwGold,
                                   fontWeight: FontWeight.w700,
@@ -239,7 +240,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                 fontWeight: FontWeight.w800)),
                       ),
                       const SizedBox(width: 10),
-                      Text('Season 2026 underway',
+                      Text(context.watch<AppState>().seasonLabel,
                           style: TextStyle(
                               color: Colors.white.withOpacity(0.7),
                               fontSize: 12)),
