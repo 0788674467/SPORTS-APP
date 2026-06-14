@@ -35,6 +35,12 @@ class _SpectatorHomeState extends State<SpectatorHome>
   bool _showLiveOverlay = false;
   bool _liveOverlayExpanded = true;
 
+  // ─ Local match clock (ticks every 60 s like PL/UCL live scores) ──────
+  Timer? _matchClockTimer;
+  int _displayMinute = 0;      // what spectators see ticking up
+  int _lastServerMinute = -1;  // last value received from server
+  bool _clockRunning = false;
+
   // Settings state
   bool _matchAlerts = true;
   bool _darkMode = false;
@@ -177,11 +183,40 @@ class _SpectatorHomeState extends State<SpectatorHome>
     if (mounted) setState(() => _guestId = gid);
   }
 
+  // ── Start / sync the local 60-second match clock ─────────────────────
+  void _syncMatchClock(int serverMinute, bool isLive) {
+    // Sync forward whenever server sends a higher minute
+    if (serverMinute > _lastServerMinute) {
+      _lastServerMinute = serverMinute;
+      if (serverMinute > _displayMinute) {
+        setState(() => _displayMinute = serverMinute);
+      }
+    }
+
+    if (isLive && !_clockRunning) {
+      _clockRunning = true;
+      _matchClockTimer = Timer.periodic(const Duration(seconds: 60), (_) {
+        if (!mounted) return;
+        setState(() {
+          if (_displayMinute < 90) _displayMinute++;
+        });
+      });
+    } else if (!isLive && _clockRunning) {
+      _clockRunning = false;
+      _matchClockTimer?.cancel();
+      setState(() {
+        _displayMinute = 0;
+        _lastServerMinute = -1;
+      });
+    }
+  }
+
   @override
   void dispose() {
     _slideTimer?.cancel();
     _onlineTimer?.cancel();
     _teamsStreamSub?.cancel();
+    _matchClockTimer?.cancel();
     _pageCtrl.dispose();
     _pulseCtrl.dispose();
     _chatCtrl.dispose();
@@ -353,10 +388,13 @@ class _SpectatorHomeState extends State<SpectatorHome>
     final awayTeam = liveF?.awayTeam ?? 'Eagles Utd';
     final homeScore = liveF?.homeScore ?? 0;
     final awayScore = liveF?.awayScore ?? 0;
-    // Show live minute from fixture's currentMinute (updated by referee)
-    final currentMin = liveF?.currentMinute ?? 0;
-    final remaining = (90 - currentMin).clamp(0, 90);
-    final minuteLabel = liveF != null ? "${currentMin}'" : "FT";
+    final isLive = liveF?.status == 'live';
+
+    // Sync local clock with server's authoritative minute
+    _syncMatchClock(liveF?.currentMinute ?? 0, isLive);
+
+    // minuteLabel ticks every 60 s locally — like Premier League / UCL apps
+    final minuteLabel = isLive ? "$_displayMinute'" : 'FT';
 
     return SafeArea(
       child: AnimatedContainer(
@@ -504,9 +542,9 @@ class _SpectatorHomeState extends State<SpectatorHome>
                             ),
                             const SizedBox(height: 2),
                             Text('(0-0)', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 9)),
-                            if (liveF != null && liveF.status == 'live') ...[
+                            if (liveF != null && isLive && _displayMinute > 0) ...[
                               const SizedBox(height: 3),
-                              Text('$remaining remaining', style: TextStyle(color: AppColors.mmwGreen.withOpacity(0.8), fontSize: 9, fontWeight: FontWeight.w600)),
+                              Text('${(90 - _displayMinute).clamp(0, 90)} mins left', style: TextStyle(color: AppColors.mmwGreen.withOpacity(0.8), fontSize: 9, fontWeight: FontWeight.w600)),
                             ],
                           ],
                         ),
