@@ -88,11 +88,11 @@ class _RefereeDashboardState extends State<RefereeDashboard> with TickerProvider
   void _startTimer() {
     _matchTimer?.cancel();
     _matchRunning = true;
+    final ms = context.read<MatchState>();
     // ── Persist current minute from MatchConsole to DB so spectators see live clock ──
     _matchTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (!mounted) return;
       if (_activeFixId != null) {
-        final ms = context.read<MatchState>();
         final f = ms.generatedFixtures.firstWhereOrNull((x) => x.id == _activeFixId);
         if (f != null) {
           _matchMinute = f.currentMinute;

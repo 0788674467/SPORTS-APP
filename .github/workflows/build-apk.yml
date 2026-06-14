@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Test & Build APK
 
 on:
   # Allow manual trigger from GitHub Actions tab
@@ -37,28 +37,47 @@ jobs:
         working-directory: frontend
         run: flutter pub get
       
+      - name: 🧪 Run unit, widget & integration tests with coverage
+        working-directory: frontend
+        run: flutter test --coverage
+      
+      - name: 📊 Show test summary
+        working-directory: frontend
+        run: |
+          echo "✅ All tests passed"
+          lines=$(wc -l < coverage/lcov.info 2>/dev/null || echo 0)
+          echo "📈 Coverage records: $lines lines"
+      
+      - name: 📤 Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-coverage
+          path: frontend/coverage/
+          retention-days: 7
+          if-no-files-found: ignore
+      
       - name: 🔨 Build APK
         working-directory: frontend
-        run: flutter build apk --debug
-      
+        run: flutter build apk --release
+
       - name: 📊 Get APK info
         working-directory: frontend
         run: |
           ls -lh build/app/outputs/flutter-apk/
-          echo "APK Size: $(du -h build/app/outputs/flutter-apk/app-debug.apk | cut -f1)"
-      
+          echo "APK Size: $(du -h build/app/outputs/flutter-apk/app-release.apk | cut -f1)"
+
       - name: 📤 Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug-apk
-          path: frontend/build/app/outputs/flutter-apk/app-debug.apk
+          name: app-release-apk
+          path: frontend/build/app/outputs/flutter-apk/app-release.apk
           retention-days: 30
-      
+
       - name: 📤 Upload Split APKs (if exist)
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: split-apks
-          path: frontend/build/app/outputs/flutter-apk/app-*-debug.apk
+          path: frontend/build/app/outputs/flutter-apk/app-*-release.apk
           retention-days: 30
           if-no-files-found: ignore

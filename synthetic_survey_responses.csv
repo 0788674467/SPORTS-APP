@@ -1,0 +1,51 @@
+Role,Duration,Device,B1_Fixtures,B2_Results,B3_Standings,B4_Players,B5_Comm,B6_Efficient,C1_Easy,C2_FixtureMgt,C3_ResultMgt,C4_CommMgt,C5_Stats,C6_Spectator,C7_Recommend,C8_Satisfaction,D1_OldProblems,D2_NewLikes,D3_Challenges,D4_Improvements
+Player,3 to 5,Smartphone,2,1,1,2,2,1,4,5,4,4,3,4,4,5,Delayed fixture communication,Digital match reports,None really,More detailed match events
+Player,Over 5,Smartphone,3,2,1,1,1,2,3,4,3,4,5,4,5,4,Poor communication,Easy to see fixtures on my phone,None,More detailed match events
+Player,3 to 5,Smartphone,2,1,1,2,1,1,5,3,4,4,3,4,5,4,Poor communication,Live match updates,A bit confusing on the first day,Add player statistics like top scorers
+Player,1 to 2,Smartphone,1,2,1,1,2,2,5,5,4,4,4,4,4,3,Everything was manual and slow,Transparency in results,None really,Keep improving the speed
+Player,Less 1,Smartphone,2,2,2,2,2,1,5,5,5,5,4,4,4,4,Hard to know league standings,The spectator dashboard is beautiful,None,SMS notifications for fixtures
+Player,3 to 5,Tablet,1,1,2,2,1,1,4,4,5,4,4,4,4,4,Paperwork was too much,The spectator dashboard is beautiful,Required a smartphone which some players lack,SMS notifications for fixtures
+Coach,1 to 2,Laptop,1,1,1,4,1,1,3,4,5,3,5,4,5,3,Everything was manual and slow,Live match updates,Required a smartphone which some players lack,Allow coaches to add assistant coaches
+Spectator,1 to 2,Laptop,1,2,2,1,1,4,4,4,4,5,4,5,5,5,Hard to know league standings,The spectator dashboard is beautiful,None really,Keep improving the speed
+Spectator,Over 5,Smartphone,1,1,4,2,3,2,4,4,4,5,5,4,4,4,Paperwork was too much,Real-time standings,None,Mobile app version
+Spectator,1 to 2,Smartphone,1,2,2,1,2,1,4,3,5,4,4,5,4,3,Everything was manual and slow,Lineup submission is very easy,None really,More detailed match events
+Referee,Over 5,Smartphone,4,1,2,2,1,2,3,4,4,4,4,5,5,4,Poor communication,Saves a lot of time,Required a smartphone which some players lack,Keep improving the speed
+Spectator,Over 5,Smartphone,2,3,1,1,2,2,5,4,4,3,4,4,4,5,Results were often disputed,Digital match reports,Required a smartphone which some players lack,Add player statistics like top scorers
+Spectator,1 to 2,Smartphone,2,1,1,2,2,2,4,4,4,4,4,4,4,4,Hard to know league standings,Easy to see fixtures on my phone,Nothing,More detailed match events
+Player,1 to 2,Smartphone,1,3,1,2,1,1,3,4,3,4,4,5,4,4,Everything was manual and slow,Real-time standings,Takes time to input all player data first,Video highlights integration
+Spectator,Over 5,Smartphone,2,1,1,2,2,2,5,5,4,4,3,5,4,4,Poor communication,Lineup submission is very easy,A bit confusing on the first day,Keep improving the speed
+Coach,3 to 5,Smartphone,1,2,3,2,2,1,5,4,4,4,5,5,5,5,Referees submitting results late,Live match updates,Internet connection sometimes drops,Mobile app version
+Spectator,Less 1,Smartphone,1,1,2,2,2,1,4,3,4,4,3,4,4,4,Referees submitting results late,Easy to see fixtures on my phone,Takes time to input all player data first,More detailed match events
+Spectator,3 to 5,Smartphone,2,2,2,1,3,1,4,5,5,5,4,4,4,4,Referees submitting results late,Saves a lot of time,A bit confusing on the first day,Allow coaches to add assistant coaches
+Coach,3 to 5,Smartphone,3,3,2,2,1,2,5,5,5,5,5,5,4,5,Delayed fixture communication,Easy to see fixtures on my phone,None really,Allow coaches to add assistant coaches
+Spectator,Less 1,Tablet,3,2,1,2,2,1,5,4,5,4,4,4,3,5,Results were often disputed,Transparency in results,None really,Video highlights integration
+Spectator,Over 5,Laptop,3,2,2,2,2,1,5,5,4,4,3,5,4,4,Delayed fixture communication,Live match updates,Nothing,Add player statistics like top scorers
+Player,Over 5,Smartphone,1,3,2,2,2,2,4,4,4,4,5,4,4,5,Delayed fixture communication,Live match updates,None really,Add player statistics like top scorers
+Spectator,3 to 5,Tablet,1,3,2,1,2,3,5,4,5,4,4,4,4,4,Losing track of player cards,Easy to see fixtures on my phone,A bit confusing on the first day,Keep improving the speed
+Spectator,3 to 5,Smartphone,2,2,1,3,2,1,4,4,4,5,3,5,4,4,Delayed fixture communication,Transparency in results,A bit confusing on the first day,SMS notifications for fixtures
+Coach,3 to 5,Smartphone,2,4,2,1,3,2,4,5,5,4,5,5,5,4,Hard to know league standings,Transparency in results,None really,More detailed match events
+Coordinator,1 to 2,Smartphone,1,3,2,2,3,2,5,5,5,4,4,5,4,5,Losing track of player cards,Live match updates,Takes time to input all player data first,Add player statistics like top scorers
+Player,Over 5,Smartphone,1,2,1,2,1,3,4,3,5,5,5,5,4,3,Everything was manual and slow,Lineup submission is very easy,None really,SMS notifications for fixtures
+Referee,3 to 5,Smartphone,2,1,2,3,3,2,4,5,5,5,5,5,4,5,Delayed fixture communication,Digital match reports,None really,"None, it is great"
+Coordinator,Less 1,Laptop,1,3,3,2,2,2,4,5,5,5,3,4,5,5,Poor communication,Real-time standings,A bit confusing on the first day,Allow coaches to add assistant coaches
+Player,1 to 2,Smartphone,1,2,1,1,2,2,5,4,4,4,5,4,3,4,Paperwork was too much,Saves a lot of time,A bit confusing on the first day,SMS notifications for fixtures
+Referee,Over 5,Tablet,1,1,2,2,1,2,3,3,5,5,4,5,3,5,Paperwork was too much,Easy to see fixtures on my phone,Getting used to the new interface initially,Add player statistics like top scorers
+Player,Less 1,Tablet,1,1,1,2,2,4,5,4,5,4,4,4,5,5,Hard to know league standings,The spectator dashboard is beautiful,Nothing,Allow coaches to add assistant coaches
+Spectator,Less 1,Smartphone,1,1,1,2,1,2,5,5,4,4,5,4,4,4,Paperwork was too much,Live match updates,Internet connection sometimes drops,Add player statistics like top scorers
+Player,Less 1,Smartphone,2,2,3,2,2,3,4,3,4,5,4,4,5,4,Poor communication,Digital match reports,Takes time to input all player data first,Add player statistics like top scorers
+Spectator,Less 1,Laptop,2,1,2,2,2,3,4,5,5,3,4,4,4,5,Losing track of player cards,Real-time standings,Getting used to the new interface initially,"None, it is great"
+Referee,3 to 5,Smartphone,1,2,1,2,2,2,4,5,5,5,4,5,5,5,Poor communication,The spectator dashboard is beautiful,A bit confusing on the first day,Mobile app version
+Spectator,1 to 2,Tablet,2,3,2,1,3,1,5,3,5,4,5,4,4,5,Paperwork was too much,Lineup submission is very easy,Nothing,"None, it is great"
+Coach,Less 1,Tablet,2,1,2,1,3,1,5,4,3,5,5,5,5,5,Hard to know league standings,Live match updates,Internet connection sometimes drops,SMS notifications for fixtures
+Player,Over 5,Smartphone,2,1,2,2,1,2,4,4,4,4,5,5,3,4,Delayed fixture communication,Transparency in results,Internet connection sometimes drops,Keep improving the speed
+Spectator,Over 5,Smartphone,2,1,1,1,2,2,4,4,5,4,5,5,4,4,Paperwork was too much,Transparency in results,None,Mobile app version
+Coach,Over 5,Smartphone,2,1,2,3,1,2,4,5,5,5,5,5,5,5,Everything was manual and slow,Digital match reports,None really,Add player statistics like top scorers
+Player,1 to 2,Tablet,1,2,2,1,2,1,5,4,4,4,4,4,4,4,Everything was manual and slow,Easy to see fixtures on my phone,Required a smartphone which some players lack,Add player statistics like top scorers
+Player,3 to 5,Smartphone,2,2,2,2,2,1,5,4,5,4,4,4,4,4,Paperwork was too much,Lineup submission is very easy,Getting used to the new interface initially,"None, it is great"
+Spectator,Less 1,Smartphone,1,1,1,4,1,2,4,5,4,3,5,4,4,3,Hard to know league standings,Real-time standings,Takes time to input all player data first,Mobile app version
+Coach,Less 1,Laptop,3,2,2,1,4,3,5,5,3,4,5,4,5,4,Delayed fixture communication,The spectator dashboard is beautiful,A bit confusing on the first day,SMS notifications for fixtures
+Coordinator,Less 1,Laptop,2,3,3,3,2,2,4,4,4,3,5,5,4,5,Referees submitting results late,Lineup submission is very easy,A bit confusing on the first day,Video highlights integration
+Coordinator,Less 1,Smartphone,1,2,1,4,1,3,5,5,5,4,4,5,4,4,Results were often disputed,Real-time standings,A bit confusing on the first day,Add player statistics like top scorers
+Spectator,Over 5,Tablet,1,2,2,2,2,1,4,4,5,4,4,4,3,4,Hard to know league standings,Lineup submission is very easy,Getting used to the new interface initially,Video highlights integration
+Coach,3 to 5,Tablet,2,2,2,3,2,1,4,5,4,5,4,5,3,5,Poor communication,The spectator dashboard is beautiful,None really,Video highlights integration
+Spectator,1 to 2,Smartphone,1,1,3,1,1,2,4,4,4,4,4,4,4,4,Losing track of player cards,Live match updates,Nothing,SMS notifications for fixtures

@@ -570,8 +570,10 @@ class Notification {
   static NotificationType _parseNotificationType(String? type) {
     switch (type?.toLowerCase()) {
       case 'match_start':
+      case 'matchstart':
         return NotificationType.matchStart;
       case 'match_end':
+      case 'matchend':
         return NotificationType.matchEnd;
       case 'goal':
         return NotificationType.goal;

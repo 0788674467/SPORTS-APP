@@ -420,12 +420,13 @@ class _LineupBuilderState extends State<LineupBuilder> {
             final ms = context.read<MatchState>();
             final lf = ms.liveFixture ?? (ms.generatedFixtures.isNotEmpty ? ms.generatedFixtures.first : null);
             if (lf != null) {
-              final lineupPlayers = _starters.map((p) => LineupPlayer(
+              final lineupPlayers = _allPlayers.map((p) => LineupPlayer(
                 name: p['name']!,
                 position: p['pos']!,
                 jerseyNo: int.tryParse(p['num'] ?? '0') ?? 0,
                 team: 'My Team',
                 photoUrl: p['photoUrl'] ?? _bytesToDataUri(p['photoBytes'] as Uint8List?),
+                isSubstituted: !(p['starter'] as bool),
               )).toList();
               ms.submitLineup(lf.id, lineupPlayers);
               // Persist to Supabase
