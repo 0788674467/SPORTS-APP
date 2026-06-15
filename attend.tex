@@ -1,0 +1,76 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage[a4paper,top=1cm,bottom=1cm,left=1.2cm,right=1.2cm,landscape]{geometry}
+\usepackage{array,xcolor,colortbl,helvet,microtype,tabularx,calc}
+\renewcommand{\familydefault}{\sfdefault}
+\pagestyle{empty}
+
+\definecolor{navy}{HTML}{0B2545}
+\definecolor{aqua}{HTML}{45C4B0}
+\definecolor{gold}{HTML}{F4C430}
+\definecolor{stripe}{HTML}{EEF4FA}
+
+% ── Row height: auto-fill 6 rows into remaining page space ──────────────
+% \textheight minus all fixed overhead (header ~58pt, info row ~15pt,
+% table header ~21pt, spacing/rules/footer ~46pt) divided by 6 rows
+\newlength{\RHlen}
+\newcommand{\RH}{\rule{0pt}{\RHlen}}
+
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+
+\begin{document}
+
+% Compute row height AFTER geometry sets \textheight
+\setlength{\RHlen}{\dimexpr(\textheight - 210pt)/6\relax}
+
+\begin{center}
+  {\large\bfseries\color{navy} MOUNTAINS OF THE MOON UNIVERSITY}\\[1pt]
+  {\normalsize\bfseries\color{navy} Directorate of Information \& Communication Technology (ICT)}\\[1pt]
+  \textcolor{aqua}{\rule{0.6\linewidth}{1.2pt}}\\[2pt]
+  {\Large\bfseries\color{navy} INTERNSHIP ATTENDANCE REGISTER}\\[0pt]
+  \textcolor{gold}{\rule{0.6\linewidth}{2pt}}
+\end{center}
+
+\vspace{2pt}
+\noindent
+\begin{tabular}{@{}l@{\,}p{4cm}@{\quad}l@{\,}p{4cm}@{\quad}l@{\,}p{2.5cm}@{\quad}l@{\,}p{2cm}@{}}
+  \textbf{Date:}       & \underline{\hfill} &
+  \textbf{Supervisor:} & \underline{\hfill} &
+  \textbf{Venue/Lab:}  & \underline{\hfill} &
+  \textbf{Week No.:}   & \underline{\hfill}
+\end{tabular}
+\vspace{3pt}
+
+\setlength{\tabcolsep}{4pt}
+\noindent{\normalsize
+\begin{tabularx}{\linewidth}{|C{0.8cm}|L|C{3.2cm}|L|C{2.2cm}|C{2.2cm}|C{3.2cm}|}
+\hline
+\rowcolor{navy}
+{\bfseries\color{white}\rule{0pt}{18pt} S/N} &
+{\bfseries\color{white} FULL NAME} &
+{\bfseries\color{white} REG.\ NO.} &
+{\bfseries\color{white} INSTITUTION} &
+{\bfseries\color{white} TIME IN} &
+{\bfseries\color{white} TIME OUT} &
+{\bfseries\color{white} SIGNATURE} \\ \hline
+\rowcolor{white}   \RH\bfseries\large 1 & & & & & & \\ \hline
+\rowcolor{stripe}  \RH\bfseries\large 2 & & & & & & \\ \hline
+\rowcolor{white}   \RH\bfseries\large 3 & & & & & & \\ \hline
+\rowcolor{stripe}  \RH\bfseries\large 4 & & & & & & \\ \hline
+\rowcolor{white}   \RH\bfseries\large 5 & & & & & & \\ \hline
+\rowcolor{stripe}  \RH\bfseries\large 6 & & & & & & \\ \hline
+\end{tabularx}}
+
+\vspace{4pt}
+\noindent\textcolor{navy}{\rule{\linewidth}{0.6pt}}\\[3pt]
+\noindent
+\begin{tabularx}{\linewidth}{@{}XX@{}}
+  \textbf{Intern:} \quad Name \underline{\hspace{5.5cm}} \quad Sign \underline{\hspace{2.5cm}} \quad Date \underline{\hspace{2cm}} &
+  \textbf{Supervisor:} \quad Name \underline{\hspace{5cm}} \quad Sign \underline{\hspace{2.5cm}} \quad Date \underline{\hspace{2cm}}
+\end{tabularx}\\[3pt]
+\noindent\textcolor{gold}{\rule{\linewidth}{1.5pt}}\\[1pt]
+\begin{center}
+{\footnotesize\color{navy}\itshape Directorate of ICT $\cdot$ Mountains of the Moon University $\cdot$ Fort Portal City, Uganda}
+\end{center}
+
+\end{document}

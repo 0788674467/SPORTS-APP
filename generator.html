@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate UniLeague PPTX (Deep Green Theme)</title>
+    <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/libs/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@3.12.0/dist/pptxgen.min.js"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; margin-top: 50px; background-color: #F7F9F8; }
+        button { padding: 15px 30px; font-size: 18px; background-color: #1A5C35; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #0D3B1E; }
+    </style>
+</head>
+<body>
+    <h1>Generating Your Presentation...</h1>
+    <p>Please wait. If the download doesn't start automatically, click the button below.</p>
+    <button onclick="main()">Download PowerPoint</button>
+
+    <script>
+        // ── Palette: Deep Green (forest MMU theme) ──
+        const C = {
+            dark:    "0D3B1E",  // deep forest green (title/section slides)
+            mid:     "1A5C35",  // medium green
+            accent:  "F5A623",  // warm gold accent
+            light:   "E8F5EC",  // very light green for content bg
+            white:   "FFFFFF",
+            offWhite:"F7F9F8",
+            text:    "1A2E20",  // dark green text
+            muted:   "5A7A64",  // muted green text
+            card:    "FFFFFF",
+        };
+
+        const makeShadow = () => ({ type: "outer", color: "000000", blur: 8, offset: 2, angle: 45, opacity: 0.10 });
+
+        async function main() {
+            const pres = new PptxGenJS();
+            pres.layout = "LAYOUT_16x9";
+            pres.title = "UniLeague – University Soccer League Management System";
+            pres.author = "Santo Rayern & Mbambu Rosette";
+
+            // ════════════════════════════════════════
+            // SLIDE 0 – TITLE SLIDE
+            // ════════════════════════════════════════
+            {
+                const s = pres.addSlide();
+                s.background = { color: C.dark };
+
+                // decorative circle top-right
+                s.addShape(pres.shapes.OVAL, { x: 7.8, y: -0.8, w: 3.5, h: 3.5,
+                fill: { color: C.mid }, line: { color: C.mid } });
+                s.addShape(pres.shapes.OVAL, { x: 8.4, y: -0.5, w: 2.0, h: 2.0,
+                fill: { color: "1E7040", transparency: 30 }, line: { color: "1E7040", transparency: 30 } });
+
+                // bottom accent circle
+                s.addShape(pres.shapes.OVAL, { x: -0.6, y: 4.2, w: 2.5, h: 2.5,
+                fill: { color: C.accent, transparency: 70 }, line: { color: C.accent, transparency: 70 } });
+
+                // university name
+                s.addText("MOUNTAINS OF THE MOON UNIVERSITY", {
+                x: 0.6, y: 0.5, w: 8.8, h: 0.45,
+                fontSize: 13, bold: true, color: C.accent, fontFace: "Calibri",
+                charSpacing: 2, align: "center", margin: 0
+                });
+                s.addText("Faculty of Science, Technology and Innovation (FOSTI)", {
+                x: 0.6, y: 0.98, w: 8.8, h: 0.3,
+                fontSize: 10, color: "AACFB5", fontFace: "Calibri", align: "center", margin: 0
+                });
+                s.addText("Department of Computer Science", {
+                x: 0.6, y: 1.28, w: 8.8, h: 0.3,
+                fontSize: 10, color: "AACFB5", fontFace: "Calibri", align: "center", margin: 0
+                });
+
+                // main title box
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                x: 0.6, y: 1.75, w: 8.8, h: 1.9,
+                fill: { color: C.mid }, rectRadius: 0.15, shadow: makeShadow(),
+                line: { color: C.mid }
+                });
+                s.addText("UNILEAGUE", {
+                x: 0.6, y: 1.82, w: 8.8, h: 0.75,
+                fontSize: 48, bold: true, color: C.white, fontFace: "Cambria",
+                align: "center", margin: 0
+                });
+                s.addText("University Soccer League Management System", {
+                x: 0.6, y: 2.58, w: 8.8, h: 0.5,
+                fontSize: 16, color: C.accent, fontFace: "Calibri", italic: true,
+                align: "center", margin: 0
+                });
+                s.addText("Case Study: Mountains of the Moon University", {
+                x: 0.6, y: 3.1, w: 8.8, h: 0.3,
+                fontSize: 11, color: "CCDDCC", fontFace: "Calibri", align: "center", margin: 0
+                });
+
+                // student info
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                x: 0.6, y: 3.65, w: 4.0, h: 1.4,
+                fill: { color: "0A2D17" }, rectRadius: 0.1, line: { color: "0A2D17" }
+                });
+                s.addText([
+                { text: "Santo Rayern", options: { bold: true, breakLine: true } },
+                { text: "2023/U/MMU/BCS/01673", options: { breakLine: true } },
+                { text: "santorayern@gmail.com", options: {} },
+                ], { x: 0.6, y: 3.68, w: 4.0, h: 1.35, color: C.white, fontFace: "Calibri", fontSize: 11, align: "center", valign: "middle" });
+
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                x: 5.4, y: 3.65, w: 4.0, h: 1.4,
+                fill: { color: "0A2D17" }, rectRadius: 0.1, line: { color: "0A2D17" }
+                });
+                s.addText([
+                { text: "Mbambu Rosette", options: { bold: true, breakLine: true } },
+                { text: "2023/U/MMU/BIT/01795", options: { breakLine: true } },
+                { text: "rossetmbambu9@mail.com", options: {} },
+                ], { x: 5.4, y: 3.68, w: 4.0, h: 1.35, color: C.white, fontFace: "Calibri", fontSize: 11, align: "center", valign: "middle" });
+
+                s.addText("Supervisor: Samuel Ocen  |  samuel.ocen@mmu.ac.ug  |  June 2026", {
+                x: 0.6, y: 5.2, w: 8.8, h: 0.25,
+                fontSize: 9, color: "889988", fontFace: "Calibri", align: "center", margin: 0
+                });
+            }
+
+            // ════════════════════════════════════════
+            // HELPER: section divider slide
+            // ════════════════════════════════════════
+            function sectionSlide(label, title) {
+                const s = pres.addSlide();
+                s.background = { color: C.dark };
+                s.addShape(pres.shapes.OVAL, { x: 8.2, y: -0.5, w: 3, h: 3,
+                fill: { color: C.mid }, line: { color: C.mid } });
+                s.addShape(pres.shapes.OVAL, { x: -0.5, y: 3.5, w: 2, h: 2,
+                fill: { color: C.accent, transparency: 75 }, line: { color: C.accent, transparency: 75 } });
+                s.addText(label, {
+                x: 0.7, y: 1.5, w: 8, h: 0.4,
+                fontSize: 12, bold: true, color: C.accent, fontFace: "Calibri",
+                charSpacing: 3, margin: 0
+                });
+                s.addText(title, {
+                x: 0.7, y: 1.95, w: 8.2, h: 1.4,
+                fontSize: 36, bold: true, color: C.white, fontFace: "Cambria", margin: 0
+                });
+                return s;
+            }
+
+            // HELPER: standard content slide header
+            function addHeader(s, title, subtitle) {
+                s.background = { color: C.offWhite };
+                s.addShape(pres.shapes.RECTANGLE, {
+                x: 0, y: 0, w: 10, h: 0.85,
+                fill: { color: C.dark }, line: { color: C.dark }
+                });
+                s.addShape(pres.shapes.RECTANGLE, {
+                x: 0, y: 0.85, w: 10, h: 0.06,
+                fill: { color: C.accent }, line: { color: C.accent }
+                });
+                s.addText(title, {
+                x: 0.4, y: 0.05, w: 9.2, h: 0.55,
+                fontSize: 22, bold: true, color: C.white, fontFace: "Cambria",
+                valign: "middle", margin: 0
+                });
+                if (subtitle) {
+                s.addText(subtitle, {
+                    x: 0.4, y: 0.6, w: 9.2, h: 0.3,
+                    fontSize: 10, color: "AACFB5", fontFace: "Calibri", valign: "middle", margin: 0
+                });
+                }
+                // slide number / footer
+                s.addText("UniLeague | MMU Dept. of Computer Science | June 2026", {
+                x: 0.4, y: 5.35, w: 9.2, h: 0.2,
+                fontSize: 8, color: C.muted, fontFace: "Calibri", align: "right", margin: 0
+                });
+            }
+
+            // ════════════════════════════════════════
+            // SLIDE 1 – INTRODUCTION / BACKGROUND
+            // ════════════════════════════════════════
+            {
+                const s = pres.addSlide();
+                addHeader(s, "Introduction", "Background of the Study");
+
+                // left text column
+                s.addText([
+                { text: "Global Context", options: { bold: true, color: C.dark, breakLine: true } },
+                { text: "University sports increasingly depend on digital platforms for scheduling, coordination, and performance management. FISU (est. 1949) promotes digital transformation as a strategic pillar.", options: { breakLine: true } },
+                { text: "\nAfrican Context", options: { bold: true, color: C.dark, breakLine: true } },
+                { text: "FASU coordinates continental university sports, yet many African universities still rely on manual processes due to limited resources and infrastructure.", options: { breakLine: true } },
+                { text: "\nAt MMU – Fort Portal", options: { bold: true, color: C.dark, breakLine: true } },
+                { text: "The MMU soccer league was managed through paper fixture lists, spreadsheets, informal WhatsApp groups, and verbal result submission — making accurate tracking difficult.", options: {} },
+                ], {
+                x: 0.4, y: 1.05, w: 5.6, h: 4.3,
+                fontSize: 12, color: C.text, fontFace: "Calibri",
+                valign: "top", margin: 8
+                });
+
+                // right info cards
+                const cards = [
+                { icon: "FaGlobe",    label: "Global Body",   val: "FISU (1949)",        color: C.mid },
+                { icon: "FaMapMarkerAlt", label: "Location", val: "Fort Portal, Uganda", color: "1A5C35" },
+                { icon: "FaUsers",    label: "Stakeholders",  val: "88 Participants",    color: "0D3B1E" },
+                { icon: "FaMobileAlt",label: "Solution",      val: "UniLeague App",      color: C.mid },
+                ];
+                for (let i = 0; i < 4; i++) {
+                const row = Math.floor(i / 2), col = i % 2;
+                const cx = 6.1 + col * 1.9, cy = 1.2 + row * 2.0;
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                    x: cx, y: cy, w: 1.75, h: 1.7,
+                    fill: { color: cards[i].color }, rectRadius: 0.12,
+                    shadow: makeShadow(), line: { color: cards[i].color }
+                });
+                s.addText(cards[i].label, {
+                    x: cx + 0.08, y: cy + 0.12, w: 1.6, h: 0.35,
+                    fontSize: 8, color: "AACFB5", fontFace: "Calibri",
+                    bold: true, charSpacing: 1, margin: 0
+                });
+                s.addText(cards[i].val, {
+                    x: cx + 0.08, y: cy + 0.5, w: 1.6, h: 0.95,
+                    fontSize: 13, color: C.white, fontFace: "Cambria",
+                    bold: true, valign: "middle", margin: 0
+                });
+                }
+            }
+
+            // ════════════════════════════════════════
+            // SLIDE 2 – PROBLEM STATEMENT
+            // ════════════════════════════════════════
+            {
+                const s = pres.addSlide();
+                addHeader(s, "Problem Statement", "Challenges at Mountains of the Moon University");
+
+                const problems = [
+                { num: "01", title: "Fixture Conflicts",    desc: "Manual scheduling caused frequent overlaps and schedule changes." },
+                { num: "02", title: "Fragmented Records",   desc: "Player data stored in disconnected spreadsheets with duplicates." },
+                { num: "03", title: "Delayed Results",      desc: "Match results reported verbally, standings lagged days behind." },
+                { num: "04", title: "No Audit Trails",      desc: "Substitutions & events had no traceable records, causing disputes." },
+                { num: "05", title: "Poor Spectator Access",desc: "No reliable platform for fans to check fixtures or standings." },
+                { num: "06", title: "Admin Overload",       desc: "Coordinators bore high manual workload with limited tools." },
+                ];
+
+                for (let i = 0; i < 6; i++) {
+                const col = i % 3, row = Math.floor(i / 3);
+                const x = 0.35 + col * 3.2, y = 1.1 + row * 2.15;
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                    x, y, w: 3.0, h: 1.95,
+                    fill: { color: C.white }, rectRadius: 0.12,
+                    shadow: makeShadow(), line: { color: "E0EDE5" }
+                });
+                // number badge
+                s.addShape(pres.shapes.OVAL, {
+                    x: x + 0.15, y: y + 0.15, w: 0.55, h: 0.55,
+                    fill: { color: C.dark }, line: { color: C.dark }
+                });
+                s.addText(problems[i].num, {
+                    x: x + 0.15, y: y + 0.15, w: 0.55, h: 0.55,
+                    fontSize: 10, bold: true, color: C.white, fontFace: "Calibri",
+                    align: "center", valign: "middle", margin: 0
+                });
+                s.addText(problems[i].title, {
+                    x: x + 0.12, y: y + 0.75, w: 2.76, h: 0.35,
+                    fontSize: 12, bold: true, color: C.dark, fontFace: "Cambria", margin: 0
+                });
+                s.addText(problems[i].desc, {
+                    x: x + 0.12, y: y + 1.1, w: 2.76, h: 0.75,
+                    fontSize: 10, color: C.muted, fontFace: "Calibri", margin: 0
+                });
+                }
+            }
+
+            // ════════════════════════════════════════
+            // SLIDE 3 – OBJECTIVES & SCOPE
+            // ════════════════════════════════════════
+            {
+                const s = pres.addSlide();
+                addHeader(s, "Objectives & Scope of Study", "What UniLeague set out to achieve");
+
+                // Main objective banner
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                x: 0.35, y: 1.08, w: 9.3, h: 0.75,
+                fill: { color: C.dark }, rectRadius: 0.1, line: { color: C.dark }
+                });
+                s.addText("MAIN OBJECTIVE: Develop a soccer league management system that streamlines administration, enables real-time coordination, provides structured performance tracking, and enhances spectator engagement at MMU.", {
+                x: 0.5, y: 1.08, w: 9.0, h: 0.75,
+                fontSize: 10, color: C.white, fontFace: "Calibri", valign: "middle", margin: 4
+                });
+
+                const objs = [
+                { n: "1", t: "Analyse", d: "Current soccer league management processes at MMU" },
+                { n: "2", t: "Design",  d: "System architecture, database, and user interfaces" },
+                { n: "3", t: "Implement", d: "A fully functional cross-platform soccer league system" },
+                { n: "4", t: "Test & Evaluate", d: "System against functional and usability requirements" },
+                ];
+                objs.forEach((o, i) => {
+                const x = 0.35 + i * 2.35, y = 2.05;
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                    x, y, w: 2.15, h: 1.75,
+                    fill: { color: i % 2 === 0 ? C.mid : C.dark }, rectRadius: 0.12,
+                    shadow: makeShadow(), line: { color: i % 2 === 0 ? C.mid : C.dark }
+                });
+                s.addText(`0${o.n}`, { x, y: y + 0.1, w: 2.15, h: 0.45,
+                    fontSize: 20, bold: true, color: C.accent, fontFace: "Cambria", align: "center", margin: 0 });
+                s.addText(o.t, { x, y: y + 0.52, w: 2.15, h: 0.35,
+                    fontSize: 13, bold: true, color: C.white, fontFace: "Cambria", align: "center", margin: 0 });
+                s.addText(o.d, { x: x + 0.1, y: y + 0.9, w: 1.95, h: 0.75,
+                    fontSize: 9, color: "CCDDCC", fontFace: "Calibri", align: "center", margin: 0 });
+                });
+
+                // Scope row
+                const scopes = [
+                { l: "Physical Scope", v: "MMU Campus, Fort Portal City" },
+                { l: "Technical Scope", v: "Flutter · Node.js · Supabase PostgreSQL" },
+                { l: "Time Scope",     v: "18 Weeks: March – July 2026" },
+                ];
+                scopes.forEach((sc, i) => {
+                const x = 0.35 + i * 3.15, y = 4.05;
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                    x, y, w: 2.95, h: 1.1,
+                    fill: { color: C.light }, rectRadius: 0.1,
+                    line: { color: "C8DDD0", width: 1 }
+                });
+                s.addText(sc.l, { x: x + 0.15, y: y + 0.08, w: 2.65, h: 0.3,
+                    fontSize: 9, bold: true, color: C.muted, fontFace: "Calibri", charSpacing: 1, margin: 0 });
+                s.addText(sc.v, { x: x + 0.15, y: y + 0.38, w: 2.65, h: 0.6,
+                    fontSize: 11, bold: true, color: C.dark, fontFace: "Calibri", margin: 0 });
+                });
+            }
+
+            // ════════════════════════════════════════
+            // SLIDE 4 – LITERATURE REVIEW
+            // ════════════════════════════════════════
+            {
+                const s = pres.addSlide();
+                addHeader(s, "Literature Review & Research Gaps", "What existing research says — and where it falls short");
+
+                // left: topics
+                const topics = [
+                "Sports Information Systems Theory",
+                "Design Science Research (DSR) Framework",
+                "Agile Software Development",
+                "Round-Robin Scheduling Algorithms",
+                "Cross-Platform Development (Flutter)",
+                "Offline-First Design Patterns",
+                "Real-Time Communication (Socket.IO)",
+                ];
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                x: 0.35, y: 1.05, w: 4.6, h: 4.2,
+                fill: { color: C.white }, rectRadius: 0.1,
+                shadow: makeShadow(), line: { color: "E0EDE5" }
+                });
+                s.addText("AREAS REVIEWED", {
+                x: 0.5, y: 1.1, w: 4.3, h: 0.35,
+                fontSize: 10, bold: true, color: C.muted, fontFace: "Calibri", charSpacing: 2, margin: 0
+                });
+                s.addText(topics.map(t => ({ text: t, options: { bullet: true, breakLine: true } })).concat([{ text: "", options: {} }]),
+                { x: 0.5, y: 1.45, w: 4.3, h: 3.5, fontSize: 11, color: C.text, fontFace: "Calibri", margin: 4 }
+                );
+
+                // right: gaps
+                const gaps = [
+                { g: "Limited East Africa Focus", d: "No study addressed resource-constrained university sports in the region." },
+                { g: "No Integrated Platform",    d: "Fixture, results, real-time, and offline were treated as separate systems." },
+                { g: "Commercial Bias",           d: "Existing tools (TeamSnap, LeagueApps) designed for fee-based leagues." },
+                { g: "No Offline-First Sports App",d: "Integration of scheduling + offline + real-time was largely unexplored." },
+                ];
+                gaps.forEach((g, i) => {
+                const y = 1.05 + i * 1.08;
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                    x: 5.3, y, w: 4.35, h: 0.95,
+                    fill: { color: i % 2 === 0 ? C.light : C.white }, rectRadius: 0.1,
+                    shadow: makeShadow(), line: { color: "E0EDE5" }
+                });
+                s.addShape(pres.shapes.OVAL, {
+                    x: 5.42, y: y + 0.2, w: 0.45, h: 0.45,
+                    fill: { color: C.accent }, line: { color: C.accent }
+                });
+                s.addText("!", {
+                    x: 5.42, y: y + 0.2, w: 0.45, h: 0.45,
+                    fontSize: 12, bold: true, color: C.white, fontFace: "Calibri",
+                    align: "center", valign: "middle", margin: 0
+                });
+                s.addText(g.g, { x: 6.0, y: y + 0.06, w: 3.5, h: 0.28,
+                    fontSize: 11, bold: true, color: C.dark, fontFace: "Calibri", margin: 0 });
+                s.addText(g.d, { x: 6.0, y: y + 0.35, w: 3.5, h: 0.5,
+                    fontSize: 9, color: C.muted, fontFace: "Calibri", margin: 0 });
+                });
+                s.addText("GAP IDENTIFIED", {
+                x: 5.3, y: 1.05, w: 4.35, h: 0.3,
+                fontSize: 0, color: C.offWhite, margin: 0 // invisible spacer
+                });
+                s.addText("IDENTIFIED RESEARCH GAPS", {
+                x: 5.3, y: 1.0, w: 4.35, h: 0.3,
+                fontSize: 9, bold: true, color: C.muted, fontFace: "Calibri", charSpacing: 2, margin: 0
+                });
+            }
+
+            // ════════════════════════════════════════
+            // SLIDE 5 – RESEARCH METHODOLOGY
+            // ════════════════════════════════════════
+            {
+                const s = pres.addSlide();
+                addHeader(s, "Research Methodology", "Design Science Research + Agile Development");
+
+                // DSR phases - horizontal flow
+                const phases = [
+                { n: "1", t: "Problem\nIdentification", c: "0D3B1E" },
+                { n: "2", t: "Solution\nObjectives",    c: "14522B" },
+                { n: "3", t: "Design &\nDevelopment",  c: "1A5C35" },
+                { n: "4", t: "Demonstration",          c: "206B40" },
+                { n: "5", t: "Evaluation",             c: "277A4B" },
+                { n: "6", t: "Communication",          c: "2E8956" },
+                ];
+                s.addText("DESIGN SCIENCE RESEARCH — 6 PHASES", {
+                x: 0.35, y: 1.05, w: 9.3, h: 0.3,
+                fontSize: 9, bold: true, color: C.muted, fontFace: "Calibri", charSpacing: 2, margin: 0
+                });
+                phases.forEach((p, i) => {
+                const x = 0.35 + i * 1.56;
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                    x, y: 1.38, w: 1.45, h: 1.35,
+                    fill: { color: p.c }, rectRadius: 0.1, line: { color: p.c }
+                });
+                s.addText(p.n, { x, y: 1.4, w: 1.45, h: 0.5,
+                    fontSize: 22, bold: true, color: C.accent, fontFace: "Cambria", align: "center", margin: 0 });
+                s.addText(p.t, { x, y: 1.9, w: 1.45, h: 0.75,
+                    fontSize: 9, color: C.white, fontFace: "Calibri", align: "center", margin: 2 });
+                if (i < 5) {
+                    s.addShape(pres.shapes.LINE, {
+                    x: x + 1.45, y: 2.0, w: 0.11, h: 0,
+                    line: { color: C.accent, width: 2 }
+                    });
+                }
+                });
+
+                // data collection + sample
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                x: 0.35, y: 2.9, w: 4.5, h: 2.4,
+                fill: { color: C.white }, rectRadius: 0.1,
+                shadow: makeShadow(), line: { color: "E0EDE5" }
+                });
+                s.addText("DATA COLLECTION METHODS", {
+                x: 0.5, y: 2.95, w: 4.2, h: 0.28,
+                fontSize: 9, bold: true, color: C.muted, fontFace: "Calibri", charSpacing: 2, margin: 0
+                });
+                const methods = ["Semi-Structured Interviews", "Questionnaires", "Observation", "Document Review", "Usability Testing"];
+                s.addText(methods.map(m => ({ text: m, options: { bullet: true, breakLine: true } })).concat([{ text: "", options: {} }]),
+                { x: 0.5, y: 3.23, w: 4.1, h: 1.9, fontSize: 11, color: C.text, fontFace: "Calibri", margin: 4 }
+                );
+
+                // population table
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                x: 5.15, y: 2.9, w: 4.5, h: 2.4,
+                fill: { color: C.white }, rectRadius: 0.1,
+                shadow: makeShadow(), line: { color: "E0EDE5" }
+                });
+                s.addText("SAMPLE SIZE — 50 RESPONDENTS", {
+                x: 5.3, y: 2.95, w: 4.2, h: 0.28,
+                fontSize: 9, bold: true, color: C.muted, fontFace: "Calibri", charSpacing: 2, margin: 0
+                });
+                const rows = [
+                [{ text: "Category", options: { bold: true, color: C.white } }, { text: "N", options: { bold: true, color: C.white } }],
+                ["Coordinators", "2"],
+                ["Coaches & Captains", "8"],
+                ["Players", "20"],
+                ["Referees", "5"],
+                ["Spectators", "15"],
+                ];
+                s.addTable(rows, {
+                x: 5.3, y: 3.23, w: 4.2, h: 1.95,
+                colW: [3.1, 1.1],
+                border: { pt: 0.5, color: "E0EDE5" },
+                fill: { color: "FFFFFF" },
+                fontFace: "Calibri", fontSize: 10, color: C.text,
+                rowH: 0.32,
+                });
+                // header row fill hack
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                x: 5.3, y: 3.23, w: 4.2, h: 0.32,
+                fill: { color: C.dark }, rectRadius: 0.0, line: { color: C.dark }
+                });
+                s.addText([
+                { text: "Category", options: { bold: true, color: C.white } },
+                ], { x: 5.35, y: 3.23, w: 3.1, h: 0.32, fontSize: 10, fontFace: "Calibri", valign: "middle", margin: 4 });
+                s.addText("N", { x: 8.45, y: 3.23, w: 1.05, h: 0.32,
+                fontSize: 10, bold: true, color: C.white, fontFace: "Calibri", align: "center", valign: "middle", margin: 0 });
+            }
+
+            // ════════════════════════════════════════
+            // SLIDE 6 – SYSTEM ANALYSIS & DESIGN (Architecture)
+            // ════════════════════════════════════════
+            {
+                const s = pres.addSlide();
+                addHeader(s, "System Analysis & Design", "Three-Tier Architecture of UniLeague");
+
+                const tiers = [
+                { t: "TIER 1 — CLIENT LAYER",  items: ["Flutter Android / iOS", "Flutter Web (Browser)", "Admin Desktop (Flutter Web)"], c: C.dark },
+                { t: "TIER 2 — SERVER LAYER",  items: ["Node.js + Express API", "REST Endpoints & Business Logic", "JWT Auth + Round-Robin Scheduler", "Socket.IO Real-Time Server"], c: "1A5C35" },
+                { t: "TIER 3 — DATA LAYER",    items: ["Supabase PostgreSQL (Cloud DB)", "SQLite — Offline Local Storage", "Supabase Auth + RLS Policies", "Socket.IO Real-Time Events"], c: "0D3B1E" },
+                ];
+                tiers.forEach((tier, i) => {
+                const x = 0.35 + i * 3.2;
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                    x, y: 1.05, w: 3.0, h: 4.2,
+                    fill: { color: tier.c }, rectRadius: 0.12,
+                    shadow: makeShadow(), line: { color: tier.c }
+                });
+                s.addText(tier.t, { x: x + 0.1, y: 1.1, w: 2.8, h: 0.45,
+                    fontSize: 9, bold: true, color: C.accent, fontFace: "Calibri", charSpacing: 1, margin: 2 });
+                s.addText(tier.items.map(it => ({ text: it, options: { bullet: true, breakLine: true } })).concat([{ text: "", options: {} }]),
+                    { x: x + 0.1, y: 1.58, w: 2.8, h: 3.5, fontSize: 11, color: C.white, fontFace: "Calibri", margin: 4 }
+                );
+                // arrow between tiers
+                if (i < 2) {
+                    s.addShape(pres.shapes.LINE, {
+                    x: x + 3.0, y: 3.15, w: 0.18, h: 0,
+                    line: { color: C.accent, width: 2 }
+                    });
+                }
+                });
+
+                // Tech stack pills
+                const techs = ["Flutter", "Node.js", "Express", "Supabase", "PostgreSQL", "Prisma", "Socket.IO", "SQLite", "JWT", "Docker"];
+                s.addText("TECHNOLOGY STACK", {
+                x: 0.35, y: 5.15, w: 9.3, h: 0.2,
+                fontSize: 0, color: C.offWhite, margin: 0
+                });
+                // just list them inline
+                s.addText(techs.join("  ·  "), {
+                x: 0.35, y: 5.15, w: 9.3, h: 0.2,
+                fontSize: 9, color: C.muted, fontFace: "Calibri", align: "center", margin: 0
+                });
+            }
+
+            // ════════════════════════════════════════
+            // SLIDE 7 – SYSTEM DEVELOPMENT & CODING
+            // ════════════════════════════════════════
+            {
+                const s = pres.addSlide();
+                addHeader(s, "System Development & Coding", "Agile sprints — from auth module to final APK build");
+
+                const sprints = [
+                { sp: "Sprint 1", wk: "Wk 1–3",   t: "Auth + DB Schema",       items: "User auth module\nSupabase PostgreSQL schema\nRole-based access setup" },
+                { sp: "Sprint 2", wk: "Wk 3–9",   t: "Team & Player Mgmt",     items: "Team registration screens\nPlayer management UI\nCoach/captain interfaces" },
+                { sp: "Sprint 3", wk: "Wk 10–12", t: "Fixture Generation",      items: "Round-robin algorithm\nConflict detection logic\nFixture schedule display" },
+                { sp: "Sprint 4", wk: "Wk 13–15", t: "Live Match + Real-Time",  items: "Match event recording\nSocket.IO integration\nOffline SQLite support" },
+                { sp: "Sprint 5", wk: "Wk 13–15", t: "Stats & Reports",         items: "Performance dashboards\nfl_chart visualisations\nPDF report generation" },
+                { sp: "Sprint 6", wk: "Wk 16–18", t: "Testing & Deployment",    items: "Unit & widget tests\nUsability testing (SUS)\nDocker build + APK" },
+                ];
+
+                sprints.forEach((sp, i) => {
+                const col = i % 3, row = Math.floor(i / 3);
+                const x = 0.35 + col * 3.2, y = 1.05 + row * 2.15;
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                    x, y, w: 3.0, h: 2.0,
+                    fill: { color: C.white }, rectRadius: 0.12,
+                    shadow: makeShadow(), line: { color: "E0EDE5" }
+                });
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                    x, y, w: 3.0, h: 0.6,
+                    fill: { color: i < 3 ? C.dark : C.mid }, rectRadius: 0.12,
+                    line: { color: i < 3 ? C.dark : C.mid }
+                });
+                // cover bottom rounded corners of header
+                s.addShape(pres.shapes.RECTANGLE, {
+                    x, y: y + 0.35, w: 3.0, h: 0.25,
+                    fill: { color: i < 3 ? C.dark : C.mid }, line: { color: i < 3 ? C.dark : C.mid }
+                });
+                s.addText(sp.sp + " · " + sp.wk, {
+                    x: x + 0.12, y: y + 0.04, w: 2.76, h: 0.28,
+                    fontSize: 9, bold: true, color: C.accent, fontFace: "Calibri", margin: 0
+                });
+                s.addText(sp.t, {
+                    x: x + 0.12, y: y + 0.62, w: 2.76, h: 0.38,
+                    fontSize: 12, bold: true, color: C.dark, fontFace: "Cambria", margin: 0
+                });
+                s.addText(sp.items, {
+                    x: x + 0.2, y: y + 1.02, w: 2.6, h: 0.88,
+                    fontSize: 9.5, color: C.muted, fontFace: "Calibri", margin: 0
+                });
+                });
+            }
+
+            // ════════════════════════════════════════
+            // SLIDE 8 – INTERFACES
+            // ════════════════════════════════════════
+            {
+                const s = pres.addSlide();
+                addHeader(s, "Interfaces Designed & Integration", "Key screens of the UniLeague application");
+
+                const screens = [
+                { t: "Login & Authentication",      d: "Email + password login. JWT token issued. Role-based dashboard routing for Admin, Coach, Referee, Player, Spectator." },
+                { t: "Administrator Dashboard",     d: "Season overview: total teams, players, live matches, pending squads. Quick-action shortcuts." },
+                { t: "Team & Player Management",    d: "Register teams, assign coaches, manage player rosters with eligibility status and jersey numbers." },
+                { t: "Fixture Generation & Schedule",d: "Round-robin auto-scheduler with conflict detection. Filter by Scheduled / Live / Completed." },
+                { t: "Match Event Recording",       d: "Referee interface: goals, yellow/red cards, substitutions, penalty kicks. Offline-capable with sync indicator." },
+                { t: "League Standings & Stats",    d: "Live points table auto-updated after each match. Top-scorers bar chart via fl_chart. PDF report export." },
+                ];
+
+                screens.forEach((sc, i) => {
+                const col = i % 2, row = Math.floor(i / 3);
+                const grp = i < 3 ? 0 : 1;
+                // 2-column x 3-row layout
+                const x = 0.35 + col * 4.8, y = 1.05 + (i % 3) * 1.45;
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                    x, y, w: 4.55, h: 1.32,
+                    fill: { color: C.white }, rectRadius: 0.1,
+                    shadow: makeShadow(), line: { color: "E0EDE5" }
+                });
+                // number circle
+                s.addShape(pres.shapes.OVAL, {
+                    x: x + 0.12, y: y + 0.12, w: 0.45, h: 0.45,
+                    fill: { color: C.dark }, line: { color: C.dark }
+                });
+                s.addText(String(i + 1), {
+                    x: x + 0.12, y: y + 0.12, w: 0.45, h: 0.45,
+                    fontSize: 11, bold: true, color: C.white, fontFace: "Calibri",
+                    align: "center", valign: "middle", margin: 0
+                });
+                s.addText(sc.t, {
+                    x: x + 0.65, y: y + 0.1, w: 3.8, h: 0.38,
+                    fontSize: 12, bold: true, color: C.dark, fontFace: "Cambria", margin: 0
+                });
+                s.addText(sc.d, {
+                    x: x + 0.12, y: y + 0.55, w: 4.3, h: 0.7,
+                    fontSize: 10, color: C.muted, fontFace: "Calibri", margin: 0
+                });
+                });
+            }
+
+            // ════════════════════════════════════════
+            // SLIDE 9 – FUNCTIONALITIES
+            // ════════════════════════════════════════
+            {
+                const s = pres.addSlide();
+                addHeader(s, "System Functionalities", "Does the implementation meet project goals and requirements?");
+
+                const frs = [
+                { id: "FR01", t: "Secure Authentication",     d: "JWT-based login with role-based dashboard routing" },
+                { id: "FR02", t: "Role-Based Access",          d: "Admin · Coordinator · Coach · Referee · Player · Spectator" },
+                { id: "FR03-04", t: "Team & Player Management",d: "Create teams, assign players, manage eligibility & rosters" },
+                { id: "FR05", t: "Fixture Auto-Generation",    d: "Round-robin scheduler with conflict detection across rounds" },
+                { id: "FR06-07", t: "Match Recording",         d: "Goals, yellow/red cards, substitutions recorded in real time" },
+                { id: "FR08", t: "Standings Calculation",      d: "Points = (3×W) + (1×D); ranked by GD and goals scored" },
+                { id: "FR09", t: "Performance Statistics",     d: "Top scorers, assists, cards — displayed with fl_chart" },
+                { id: "FR10", t: "Real-Time Updates",          d: "Socket.IO broadcasts live match events to all connected users" },
+                { id: "FR11", t: "Offline Support",            d: "SQLite stores events locally; syncs on reconnect" },
+                { id: "FR12", t: "PDF Report Generation",      d: "Admins generate & download full-season league reports" },
+                ];
+
+                frs.forEach((fr, i) => {
+                const col = i % 2, row = Math.floor(i / 2);
+                const x = 0.35 + col * 4.8, y = 1.05 + row * 0.87;
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                    x, y, w: 4.55, h: 0.77,
+                    fill: { color: row % 2 === 0 ? C.light : C.white }, rectRadius: 0.08,
+                    line: { color: "D4E9DA" }
+                });
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                    x: x + 0.12, y: y + 0.15, w: 0.72, h: 0.3,
+                    fill: { color: C.dark }, rectRadius: 0.05, line: { color: C.dark }
+                });
+                s.addText(fr.id, {
+                    x: x + 0.12, y: y + 0.15, w: 0.72, h: 0.3,
+                    fontSize: 7, bold: true, color: C.accent, fontFace: "Calibri",
+                    align: "center", valign: "middle", margin: 0
+                });
+                s.addText(fr.t, {
+                    x: x + 0.92, y: y + 0.06, w: 3.5, h: 0.3,
+                    fontSize: 11, bold: true, color: C.dark, fontFace: "Calibri", margin: 0
+                });
+                s.addText(fr.d, {
+                    x: x + 0.92, y: y + 0.38, w: 3.5, h: 0.32,
+                    fontSize: 9, color: C.muted, fontFace: "Calibri", margin: 0
+                });
+                // check mark
+                s.addShape(pres.shapes.OVAL, {
+                    x: x + 4.2, y: y + 0.18, w: 0.3, h: 0.3,
+                    fill: { color: C.mid }, line: { color: C.mid }
+                });
+                s.addText("✓", {
+                    x: x + 4.2, y: y + 0.18, w: 0.3, h: 0.3,
+                    fontSize: 10, bold: true, color: C.white, fontFace: "Calibri",
+                    align: "center", valign: "middle", margin: 0
+                });
+                });
+            }
+
+            // ════════════════════════════════════════
+            // SLIDE 10 – SYSTEM TESTING
+            // ════════════════════════════════════════
+            {
+                const s = pres.addSlide();
+                addHeader(s, "System Testing & Evaluation", "Testing methods, test cases, and results");
+
+                // testing types
+                const types = [
+                { t: "Unit & Widget",   d: "Flutter tests verified individual components and business logic" },
+                { t: "Integration",     d: "Frontend ↔ Backend ↔ Database flow validated end-to-end" },
+                { t: "Functional",      d: "9 manual test cases: all PASSED (see table)" },
+                { t: "Usability (SUS)", d: "88–94% positive ratings across key tasks" },
+                { t: "User Acceptance", d: "Mean UAT score: 4.25–4.48 / 5.0 across all user groups" },
+                ];
+                types.forEach((tp, i) => {
+                const y = 1.05 + i * 0.72;
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                    x: 0.35, y, w: 4.3, h: 0.62,
+                    fill: { color: i % 2 === 0 ? C.light : C.white }, rectRadius: 0.08,
+                    line: { color: "D4E9DA" }
+                });
+                s.addText(tp.t, { x: 0.48, y: y + 0.05, w: 4.0, h: 0.25,
+                    fontSize: 11, bold: true, color: C.dark, fontFace: "Calibri", margin: 0 });
+                s.addText(tp.d, { x: 0.48, y: y + 0.32, w: 4.0, h: 0.25,
+                    fontSize: 9.5, color: C.muted, fontFace: "Calibri", margin: 0 });
+                });
+
+                // UAT bar chart
+                s.addText("USER ACCEPTANCE TESTING — MEAN SCORES (/ 5.0)", {
+                x: 5.0, y: 1.05, w: 4.65, h: 0.28,
+                fontSize: 8, bold: true, color: C.muted, fontFace: "Calibri", charSpacing: 1, margin: 0
+                });
+                s.addChart(pres.charts.BAR, [
+                { name: "Ease of Use",  labels: ["Coordinators","Coaches","Referees","Players/Spectators"], values: [4.4, 4.2, 4.3, 4.1] },
+                { name: "Usefulness",   labels: ["Coordinators","Coaches","Referees","Players/Spectators"], values: [4.6, 4.5, 4.5, 4.3] },
+                { name: "Satisfaction", labels: ["Coordinators","Coaches","Referees","Players/Spectators"], values: [4.5, 4.4, 4.4, 4.2] },
+                ], {
+                x: 4.9, y: 1.35, w: 4.75, h: 3.4,
+                barDir: "col", barGrouping: "clustered",
+                chartColors: [C.dark, C.mid, "2E8956"],
+                chartArea: { fill: { color: "FFFFFF" } },
+                catAxisLabelColor: "64748B", valAxisLabelColor: "64748B",
+                valGridLine: { color: "E2E8F0", size: 0.5 }, catGridLine: { style: "none" },
+                showLegend: true, legendPos: "b", legendFontSize: 9,
+                valAxisMinVal: 3.5, valAxisMaxVal: 5,
+                showValue: true, dataLabelFontSize: 7,
+                });
+
+                // usability summary
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                x: 0.35, y: 4.7, w: 4.3, h: 0.65,
+                fill: { color: C.dark }, rectRadius: 0.1, line: { color: C.dark }
+                });
+                s.addText("Overall Satisfaction: 90% · Fixture Clarity: 92% · Standings Usefulness: 94%", {
+                x: 0.45, y: 4.72, w: 4.1, h: 0.6,
+                fontSize: 9.5, color: C.white, fontFace: "Calibri", valign: "middle", margin: 3
+                });
+            }
+
+            // ════════════════════════════════════════
+            // SLIDE 11 – DEPLOYMENT
+            // ════════════════════════════════════════
+            {
+                const s = pres.addSlide();
+                addHeader(s, "Deployment", "Hosting, access, and rollout strategy");
+
+                const items = [
+                { t: "Docker Containerisation", d: "Backend packaged with Docker for consistent, portable deployment across server environments." },
+                { t: "Supabase Cloud Hosting",  d: "PostgreSQL database hosted on Supabase — managed cloud with RLS policies and automatic backups." },
+                { t: "Flutter Build Output",    d: "Android APK built for distribution. Flutter Web deployed for browser-based admin and spectator access." },
+                { t: "Offline-First Operation", d: "SQLite local storage ensures referees can record match events even without internet connectivity." },
+                { t: "User Training Sessions",  d: "Sports coordinators and referees received hands-on training before pilot evaluation sessions." },
+                { t: "Pilot Evaluation",        d: "System piloted with 50 representative users over Weeks 16–18 of the project timeline." },
+                ];
+
+                items.forEach((item, i) => {
+                const col = i % 2, row = Math.floor(i / 2);
+                const x = 0.35 + col * 4.8, y = 1.05 + row * 1.45;
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                    x, y, w: 4.55, h: 1.32,
+                    fill: { color: C.white }, rectRadius: 0.12,
+                    shadow: makeShadow(), line: { color: "E0EDE5" }
+                });
+                s.addShape(pres.shapes.OVAL, {
+                    x: x + 0.12, y: y + 0.15, w: 0.45, h: 0.45,
+                    fill: { color: C.mid }, line: { color: C.mid }
+                });
+                s.addText(String(i + 1), {
+                    x: x + 0.12, y: y + 0.15, w: 0.45, h: 0.45,
+                    fontSize: 11, bold: true, color: C.white, fontFace: "Calibri",
+                    align: "center", valign: "middle", margin: 0
+                });
+                s.addText(item.t, {
+                    x: x + 0.65, y: y + 0.1, w: 3.8, h: 0.35,
+                    fontSize: 12, bold: true, color: C.dark, fontFace: "Cambria", margin: 0
+                });
+                s.addText(item.d, {
+                    x: x + 0.12, y: y + 0.52, w: 4.3, h: 0.72,
+                    fontSize: 10, color: C.muted, fontFace: "Calibri", margin: 0
+                });
+                });
+            }
+
+            // ════════════════════════════════════════
+            // SLIDE 12 – RESULTS & ACHIEVEMENTS
+            // ════════════════════════════════════════
+            {
+                const s = pres.addSlide();
+                addHeader(s, "Results & Achievements", "What UniLeague accomplished");
+
+                // 4 big stat cards
+                const stats = [
+                { val: "4.38", sub: "/ 5.0 UAT Satisfaction\n(Overall Average)" },
+                { val: "90%",  sub: "Users Satisfied\n(Usability Testing)" },
+                { val: "9/9",  sub: "Functional Tests\nPassed" },
+                { val: "100%", sub: "Objectives\nAchieved" },
+                ];
+                stats.forEach((st, i) => {
+                const x = 0.35 + i * 2.35;
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                    x, y: 1.05, w: 2.2, h: 1.65,
+                    fill: { color: i % 2 === 0 ? C.dark : C.mid }, rectRadius: 0.12,
+                    shadow: makeShadow(), line: { color: i % 2 === 0 ? C.dark : C.mid }
+                });
+                s.addText(st.val, {
+                    x, y: 1.12, w: 2.2, h: 0.85,
+                    fontSize: 38, bold: true, color: C.accent, fontFace: "Cambria",
+                    align: "center", margin: 0
+                });
+                s.addText(st.sub, {
+                    x: x + 0.1, y: 1.98, w: 2.0, h: 0.6,
+                    fontSize: 9, color: "CCDDCC", fontFace: "Calibri",
+                    align: "center", margin: 0
+                });
+                });
+
+                // Achievements list
+                const achv = [
+                "Centralised team, player, fixture, result, and statistics records in one platform",
+                "Replaced informal WhatsApp/paper coordination with structured digital notifications",
+                "Automated fixture generation using round-robin algorithm with conflict detection",
+                "Enabled real-time match updates via Socket.IO for all stakeholders simultaneously",
+                "Offline-first SQLite support for match officials in low-connectivity environments",
+                "Cross-platform access: Android, iOS, and web browser from a single Flutter codebase",
+                "UniLeague outperforms TeamSnap, LeagueApps, and SportsEngine for MMU's context",
+                ];
+
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                x: 0.35, y: 2.88, w: 9.3, h: 2.42,
+                fill: { color: C.white }, rectRadius: 0.12,
+                shadow: makeShadow(), line: { color: "E0EDE5" }
+                });
+                s.addText("KEY ACHIEVEMENTS", {
+                x: 0.5, y: 2.93, w: 9.0, h: 0.28,
+                fontSize: 9, bold: true, color: C.muted, fontFace: "Calibri", charSpacing: 2, margin: 0
+                });
+                s.addText(achv.map(a => ({ text: a, options: { bullet: true, breakLine: true } })).concat([{ text: "", options: {} }]),
+                { x: 0.5, y: 3.22, w: 9.0, h: 2.0, fontSize: 10.5, color: C.text, fontFace: "Calibri", margin: 4 }
+                );
+            }
+
+            // ════════════════════════════════════════
+            // SLIDE 13 – CHALLENGES & SOLUTIONS
+            // ════════════════════════════════════════
+            {
+                const s = pres.addSlide();
+                addHeader(s, "Challenges Faced & How They Were Solved", "Obstacles encountered during development and evaluation");
+
+                const challs = [
+                {
+                    c: "Limited Internet Connectivity",
+                    s: "Implemented offline-first SQLite storage (sqflite) with automatic sync queue when connectivity is restored via connectivity_plus."
+                },
+                {
+                    c: "Varying Digital Literacy",
+                    s: "Designed simplified task-oriented UI with clear labels, in-app help text, and ran structured user training sessions before pilot."
+                },
+                {
+                    c: "Fixture Constraint Complexity",
+                    s: "Extended round-robin algorithm with basic conflict detection, flagging duplicate team or venue assignments before saving fixtures."
+                },
+                {
+                    c: "Device & Platform Variation",
+                    s: "Flutter's single codebase supports Android, iOS, and web with responsive layouts, ensuring consistent UX across all devices."
+                },
+                ];
+
+                challs.forEach((ch, i) => {
+                const y = 1.05 + i * 1.1;
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                    x: 0.35, y, w: 9.3, h: 0.95,
+                    fill: { color: i % 2 === 0 ? C.white : C.light }, rectRadius: 0.1,
+                    shadow: makeShadow(), line: { color: "E0EDE5" }
+                });
+
+                // Challenge side
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                    x: 0.48, y: y + 0.12, w: 0.58, h: 0.58,
+                    fill: { color: "E74C3C" }, rectRadius: 0.06, line: { color: "E74C3C" }
+                });
+                s.addText("!", {
+                    x: 0.48, y: y + 0.12, w: 0.58, h: 0.58,
+                    fontSize: 16, bold: true, color: C.white, fontFace: "Calibri",
+                    align: "center", valign: "middle", margin: 0
+                });
+                s.addText(ch.c, {
+                    x: 1.14, y: y + 0.08, w: 3.7, h: 0.35,
+                    fontSize: 11, bold: true, color: C.dark, fontFace: "Cambria", margin: 0
+                });
+                s.addText("CHALLENGE", {
+                    x: 1.14, y: y + 0.55, w: 3.7, h: 0.25,
+                    fontSize: 8, color: "CC4444", fontFace: "Calibri", charSpacing: 1, margin: 0
+                });
+
+                // divider
+                s.addShape(pres.shapes.LINE, {
+                    x: 4.95, y: y + 0.15, w: 0, h: 0.65,
+                    line: { color: "D4E9DA", width: 1.5 }
+                });
+
+                // Solution side
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                    x: 5.12, y: y + 0.12, w: 0.58, h: 0.58,
+                    fill: { color: C.mid }, rectRadius: 0.06, line: { color: C.mid }
+                });
+                s.addText("✓", {
+                    x: 5.12, y: y + 0.12, w: 0.58, h: 0.58,
+                    fontSize: 16, bold: true, color: C.white, fontFace: "Calibri",
+                    align: "center", valign: "middle", margin: 0
+                });
+                s.addText(ch.s, {
+                    x: 5.78, y: y + 0.1, w: 3.75, h: 0.75,
+                    fontSize: 10, color: C.text, fontFace: "Calibri", margin: 0
+                });
+                s.addText("SOLUTION", {
+                    x: 5.78, y: y + 0.08, w: 3.75, h: 0.2,
+                    fontSize: 0, color: C.offWhite, margin: 0 // spacer
+                });
+                });
+            }
+
+            // ════════════════════════════════════════
+            // SLIDE 14 – CONCLUSIONS & RECOMMENDATIONS
+            // ════════════════════════════════════════
+            {
+                const s = pres.addSlide();
+                addHeader(s, "Conclusions & Recommendations", "Findings, contributions, and the path forward");
+
+                // left: conclusions
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                x: 0.35, y: 1.05, w: 4.55, h: 4.2,
+                fill: { color: C.white }, rectRadius: 0.1,
+                shadow: makeShadow(), line: { color: "E0EDE5" }
+                });
+                s.addText("CONCLUSIONS", {
+                x: 0.5, y: 1.1, w: 4.25, h: 0.28,
+                fontSize: 9, bold: true, color: C.muted, fontFace: "Calibri", charSpacing: 2, margin: 0
+                });
+                const concs = [
+                "UniLeague reduced administrative workload by automating fixture and standings management.",
+                "Data accuracy improved through centralised PostgreSQL storage replacing fragmented spreadsheets.",
+                "Real-time Socket.IO coordination replaced informal WhatsApp-based communication.",
+                "Offline SQLite support addressed connectivity challenges in field environments.",
+                "Spectator engagement improved via a public portal for live scores and standings.",
+                "UniLeague is adaptable and generalisable to other East African universities.",
+                ];
+                s.addText(concs.map(c => ({ text: c, options: { bullet: true, breakLine: true } })).concat([{ text: "", options: {} }]),
+                { x: 0.5, y: 1.4, w: 4.25, h: 3.8, fontSize: 10.5, color: C.text, fontFace: "Calibri", margin: 4 }
+                );
+
+                // right: recommendations
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                x: 5.1, y: 1.05, w: 4.55, h: 4.2,
+                fill: { color: C.dark }, rectRadius: 0.1,
+                shadow: makeShadow(), line: { color: C.dark }
+                });
+                s.addText("RECOMMENDATIONS", {
+                x: 5.25, y: 1.1, w: 4.25, h: 0.28,
+                fontSize: 9, bold: true, color: C.accent, fontFace: "Calibri", charSpacing: 2, margin: 0
+                });
+                const recs = [
+                "MMU should adopt UniLeague for full league administration from the next season.",
+                "Coordinators and referees should receive formal system training.",
+                "Host the system on a reliable server with regular database backups.",
+                "Collect user feedback after every season to guide iterative improvements.",
+                "Extend to other sports: netball, basketball, volleyball, athletics.",
+                "Integrate with the university student information system for automatic eligibility checks.",
+                ];
+                s.addText(recs.map(r => ({ text: r, options: { bullet: true, breakLine: true } })).concat([{ text: "", options: {} }]),
+                { x: 5.25, y: 1.4, w: 4.25, h: 3.8, fontSize: 10.5, color: "CCDDCC", fontFace: "Calibri", margin: 4 }
+                );
+            }
+
+            // ════════════════════════════════════════
+            // SLIDE 15 – FUTURE WORK & Q&A
+            // ════════════════════════════════════════
+            {
+                const s = pres.addSlide();
+                s.background = { color: C.dark };
+
+                // decorative circles
+                s.addShape(pres.shapes.OVAL, { x: 7.8, y: -0.8, w: 3.5, h: 3.5,
+                fill: { color: C.mid }, line: { color: C.mid } });
+                s.addShape(pres.shapes.OVAL, { x: -0.6, y: 3.5, w: 2.5, h: 2.5,
+                fill: { color: C.accent, transparency: 80 }, line: { color: C.accent, transparency: 80 } });
+
+                s.addText("AREAS FOR FUTURE WORK", {
+                x: 0.5, y: 0.5, w: 9.0, h: 0.3,
+                fontSize: 10, bold: true, color: C.accent, fontFace: "Calibri",
+                charSpacing: 3, margin: 0
+                });
+
+                const futures = [
+                { n: "01", t: "Multi-Sport Support",         d: "Basketball, volleyball, netball, athletics" },
+                { n: "02", t: "AI Fixture Optimisation",      d: "ML-based scheduling and match outcome prediction" },
+                { n: "03", t: "Push Notifications",           d: "Firebase Cloud Messaging for live alerts" },
+                { n: "04", t: "Student System Integration",   d: "Automatic player eligibility from university records" },
+                { n: "05", t: "Live Commentary & Media",      d: "Match commentary and photo/video uploads" },
+                { n: "06", t: "Multi-Institution Deployment", d: "Scale across East African universities" },
+                ];
+                futures.forEach((f, i) => {
+                const col = i % 3, row = Math.floor(i / 3);
+                const x = 0.5 + col * 3.15, y = 0.92 + row * 1.35;
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                    x, y, w: 2.95, h: 1.2,
+                    fill: { color: "0D2E1A" }, rectRadius: 0.1, line: { color: "1A4A2A" }
+                });
+                s.addText(f.n, { x, y: y + 0.06, w: 2.95, h: 0.42,
+                    fontSize: 18, bold: true, color: C.accent, fontFace: "Cambria", align: "center", margin: 0 });
+                s.addText(f.t, { x: x + 0.1, y: y + 0.48, w: 2.75, h: 0.3,
+                    fontSize: 11, bold: true, color: C.white, fontFace: "Calibri", align: "center", margin: 0 });
+                s.addText(f.d, { x: x + 0.1, y: y + 0.78, w: 2.75, h: 0.35,
+                    fontSize: 9, color: "AACFB5", fontFace: "Calibri", align: "center", margin: 0 });
+                });
+
+                // Q&A box
+                s.addShape(pres.shapes.ROUNDED_RECTANGLE, {
+                x: 1.5, y: 3.65, w: 7.0, h: 1.65,
+                fill: { color: C.mid }, rectRadius: 0.15, shadow: makeShadow(), line: { color: C.mid }
+                });
+                s.addText("Thank You", {
+                x: 1.5, y: 3.72, w: 7.0, h: 0.55,
+                fontSize: 26, bold: true, color: C.white, fontFace: "Cambria", align: "center", margin: 0
+                });
+                s.addText("Questions & Answers — Supervisor: Samuel Ocen · samuel.ocen@mmu.ac.ug", {
+                x: 1.5, y: 4.28, w: 7.0, h: 0.35,
+                fontSize: 10, color: "CCDDCC", fontFace: "Calibri", align: "center", margin: 0
+                });
+                s.addText("Santo Rayern · 2023/U/MMU/BCS/01673  |  Mbambu Rosette · 2023/U/MMU/BIT/01795", {
+                x: 1.5, y: 4.62, w: 7.0, h: 0.3,
+                fontSize: 9, color: "889988", fontFace: "Calibri", align: "center", margin: 0
+                });
+            }
+
+            pres.writeFile({ fileName: "UniLeague_Presentation.pptx" })
+                .then(() => console.log("Presentation generated successfully."))
+                .catch(e => { console.error(e); alert("Error generating presentation. Check console."); });
+        }
+    </script>
+</body>
+</html>

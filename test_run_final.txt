@@ -1,0 +1,253 @@
+00:00 +0: loading /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/app_state_test.dart
+00:00 +0: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/app_state_test.dart: AppState initial values are correct
+00:00 +1: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/app_state_test.dart: AppState toggleDarkMode toggles dark mode on
+00:00 +2: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/app_state_test.dart: AppState toggleDarkMode toggles dark mode off
+00:00 +3: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/app_state_test.dart: AppState setSeasonLabel updates season label
+00:00 +4: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/app_state_test.dart: AppState setSeasonLabel ignores empty string
+00:00 +5: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/app_state_test.dart: AppState setSeasonLabel ignores whitespace-only string
+00:00 +6: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/app_state_test.dart: AppState setLanguage sets language to Kiswahili
+00:00 +7: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/app_state_test.dart: AppState setLanguage sets language back to English
+00:00 +8: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/app_state_test.dart: AppState translate returns English translations by default
+00:00 +9: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/app_state_test.dart: AppState translate returns Kiswahili translations
+00:00 +10: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/app_state_test.dart: AppState translate returns key as fallback for unknown key in English
+00:00 +11: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/app_state_test.dart: AppState translate returns key as fallback for unknown key in Kiswahili
+00:00 +12: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/app_state_test.dart: AppState translate season_underway returns dynamic season label
+00:00 +13: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/app_state_test.dart: AppState translate season_underway in Kiswahili still returns English season label (dynamic)
+00:01 +14: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/app_state_test.dart: AppState translate status_live translation in English
+00:01 +15: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/app_state_test.dart: AppState translate status_live translation in Kiswahili
+00:08 +16: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/integration/standings_test.dart: Standings computation — integration all scheduled matches produce empty standings
+00:08 +17: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/integration/standings_test.dart: Standings computation — integration single completed match updates both teams
+00:08 +18: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/integration/standings_test.dart: Standings computation — integration draw gives each team 1 point
+00:08 +19: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/integration/standings_test.dart: Standings computation — integration away win gives away team 3 points
+00:08 +20: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/integration/standings_test.dart: Standings computation — integration full season of 4 teams produces correct standings
+00:08 +21: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/integration/standings_test.dart: Standings computation — integration teams with equal points sorted by goal difference
+00:08 +22: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/integration/standings_test.dart: Standings computation — integration unplayed (scheduled) matches do not affect standings
+00:08 +23: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/integration/standings_test.dart: Standings computation — integration live matches do not affect standings
+00:08 +24: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/integration/standings_test.dart: Standings computation — integration standings table is sorted descending by points then goal difference
+00:08 +25: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/integration/standings_test.dart: GeneratedFixture serialization with standings fixture with events roundtrips through toRow/fromRow and feeds standings
+00:08 +26: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/integration/standings_test.dart: End-to-end: generate schedule → play matches → compute standings full season for 4 teams produces consistent results
+00:14 +27: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/integration/fixture_generation_test.dart: Round-robin fixture generation — integration generates correct number of rounds and matches for 4 teams
+00:14 +28: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/integration/fixture_generation_test.dart: Round-robin fixture generation — integration every team plays every other team exactly once (4 teams)
+00:14 +29: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/integration/fixture_generation_test.dart: Round-robin fixture generation — integration handles odd number of teams (5 teams → BYE)
+00:14 +30: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/integration/fixture_generation_test.dart: Round-robin fixture generation — integration generates matches on correct dates with 7-day spacing
+00:14 +31: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/integration/fixture_generation_test.dart: Round-robin fixture generation — integration home/away distribution across all teams
+00:14 +32: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/integration/fixture_generation_test.dart: Round-robin fixture generation — integration venues cycle across matches
+00:14 +33: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/integration/fixture_generation_test.dart: Round-robin fixture generation — integration fixture IDs are sequential
+00:14 +34: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/integration/fixture_generation_test.dart: Round-robin fixture generation — integration generates fixtures for 8 teams
+00:20 +35: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/integration/data_persistence_test.dart: Data persistence layer — integration GeneratedFixture toRow / fromRow roundtrips fixture with all fields populated
+00:20 +36: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/integration/data_persistence_test.dart: Data persistence layer — integration GeneratedFixture toRow / fromRow roundtrips fixture with empty events
+00:20 +37: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/integration/data_persistence_test.dart: Data persistence layer — integration GeneratedFixture toRow / fromRow roundtrips fixture with null referee
+00:20 +38: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/integration/data_persistence_test.dart: Data persistence layer — integration GeneratedFixture toRow / fromRow roundtrips fixture with halftime score (0-0)
+00:20 +39: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/integration/data_persistence_test.dart: Data persistence layer — integration MatchEvent toJson / fromJson roundtrips all event types
+00:20 +40: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/integration/data_persistence_test.dart: Data persistence layer — integration Multi-fixture data flow fixtures list sorted by date processes correctly
+00:21 +41: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/integration/data_persistence_test.dart: Data persistence layer — integration Multi-fixture data flow many events serialize correctly
+00:21 +42: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/integration/data_persistence_test.dart: Data persistence layer — integration Referee assignment auto-assigns referees round-robin
+00:26 +43: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/match_state_test.dart: MatchEvent constructs with required fields
+00:26 +44: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/match_state_test.dart: MatchEvent toJson converts correctly
+00:27 +45: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/match_state_test.dart: MatchEvent fromJson restores from map
+00:27 +46: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/match_state_test.dart: MatchEvent fromJson uses defaults for missing fields
+00:27 +47: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/match_state_test.dart: MatchEvent roundtrip preserves data
+00:27 +48: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/match_state_test.dart: StandingEntry initializes with zero values
+00:27 +49: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/match_state_test.dart: StandingEntry goalDifference returns positive diff
+00:27 +50: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/match_state_test.dart: StandingEntry goalDifference returns negative diff
+00:27 +51: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/match_state_test.dart: StandingEntry goalDifference returns zero for equal goals
+00:27 +52: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/match_state_test.dart: GeneratedFixture initializes with defaults
+00:27 +53: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/match_state_test.dart: GeneratedFixture events list is mutable
+00:27 +54: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/match_state_test.dart: GeneratedFixture toRow serializes correctly
+00:27 +55: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/match_state_test.dart: GeneratedFixture fromRow deserializes correctly
+00:27 +56: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/match_state_test.dart: GeneratedFixture fromRow defaults for missing fields
+00:27 +57: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/match_state_test.dart: GeneratedFixture roundtrip toRow/fromRow preserves data
+00:27 +58: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/match_state_test.dart: Standings calculation completed match updates both teams correctly
+00:27 +59: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/match_state_test.dart: Standings calculation draw gives both teams one point
+00:27 +60: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/match_state_test.dart: Standings calculation away win gives away team 3 points
+00:27 +61: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/match_state_test.dart: Standings calculation sorting by points then goal difference
+00:27 +62: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/match_state_test.dart: LineupPlayer constructs with defaults
+00:27 +63: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/match_state_test.dart: LineupPlayer flags start false
+00:32 +64: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: UserRole enum has admin, coach, referee, spectator
+00:32 +65: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: ApprovalStatus enum has pending, approved, rejected
+00:32 +66: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: UserProfile fromJson parses role correctly
+00:32 +67: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: UserProfile fromJson defaults to spectator when role is null
+00:32 +68: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: UserProfile fromJson defaults to pending when status is null
+00:32 +69: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: UserProfile toJson returns all fields including optionals
+00:32 +70: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: UserProfile toJson omits null optionals
+00:32 +71: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: UserProfile roundtrip fromJson to toJson preserves data
+00:32 +72: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: PlayerPosition enum has all four positions
+00:32 +73: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Player fromJson parses all fields
+00:32 +74: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Player fromJson handles null dateOfBirth
+00:32 +75: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Player toJson includes all fields
+00:32 +76: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Player toJson omits null dateOfBirth and photoUrl
+00:32 +77: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Player roundtrip preserves data
+00:32 +78: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Team fromJson parses all fields
+00:32 +79: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Team fromJson parses nested coach profile
+00:32 +80: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Team toJson excludes null optionals
+00:32 +81: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Team roundtrip preserves data
+00:32 +82: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: MatchStatus enum has all status values
+00:32 +83: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: MatchEventType enum has all event types
+00:32 +84: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Match fromJson parses all fields
+00:32 +85: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Match fromJson defaults scores to 0
+00:33 +86: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Match fromJson parses live status
+00:33 +87: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Match fromJson parses completed status
+00:33 +88: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Match fromJson defaults null venue to null
+00:33 +89: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Match toJson only includes non-null venue
+00:33 +90: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Match toJson omits venue when null
+00:33 +91: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Match roundtrip preserves data
+00:33 +92: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Venue fromJson parses all fields
+00:33 +93: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Venue fromJson defaults isActive to true when null
+00:33 +94: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Venue toJson omits null location and capacity
+00:33 +95: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Venue roundtrip preserves data
+00:33 +96: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: NotificationType enum has all notification types
+00:33 +97: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Notification fromJson parses all fields
+00:33 +98: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Notification fromJson defaults read to false
+00:33 +99: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Notification fromJson defaults type to general when unknown
+00:33 +100: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Notification fromJson defaults user_id to null
+00:33 +101: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Notification toJson includes all fields
+00:33 +102: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Notification toJson omits null userId and data
+00:33 +103: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Notification roundtrip preserves data
+00:34 +103 -1: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/models_test.dart: Notification roundtrip preserves data [E]
+  Expected: NotificationType:<NotificationType.matchStart>
+    Actual: NotificationType:<NotificationType.general>
+  
+  package:matcher                                     expect
+  package:flutter_test/src/widget_tester.dart 474:18  expect
+  test/models_test.dart 441:7                         main.<fn>.<fn>
+  
+00:42 +103 -1: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/widget_test.dart: AppColors has primary navy color
+00:42 +104 -1: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/widget_test.dart: AppColors has secondary green
+00:42 +105 -1: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/widget_test.dart: AppColors has tertiary gold
+00:42 +106 -1: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/widget_test.dart: AppTheme lightTheme creates valid theme data
+00:42 +107 -1: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/widget_test.dart: AppTheme darkTheme creates valid theme data
+00:43 +107 -1: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/widget_test.dart: AppTheme lightTheme creates valid theme data
+Error: google_fonts was unable to load font Outfit-Regular because the following exception occurred:
+Exception: GoogleFonts.config.allowRuntimeFetching is false but font Outfit-Regular was not found in the application assets. Ensure Outfit-Regular.ttf exists in a folder that is included in your pubspec's assets.
+
+There is likely something wrong with your test. Please see https://github.com/flutter/packages/blob/main/packages/google_fonts/example/test for examples of how to test with google_fonts.
+If troubleshooting doesn't solve the problem, please file an issue at https://github.com/flutter/flutter/issues/new/choose.
+
+00:43 +106 -2: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/widget_test.dart: AppTheme darkTheme creates valid theme data
+00:43 +106 -2: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/widget_test.dart: AppTheme lightTheme creates valid theme data [E]
+  Exception: GoogleFonts.config.allowRuntimeFetching is false but font Outfit-Regular was not found in the application assets. Ensure Outfit-Regular.ttf exists in a folder that is included in your pubspec's assets.
+  package:google_fonts/src/google_fonts_base.dart 181:7              loadFontIfNecessary
+  ===== asynchronous gap ===========================
+  dart:async                                                         _CustomZone.registerUnaryCallback
+  package:google_fonts/src/google_fonts_base.dart 149:23             loadFontIfNecessary
+  package:google_fonts/src/google_fonts_base.dart 111:38             googleFontsTextStyle
+  package:google_fonts/src/google_fonts_parts/part_o.g.dart 2315:12  PartO.outfit
+  package:google_fonts/src/google_fonts_parts/part_o.g.dart 2348:21  PartO.outfitTextTheme
+  package:sports_app/core/theme/app_theme.dart 62:45                 AppTheme.lightTheme
+  test/widget_test.dart 26:30                                        main.<fn>.<fn>
+  
+  This test failed after it had already completed.
+  Make sure to use a matching library which informs the test runner
+  of pending async work.
+  package:google_fonts/src/google_fonts_base.dart 181:7              loadFontIfNecessary
+  ===== asynchronous gap ===========================
+  dart:async                                                         _CustomZone.registerUnaryCallback
+  package:google_fonts/src/google_fonts_base.dart 149:23             loadFontIfNecessary
+  package:google_fonts/src/google_fonts_base.dart 111:38             googleFontsTextStyle
+  package:google_fonts/src/google_fonts_parts/part_o.g.dart 2315:12  PartO.outfit
+  package:google_fonts/src/google_fonts_parts/part_o.g.dart 2348:21  PartO.outfitTextTheme
+  package:sports_app/core/theme/app_theme.dart 62:45                 AppTheme.lightTheme
+  test/widget_test.dart 26:30                                        main.<fn>.<fn>
+  
+00:43 +107 -2: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/widget_test.dart: AppTheme light theme app bar has navy background
+00:43 +107 -2: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/widget_test.dart: AppTheme darkTheme creates valid theme data
+Error: google_fonts was unable to load font Outfit-Regular because the following exception occurred:
+Exception: GoogleFonts.config.allowRuntimeFetching is false but font Outfit-Regular was not found in the application assets. Ensure Outfit-Regular.ttf exists in a folder that is included in your pubspec's assets.
+
+There is likely something wrong with your test. Please see https://github.com/flutter/packages/blob/main/packages/google_fonts/example/test for examples of how to test with google_fonts.
+If troubleshooting doesn't solve the problem, please file an issue at https://github.com/flutter/flutter/issues/new/choose.
+
+00:43 +106 -3: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/widget_test.dart: AppTheme light theme app bar has navy background
+00:43 +106 -3: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/widget_test.dart: AppTheme darkTheme creates valid theme data [E]
+  Exception: GoogleFonts.config.allowRuntimeFetching is false but font Outfit-Regular was not found in the application assets. Ensure Outfit-Regular.ttf exists in a folder that is included in your pubspec's assets.
+  package:google_fonts/src/google_fonts_base.dart 181:7              loadFontIfNecessary
+  ===== asynchronous gap ===========================
+  dart:async                                                         _CustomZone.registerUnaryCallback
+  package:google_fonts/src/google_fonts_base.dart 157:9              loadFontIfNecessary
+  package:google_fonts/src/google_fonts_base.dart 111:38             googleFontsTextStyle
+  package:google_fonts/src/google_fonts_parts/part_o.g.dart 2315:12  PartO.outfit
+  package:google_fonts/src/google_fonts_parts/part_o.g.dart 2348:21  PartO.outfitTextTheme
+  package:sports_app/core/theme/app_theme.dart 178:45                AppTheme.darkTheme
+  test/widget_test.dart 34:30                                        main.<fn>.<fn>
+  
+  This test failed after it had already completed.
+  Make sure to use a matching library which informs the test runner
+  of pending async work.
+  package:google_fonts/src/google_fonts_base.dart 181:7              loadFontIfNecessary
+  ===== asynchronous gap ===========================
+  dart:async                                                         _CustomZone.registerUnaryCallback
+  package:google_fonts/src/google_fonts_base.dart 157:9              loadFontIfNecessary
+  package:google_fonts/src/google_fonts_base.dart 111:38             googleFontsTextStyle
+  package:google_fonts/src/google_fonts_parts/part_o.g.dart 2315:12  PartO.outfit
+  package:google_fonts/src/google_fonts_parts/part_o.g.dart 2348:21  PartO.outfitTextTheme
+  package:sports_app/core/theme/app_theme.dart 178:45                AppTheme.darkTheme
+  test/widget_test.dart 34:30                                        main.<fn>.<fn>
+  
+00:43 +107 -3: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/widget_test.dart: AppTheme light theme has elevated button styling
+00:43 +107 -3: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/widget_test.dart: AppTheme light theme app bar has navy background
+Error: google_fonts was unable to load font Outfit-Regular because the following exception occurred:
+Exception: GoogleFonts.config.allowRuntimeFetching is false but font Outfit-Regular was not found in the application assets. Ensure Outfit-Regular.ttf exists in a folder that is included in your pubspec's assets.
+
+There is likely something wrong with your test. Please see https://github.com/flutter/packages/blob/main/packages/google_fonts/example/test for examples of how to test with google_fonts.
+If troubleshooting doesn't solve the problem, please file an issue at https://github.com/flutter/flutter/issues/new/choose.
+
+00:43 +106 -4: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/widget_test.dart: AppTheme light theme has elevated button styling
+00:43 +106 -4: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/widget_test.dart: AppTheme light theme app bar has navy background [E]
+  Exception: GoogleFonts.config.allowRuntimeFetching is false but font Outfit-Regular was not found in the application assets. Ensure Outfit-Regular.ttf exists in a folder that is included in your pubspec's assets.
+  package:google_fonts/src/google_fonts_base.dart 181:7              loadFontIfNecessary
+  ===== asynchronous gap ===========================
+  dart:async                                                         _CustomZone.registerUnaryCallback
+  package:google_fonts/src/google_fonts_base.dart 157:9              loadFontIfNecessary
+  package:google_fonts/src/google_fonts_base.dart 111:38             googleFontsTextStyle
+  package:google_fonts/src/google_fonts_parts/part_o.g.dart 2315:12  PartO.outfit
+  package:google_fonts/src/google_fonts_parts/part_o.g.dart 2348:21  PartO.outfitTextTheme
+  package:sports_app/core/theme/app_theme.dart 62:45                 AppTheme.lightTheme
+  test/widget_test.dart 40:30                                        main.<fn>.<fn>
+  
+  This test failed after it had already completed.
+  Make sure to use a matching library which informs the test runner
+  of pending async work.
+  package:google_fonts/src/google_fonts_base.dart 181:7              loadFontIfNecessary
+  ===== asynchronous gap ===========================
+  dart:async                                                         _CustomZone.registerUnaryCallback
+  package:google_fonts/src/google_fonts_base.dart 157:9              loadFontIfNecessary
+  package:google_fonts/src/google_fonts_base.dart 111:38             googleFontsTextStyle
+  package:google_fonts/src/google_fonts_parts/part_o.g.dart 2315:12  PartO.outfit
+  package:google_fonts/src/google_fonts_parts/part_o.g.dart 2348:21  PartO.outfitTextTheme
+  package:sports_app/core/theme/app_theme.dart 62:45                 AppTheme.lightTheme
+  test/widget_test.dart 40:30                                        main.<fn>.<fn>
+  
+00:43 +107 -4: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/widget_test.dart: AppTheme light theme has elevated button styling
+Error: google_fonts was unable to load font Outfit-Regular because the following exception occurred:
+Exception: GoogleFonts.config.allowRuntimeFetching is false but font Outfit-Regular was not found in the application assets. Ensure Outfit-Regular.ttf exists in a folder that is included in your pubspec's assets.
+
+There is likely something wrong with your test. Please see https://github.com/flutter/packages/blob/main/packages/google_fonts/example/test for examples of how to test with google_fonts.
+If troubleshooting doesn't solve the problem, please file an issue at https://github.com/flutter/flutter/issues/new/choose.
+
+00:43 +106 -5: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/widget_test.dart: AppTheme light theme card has border radius
+00:43 +106 -5: /Users/first6/.gemini/antigravity/scratch/sports-app/frontend/test/widget_test.dart: AppTheme light theme has elevated button styling [E]
+  Exception: GoogleFonts.config.allowRuntimeFetching is false but font Outfit-Regular was not found in the application assets. Ensure Outfit-Regular.ttf exists in a folder that is included in your pubspec's assets.
+  package:google_fonts/src/google_fonts_base.dart 181:7              loadFontIfNecessary
+  ===== asynchronous gap ===========================
+  dart:async                                                         _CustomZone.registerUnaryCallback
+  package:google_fonts/src/google_fonts_base.dart 157:9              loadFontIfNecessary
+  package:google_fonts/src/google_fonts_base.dart 111:38             googleFontsTextStyle
+  package:google_fonts/src/google_fonts_parts/part_o.g.dart 2315:12  PartO.outfit
+  package:google_fonts/src/google_fonts_parts/part_o.g.dart 2348:21  PartO.outfitTextTheme
+  package:sports_app/core/theme/app_theme.dart 62:45                 AppTheme.lightTheme
+  test/widget_test.dart 46:30                                        main.<fn>.<fn>
+  
+  This test failed after it had already completed.
+  Make sure to use a matching library which informs the test runner
+  of pending async work.
+  package:google_fonts/src/google_fonts_base.dart 181:7              loadFontIfNecessary
+  ===== asynchronous gap ===========================
+  dart:async                                                         _CustomZone.registerUnaryCallback
+  package:google_fonts/src/google_fonts_base.dart 157:9              loadFontIfNecessary
+  package:google_fonts/src/google_fonts_base.dart 111:38             googleFontsTextStyle
+  package:google_fonts/src/google_fonts_parts/part_o.g.dart 2315:12  PartO.outfit
+  package:google_fonts/src/google_fonts_parts/part_o.g.dart 2348:21  PartO.outfitTextTheme
+  package:sports_app/core/theme/app_theme.dart 62:45                 AppTheme.lightTheme
+  test/widget_test.dart 46:30                                        main.<fn>.<fn>
+  
+00:43 +107 -5: Some tests failed.

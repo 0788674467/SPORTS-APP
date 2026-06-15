@@ -3589,7 +3589,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     var players = _dynamicPlayers.where((p) {
       if (_playersPositionFilter != 'all') {
         final pos = (p['position'] as String? ?? '').toUpperCase();
-        if (pos != _playersPositionFilter.toUpperCase()) return false;
+        String filterVal = _playersPositionFilter.toUpperCase();
+        if (filterVal == 'MD') filterVal = 'MF'; // Map MD back to MF for matching
+        if (pos != filterVal) return false;
       }
       if (_searchQuery.isEmpty) return true;
       return (p['full_name'] as String? ?? '').toLowerCase().contains(_searchQuery) ||
@@ -3622,41 +3624,29 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         child: Column(children: [
           // Toolbar
           Row(children: [
-            _filterChips(['all', 'gk', 'def', 'mid', 'fw'], _playersPositionFilter, (v) => setState(() => _playersPositionFilter = v)),
+            _filterChips(['all', 'GK', 'DF', 'MD', 'FW'], _playersPositionFilter, (v) => setState(() => _playersPositionFilter = v)),
             const Spacer(),
             _resultCount(players.length, _dynamicPlayers.length),
           ]),
           const SizedBox(height: 10),
-          // Responsive scrolling table
-          LayoutBuilder(builder: (context, constraints) {
-            final minW = 850.0;
-            return SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(
-                width: constraints.maxWidth > minW ? constraints.maxWidth : minW,
-                child: Column(children: [
-                  // Sortable header
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-                    decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
-                    child: Row(children: [
-                      const SizedBox(width: 40),
-                      Expanded(flex: 3, child: _sortableColHeader('Player', 'name', _playersSortCol, _playersSortAsc, () => toggleSort('name'))),
-                      Expanded(flex: 2, child: _sortableColHeader('Team', 'team', _playersSortCol, _playersSortAsc, () => toggleSort('team'))),
-                      SizedBox(width: 70, child: _sortableColHeader('Position', 'position', _playersSortCol, _playersSortAsc, () => toggleSort('position'))),
-                      SizedBox(width: 40, child: _sortableColHeader('#', 'number', _playersSortCol, _playersSortAsc, () => toggleSort('number'), align: TextAlign.center)),
-                      const SizedBox(width: 80, child: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey), textAlign: TextAlign.center)),
-                    ]),
-                  ),
-                  const SizedBox(height: 8),
-                  if (players.isEmpty)
-                    Padding(padding: const EdgeInsets.all(24), child: Text(_searchQuery.isEmpty ? 'No players found.' : 'No players match "$_searchQuery".'))
-                  else
-                    ...players.map((p) => _buildPlayerRow(p)),
-                ]),
-              ),
-            );
-          }),
+          // Sortable header
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+            decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
+            child: Row(children: [
+              const SizedBox(width: 40),
+              Expanded(flex: 3, child: _sortableColHeader('Player', 'name', _playersSortCol, _playersSortAsc, () => toggleSort('name'))),
+              Expanded(flex: 2, child: _sortableColHeader('Team', 'team', _playersSortCol, _playersSortAsc, () => toggleSort('team'))),
+              SizedBox(width: 70, child: _sortableColHeader('Position', 'position', _playersSortCol, _playersSortAsc, () => toggleSort('position'))),
+              SizedBox(width: 40, child: _sortableColHeader('#', 'number', _playersSortCol, _playersSortAsc, () => toggleSort('number'), align: TextAlign.center)),
+              const SizedBox(width: 80, child: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey), textAlign: TextAlign.center)),
+            ]),
+          ),
+          const SizedBox(height: 8),
+          if (players.isEmpty)
+            Padding(padding: const EdgeInsets.all(24), child: Text(_searchQuery.isEmpty ? 'No players found.' : 'No players match "$_searchQuery".'))
+          else
+            ...players.map((p) => _buildPlayerRow(p)),
         ]),
       ),
     );
@@ -4327,34 +4317,23 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             _resultCount(coaches.length, _dynamicCoaches.length),
           ]),
           const SizedBox(height: 10),
-          LayoutBuilder(builder: (context, constraints) {
-            final minW = 800.0;
-            return SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(
-                width: constraints.maxWidth > minW ? constraints.maxWidth : minW,
-                child: Column(children: [
-                  // Sortable header
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                    decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
-                    child: Row(children: [
-                      const Expanded(flex: 1, child: Text('Photo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
-                      Expanded(flex: 2, child: _sortableColHeader('Name', 'name', _coachesSortCol, _coachesSortAsc, () => toggleSort('name'))),
-                      Expanded(flex: 2, child: _sortableColHeader('Email', 'email', _coachesSortCol, _coachesSortAsc, () => toggleSort('email'))),
-                      Expanded(flex: 2, child: _sortableColHeader('Team', 'team', _coachesSortCol, _coachesSortAsc, () => toggleSort('team'))),
-                      const Expanded(flex: 1, child: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
-                    ]),
-                  ),
-                  const SizedBox(height: 8),
-                  if (coaches.isEmpty)
-                    Padding(padding: const EdgeInsets.all(24), child: Text(_searchQuery.isEmpty ? 'No approved coaches.' : 'No coaches match "$_searchQuery".'))
-                  else
-                    ...coaches.map((c) => _coachRow(c)),
-                ]),
-              ),
-            );
-          }),
+          // Sortable header
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+            decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
+            child: Row(children: [
+              const Expanded(flex: 1, child: Text('Photo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
+              Expanded(flex: 2, child: _sortableColHeader('Name', 'name', _coachesSortCol, _coachesSortAsc, () => toggleSort('name'))),
+              Expanded(flex: 2, child: _sortableColHeader('Email', 'email', _coachesSortCol, _coachesSortAsc, () => toggleSort('email'))),
+              Expanded(flex: 2, child: _sortableColHeader('Team', 'team', _coachesSortCol, _coachesSortAsc, () => toggleSort('team'))),
+              const Expanded(flex: 1, child: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
+            ]),
+          ),
+          const SizedBox(height: 8),
+          if (coaches.isEmpty)
+            Padding(padding: const EdgeInsets.all(24), child: Text(_searchQuery.isEmpty ? 'No approved coaches.' : 'No coaches match "$_searchQuery".'))
+          else
+            ...coaches.map((c) => _coachRow(c)),
         ]),
       ),
     );
@@ -4414,56 +4393,19 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           flex: 1,
           child: Row(children: [
             IconButton(
-              icon: const Icon(Icons.visibility_rounded, size: 18, color: Color(0xFF003087)),
-              onPressed: () => _showCoachDetailsModal(c),
-              constraints: const BoxConstraints(), padding: const EdgeInsets.all(4),
-            ),
-            IconButton(
               icon: const Icon(Icons.edit_rounded, size: 18, color: Colors.blue),
               onPressed: () => _showCoachEditDialog(c),
-              constraints: const BoxConstraints(), padding: const EdgeInsets.all(4),
+              constraints: const BoxConstraints(), padding: EdgeInsets.zero,
             ),
+            const SizedBox(width: 8),
             IconButton(
               icon: Icon(Icons.delete_rounded, size: 18, color: Colors.red.shade400),
               onPressed: () => _confirmDeleteCoach(c),
-              constraints: const BoxConstraints(), padding: const EdgeInsets.all(4),
+              constraints: const BoxConstraints(), padding: EdgeInsets.zero,
             ),
           ]),
         ),
       ]),
-    );
-  }
-
-  void _showCoachDetailsModal(Map<String, dynamic> c) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Coach Details'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CircleAvatar(
-              radius: 30,
-              backgroundColor: const Color(0xFF00A651).withOpacity(0.1),
-              backgroundImage: c['avatar_url'] != null ? NetworkImage(c['avatar_url']) : null,
-              child: c['avatar_url'] == null ? Text(c['full_name']?[0] ?? 'C') : null,
-            ),
-            const SizedBox(height: 16),
-            Text('Name: ${c['full_name'] ?? 'Unknown'}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text('Email: ${c['email'] ?? '—'}', style: const TextStyle(fontSize: 14)),
-            const SizedBox(height: 8),
-            Text('Phone: ${c['phone'] ?? '—'}', style: const TextStyle(fontSize: 14)),
-            const SizedBox(height: 8),
-            Text('Team: ${c['team_name'] ?? '—'}', style: const TextStyle(fontSize: 14)),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
-        ],
-      ),
     );
   }
 
@@ -4583,33 +4525,22 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             _resultCount(referees.length, _dynamicReferees.length),
           ]),
           const SizedBox(height: 10),
-          LayoutBuilder(builder: (context, constraints) {
-            final minW = 800.0;
-            return SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(
-                width: constraints.maxWidth > minW ? constraints.maxWidth : minW,
-                child: Column(children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                    decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
-                    child: Row(children: [
-                      const Expanded(flex: 1, child: Text('Photo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
-                      Expanded(flex: 2, child: _sortableColHeader('Name', 'name', _refereesSortCol, _refereesSortAsc, () => toggleSort('name'))),
-                      Expanded(flex: 2, child: _sortableColHeader('Email', 'email', _refereesSortCol, _refereesSortAsc, () => toggleSort('email'))),
-                      Expanded(flex: 2, child: _sortableColHeader('Phone', 'phone', _refereesSortCol, _refereesSortAsc, () => toggleSort('phone'))),
-                      const Expanded(flex: 1, child: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
-                    ]),
-                  ),
-                  const SizedBox(height: 8),
-                  if (referees.isEmpty)
-                    Padding(padding: const EdgeInsets.all(24), child: Text(_searchQuery.isEmpty ? 'No approved referees.' : 'No referees match "$_searchQuery".'))
-                  else
-                    ...referees.map((r) => _refereeRow(r)),
-                ]),
-              ),
-            );
-          }),
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+            decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
+            child: Row(children: [
+              const Expanded(flex: 1, child: Text('Photo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
+              Expanded(flex: 2, child: _sortableColHeader('Name', 'name', _refereesSortCol, _refereesSortAsc, () => toggleSort('name'))),
+              Expanded(flex: 2, child: _sortableColHeader('Email', 'email', _refereesSortCol, _refereesSortAsc, () => toggleSort('email'))),
+              Expanded(flex: 2, child: _sortableColHeader('Phone', 'phone', _refereesSortCol, _refereesSortAsc, () => toggleSort('phone'))),
+              const Expanded(flex: 1, child: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
+            ]),
+          ),
+          const SizedBox(height: 8),
+          if (referees.isEmpty)
+            Padding(padding: const EdgeInsets.all(24), child: Text(_searchQuery.isEmpty ? 'No approved referees.' : 'No referees match "$_searchQuery".'))
+          else
+            ...referees.map((r) => _refereeRow(r)),
         ]),
       ),
     );
@@ -4657,54 +4588,19 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           flex: 1,
           child: Row(children: [
             IconButton(
-              icon: const Icon(Icons.visibility_rounded, size: 18, color: Color(0xFF003087)),
-              onPressed: () => _showRefereeDetailsModal(r),
-              constraints: const BoxConstraints(), padding: const EdgeInsets.all(4),
-            ),
-            IconButton(
               icon: const Icon(Icons.edit_rounded, size: 18, color: Colors.blue),
               onPressed: () => _showRefereeEditDialog(r),
-              constraints: const BoxConstraints(), padding: const EdgeInsets.all(4),
+              constraints: const BoxConstraints(), padding: EdgeInsets.zero,
             ),
+            const SizedBox(width: 8),
             IconButton(
               icon: Icon(Icons.delete_rounded, size: 18, color: Colors.red.shade400),
               onPressed: () => _confirmDeleteReferee(r),
-              constraints: const BoxConstraints(), padding: const EdgeInsets.all(4),
+              constraints: const BoxConstraints(), padding: EdgeInsets.zero,
             ),
           ]),
         ),
       ]),
-    );
-  }
-
-  void _showRefereeDetailsModal(Map<String, dynamic> r) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Referee Details'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CircleAvatar(
-              radius: 30,
-              backgroundColor: const Color(0xFF003087).withOpacity(0.1),
-              backgroundImage: r['avatar_url'] != null ? NetworkImage(r['avatar_url']) : null,
-              child: r['avatar_url'] == null ? Text(r['full_name']?[0] ?? 'R') : null,
-            ),
-            const SizedBox(height: 16),
-            Text('Name: ${r['full_name'] ?? 'Unknown'}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text('Email: ${r['email'] ?? '—'}', style: const TextStyle(fontSize: 14)),
-            const SizedBox(height: 8),
-            Text('Phone: ${r['phone'] ?? '—'}', style: const TextStyle(fontSize: 14)),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
-        ],
-      ),
     );
   }
 

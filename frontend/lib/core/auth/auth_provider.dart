@@ -334,7 +334,12 @@ class AuthProvider extends ChangeNotifier {
       return null;
     } catch (e) {
       debugPrint('Error deleting user: $e');
-      return e.toString();
+      final errorStr = e.toString();
+      // Handle the specific RLS / foreign key constraint issue where the team couldn't be deleted by the admin.
+      if (errorStr.contains('violates not-null constraint') && errorStr.contains('coach_id')) {
+        return 'Cannot delete this coach because their team could not be deleted (likely due to database permissions/RLS). Please deactivate them instead.';
+      }
+      return errorStr;
     }
   }
 
