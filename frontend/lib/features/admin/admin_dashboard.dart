@@ -4318,10 +4318,15 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           // Sortable header and list with horizontal scrolling for mobile
           LayoutBuilder(
             builder: (context, constraints) {
+              final double tableWidth = constraints.maxWidth < 700 ? 700 : constraints.maxWidth;
+              final double usableWidth = tableWidth - 24; // 12 padding on each side
+              final double w1 = usableWidth / 8; // flex 1
+              final double w2 = (usableWidth / 8) * 2; // flex 2
+
               return SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minWidth: constraints.maxWidth < 600 ? 600 : constraints.maxWidth),
+                child: SizedBox(
+                  width: tableWidth,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -4329,18 +4334,18 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                         decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
                         child: Row(children: [
-                          const Expanded(flex: 1, child: Text('Photo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
-                          Expanded(flex: 2, child: _sortableColHeader('Name', 'name', _coachesSortCol, _coachesSortAsc, () => toggleSort('name'))),
-                          Expanded(flex: 2, child: _sortableColHeader('Email', 'email', _coachesSortCol, _coachesSortAsc, () => toggleSort('email'))),
-                          Expanded(flex: 2, child: _sortableColHeader('Team', 'team', _coachesSortCol, _coachesSortAsc, () => toggleSort('team'))),
-                          const Expanded(flex: 1, child: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
+                          SizedBox(width: w1, child: const Text('Photo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
+                          SizedBox(width: w2, child: _sortableColHeader('Name', 'name', _coachesSortCol, _coachesSortAsc, () => toggleSort('name'))),
+                          SizedBox(width: w2, child: _sortableColHeader('Email', 'email', _coachesSortCol, _coachesSortAsc, () => toggleSort('email'))),
+                          SizedBox(width: w2, child: _sortableColHeader('Team', 'team', _coachesSortCol, _coachesSortAsc, () => toggleSort('team'))),
+                          SizedBox(width: w1, child: const Text('Actions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
                         ]),
                       ),
                       const SizedBox(height: 8),
                       if (coaches.isEmpty)
                         Padding(padding: const EdgeInsets.all(24), child: Center(child: Text(_searchQuery.isEmpty ? 'No approved coaches.' : 'No coaches match "$_searchQuery".')))
                       else
-                        ...coaches.map((c) => _coachRow(c)),
+                        ...coaches.map((c) => _coachRow(c, w1, w2)),
                     ],
                   ),
                 ),
@@ -4364,7 +4369,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     );
   }
 
-  Widget _coachRow(Map<String, dynamic> c) {
+  Widget _coachRow(Map<String, dynamic> c, double w1, double w2) {
     final ap = Provider.of<auth.AuthProvider>(context, listen: false);
     final name = c['full_name'] ?? 'Unknown';
     final email = c['email'] ?? 'No Email';
@@ -4381,8 +4386,8 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       ),
       child: Row(children: [
         // Photo
-        Expanded(
-          flex: 1,
+        SizedBox(
+          width: w1,
           child: Align(
             alignment: Alignment.centerLeft,
             child: CircleAvatar(
@@ -4396,14 +4401,14 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           ),
         ),
         // Name
-        Expanded(flex: 2, child: Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
+        SizedBox(width: w2, child: Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13), overflow: TextOverflow.ellipsis)),
         // Email
-        Expanded(flex: 2, child: Text(email, style: TextStyle(color: Colors.grey.shade600, fontSize: 12), overflow: TextOverflow.ellipsis)),
+        SizedBox(width: w2, child: Text(email, style: TextStyle(color: Colors.grey.shade600, fontSize: 12), overflow: TextOverflow.ellipsis)),
         // Team
-        Expanded(flex: 2, child: Text(team, style: const TextStyle(fontSize: 12))),
+        SizedBox(width: w2, child: Text(team, style: const TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis)),
         // Actions
-        Expanded(
-          flex: 1,
+        SizedBox(
+          width: w1,
           child: Row(children: [
             IconButton(
               icon: const Icon(Icons.edit_rounded, size: 18, color: Colors.blue),
@@ -4540,10 +4545,15 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           const SizedBox(height: 10),
           LayoutBuilder(
             builder: (context, constraints) {
+              final double tableWidth = constraints.maxWidth < 700 ? 700 : constraints.maxWidth;
+              final double usableWidth = tableWidth - 24; // 12 padding on each side
+              final double w1 = usableWidth / 8; // flex 1
+              final double w2 = (usableWidth / 8) * 2; // flex 2
+
               return SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minWidth: constraints.maxWidth < 600 ? 600 : constraints.maxWidth),
+                child: SizedBox(
+                  width: tableWidth,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -4551,18 +4561,18 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                         decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
                         child: Row(children: [
-                          const Expanded(flex: 1, child: Text('Photo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
-                          Expanded(flex: 2, child: _sortableColHeader('Name', 'name', _refereesSortCol, _refereesSortAsc, () => toggleSort('name'))),
-                          Expanded(flex: 2, child: _sortableColHeader('Email', 'email', _refereesSortCol, _refereesSortAsc, () => toggleSort('email'))),
-                          Expanded(flex: 2, child: _sortableColHeader('Phone', 'phone', _refereesSortCol, _refereesSortAsc, () => toggleSort('phone'))),
-                          const Expanded(flex: 1, child: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
+                          SizedBox(width: w1, child: const Text('Photo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
+                          SizedBox(width: w2, child: _sortableColHeader('Name', 'name', _refereesSortCol, _refereesSortAsc, () => toggleSort('name'))),
+                          SizedBox(width: w2, child: _sortableColHeader('Email', 'email', _refereesSortCol, _refereesSortAsc, () => toggleSort('email'))),
+                          SizedBox(width: w2, child: _sortableColHeader('Phone', 'phone', _refereesSortCol, _refereesSortAsc, () => toggleSort('phone'))),
+                          SizedBox(width: w1, child: const Text('Actions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
                         ]),
                       ),
                       const SizedBox(height: 8),
                       if (referees.isEmpty)
                         Padding(padding: const EdgeInsets.all(24), child: Center(child: Text(_searchQuery.isEmpty ? 'No approved referees.' : 'No referees match "$_searchQuery".')))
                       else
-                        ...referees.map((r) => _refereeRow(r)),
+                        ...referees.map((r) => _refereeRow(r, w1, w2)),
                     ],
                   ),
                 ),
@@ -4574,7 +4584,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     );
   }
 
-  Widget _refereeRow(Map<String, dynamic> r) {
+  Widget _refereeRow(Map<String, dynamic> r, double w1, double w2) {
     final ap = Provider.of<auth.AuthProvider>(context, listen: false);
     final name = r['full_name'] ?? 'Unknown';
     final email = r['email'] ?? 'No Email';
@@ -4591,8 +4601,8 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
       ),
       child: Row(children: [
         // Photo
-        Expanded(
-          flex: 1,
+        SizedBox(
+          width: w1,
           child: Align(
             alignment: Alignment.centerLeft,
             child: CircleAvatar(
@@ -4606,14 +4616,14 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           ),
         ),
         // Name
-        Expanded(flex: 2, child: Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
+        SizedBox(width: w2, child: Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13), overflow: TextOverflow.ellipsis)),
         // Email
-        Expanded(flex: 2, child: Text(email, style: TextStyle(color: Colors.grey.shade600, fontSize: 12), overflow: TextOverflow.ellipsis)),
+        SizedBox(width: w2, child: Text(email, style: TextStyle(color: Colors.grey.shade600, fontSize: 12), overflow: TextOverflow.ellipsis)),
         // Phone
-        Expanded(flex: 2, child: Text(phone, style: const TextStyle(fontSize: 12))),
+        SizedBox(width: w2, child: Text(phone, style: const TextStyle(fontSize: 12), overflow: TextOverflow.ellipsis)),
         // Actions
-        Expanded(
-          flex: 1,
+        SizedBox(
+          width: w1,
           child: Row(children: [
             IconButton(
               icon: const Icon(Icons.edit_rounded, size: 18, color: Colors.blue),
