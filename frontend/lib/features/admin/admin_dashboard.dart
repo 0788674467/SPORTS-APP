@@ -3584,7 +3584,6 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   // ─── Players ────────────────────────────────────────────────────────────────
   Widget _buildPlayers() {
     if (_isLoadingManagement) return const Center(child: CircularProgressIndicator(color: Color(0xFF00A651)));
-    final isMobile = ResponsiveWrapper.isMobile(context);
 
     // Position + search filter
     var players = _dynamicPlayers.where((p) {
@@ -3628,7 +3627,15 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             _resultCount(players.length, _dynamicPlayers.length),
           ]),
           const SizedBox(height: 10),
-          // Sortable header
+          // Responsive scrolling table
+          LayoutBuilder(builder: (context, constraints) {
+            final minW = 850.0;
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: constraints.maxWidth > minW ? constraints.maxWidth : minW,
+                child: Column(children: [
+                  // Sortable header
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                     decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
@@ -3642,17 +3649,20 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     ]),
                   ),
                   const SizedBox(height: 8),
-          if (players.isEmpty)
-            Padding(padding: const EdgeInsets.all(24), child: Text(_searchQuery.isEmpty ? 'No players found.' : 'No players match "$_searchQuery".'))
-          else
-            ...players.map((p) => _buildPlayerRow(p)),
+                  if (players.isEmpty)
+                    Padding(padding: const EdgeInsets.all(24), child: Text(_searchQuery.isEmpty ? 'No players found.' : 'No players match "$_searchQuery".'))
+                  else
+                    ...players.map((p) => _buildPlayerRow(p)),
+                ]),
+              ),
+            );
+          }),
         ]),
       ),
     );
   }
 
   Widget _buildPlayerRow(Map<String, dynamic> player) {
-    final isMobile = ResponsiveWrapper.isMobile(context);
     final name = player['full_name'] ?? 'Unknown';
     final teamName = player['teams']?['name'] ?? 'No Team';
     final position = player['position'] ?? 'FW';
@@ -3691,12 +3701,12 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           ),
         ),
         // Team
-        if (!isMobile) Expanded(
+        Expanded(
           flex: 2,
           child: Text(teamName, style: const TextStyle(fontSize: 12, color: Colors.grey)),
         ),
         // Position badge
-        if (!isMobile) SizedBox(
+        SizedBox(
           width: 60,
           child: Center(child: _posBadge(position)),
         ),
@@ -4283,7 +4293,6 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   // ─── Coaches ────────────────────────────────────────────────────────────────
   Widget _buildCoaches() {
     if (_isLoadingManagement) return const Center(child: CircularProgressIndicator(color: Color(0xFF00A651)));
-    final isMobile = ResponsiveWrapper.isMobile(context);
 
     var coaches = _dynamicCoaches.where((c) {
       if (_searchQuery.isEmpty) return true;
@@ -4318,7 +4327,14 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             _resultCount(coaches.length, _dynamicCoaches.length),
           ]),
           const SizedBox(height: 10),
-          // Sortable header
+          LayoutBuilder(builder: (context, constraints) {
+            final minW = 800.0;
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: constraints.maxWidth > minW ? constraints.maxWidth : minW,
+                child: Column(children: [
+                  // Sortable header
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                     decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
@@ -4331,10 +4347,14 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     ]),
                   ),
                   const SizedBox(height: 8),
-          if (coaches.isEmpty)
-            Padding(padding: const EdgeInsets.all(24), child: Text(_searchQuery.isEmpty ? 'No approved coaches.' : 'No coaches match "$_searchQuery".'))
-          else
-            ...coaches.map((c) => _coachRow(c)),
+                  if (coaches.isEmpty)
+                    Padding(padding: const EdgeInsets.all(24), child: Text(_searchQuery.isEmpty ? 'No approved coaches.' : 'No coaches match "$_searchQuery".'))
+                  else
+                    ...coaches.map((c) => _coachRow(c)),
+                ]),
+              ),
+            );
+          }),
         ]),
       ),
     );
@@ -4354,7 +4374,6 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
 
   Widget _coachRow(Map<String, dynamic> c) {
     final ap = Provider.of<auth.AuthProvider>(context, listen: false);
-    final isMobile = ResponsiveWrapper.isMobile(context);
     final name = c['full_name'] ?? 'Unknown';
     final email = c['email'] ?? 'No Email';
     final team = c['team_name'] ?? '—';
@@ -4387,27 +4406,64 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         // Name
         Expanded(flex: 2, child: Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
         // Email
-        if (!isMobile) Expanded(flex: 2, child: Text(email, style: TextStyle(color: Colors.grey.shade600, fontSize: 12), overflow: TextOverflow.ellipsis)),
+        Expanded(flex: 2, child: Text(email, style: TextStyle(color: Colors.grey.shade600, fontSize: 12), overflow: TextOverflow.ellipsis)),
         // Team
-        if (!isMobile) Expanded(flex: 2, child: Text(team, style: const TextStyle(fontSize: 12))),
+        Expanded(flex: 2, child: Text(team, style: const TextStyle(fontSize: 12))),
         // Actions
         Expanded(
           flex: 1,
           child: Row(children: [
             IconButton(
+              icon: const Icon(Icons.visibility_rounded, size: 18, color: Color(0xFF003087)),
+              onPressed: () => _showCoachDetailsModal(c),
+              constraints: const BoxConstraints(), padding: const EdgeInsets.all(4),
+            ),
+            IconButton(
               icon: const Icon(Icons.edit_rounded, size: 18, color: Colors.blue),
               onPressed: () => _showCoachEditDialog(c),
-              constraints: const BoxConstraints(), padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(), padding: const EdgeInsets.all(4),
             ),
-            const SizedBox(width: 8),
             IconButton(
               icon: Icon(Icons.delete_rounded, size: 18, color: Colors.red.shade400),
               onPressed: () => _confirmDeleteCoach(c),
-              constraints: const BoxConstraints(), padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(), padding: const EdgeInsets.all(4),
             ),
           ]),
         ),
       ]),
+    );
+  }
+
+  void _showCoachDetailsModal(Map<String, dynamic> c) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Coach Details'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              radius: 30,
+              backgroundColor: const Color(0xFF00A651).withOpacity(0.1),
+              backgroundImage: c['avatar_url'] != null ? NetworkImage(c['avatar_url']) : null,
+              child: c['avatar_url'] == null ? Text(c['full_name']?[0] ?? 'C') : null,
+            ),
+            const SizedBox(height: 16),
+            Text('Name: ${c['full_name'] ?? 'Unknown'}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text('Email: ${c['email'] ?? '—'}', style: const TextStyle(fontSize: 14)),
+            const SizedBox(height: 8),
+            Text('Phone: ${c['phone'] ?? '—'}', style: const TextStyle(fontSize: 14)),
+            const SizedBox(height: 8),
+            Text('Team: ${c['team_name'] ?? '—'}', style: const TextStyle(fontSize: 14)),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+        ],
+      ),
     );
   }
 
@@ -4493,7 +4549,6 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   // ─── Referees ───────────────────────────────────────────────────────────────
   Widget _buildReferees() {
     if (_isLoadingManagement) return const Center(child: CircularProgressIndicator(color: Color(0xFF00A651)));
-    final isMobile = ResponsiveWrapper.isMobile(context);
 
     var referees = _dynamicReferees.where((r) {
       if (_searchQuery.isEmpty) return true;
@@ -4528,9 +4583,16 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             _resultCount(referees.length, _dynamicReferees.length),
           ]),
           const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-            decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
+          LayoutBuilder(builder: (context, constraints) {
+            final minW = 800.0;
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: constraints.maxWidth > minW ? constraints.maxWidth : minW,
+                child: Column(children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                    decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
                     child: Row(children: [
                       const Expanded(flex: 1, child: Text('Photo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
                       Expanded(flex: 2, child: _sortableColHeader('Name', 'name', _refereesSortCol, _refereesSortAsc, () => toggleSort('name'))),
@@ -4540,10 +4602,14 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     ]),
                   ),
                   const SizedBox(height: 8),
-          if (referees.isEmpty)
-            Padding(padding: const EdgeInsets.all(24), child: Text(_searchQuery.isEmpty ? 'No approved referees.' : 'No referees match "$_searchQuery".'))
-          else
-            ...referees.map((r) => _refereeRow(r)),
+                  if (referees.isEmpty)
+                    Padding(padding: const EdgeInsets.all(24), child: Text(_searchQuery.isEmpty ? 'No approved referees.' : 'No referees match "$_searchQuery".'))
+                  else
+                    ...referees.map((r) => _refereeRow(r)),
+                ]),
+              ),
+            );
+          }),
         ]),
       ),
     );
@@ -4551,7 +4617,6 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
 
   Widget _refereeRow(Map<String, dynamic> r) {
     final ap = Provider.of<auth.AuthProvider>(context, listen: false);
-    final isMobile = ResponsiveWrapper.isMobile(context);
     final name = r['full_name'] ?? 'Unknown';
     final email = r['email'] ?? 'No Email';
     final phone = r['phone'] ?? '—';
@@ -4584,27 +4649,62 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         // Name
         Expanded(flex: 2, child: Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
         // Email
-        if (!isMobile) Expanded(flex: 2, child: Text(email, style: TextStyle(color: Colors.grey.shade600, fontSize: 12), overflow: TextOverflow.ellipsis)),
+        Expanded(flex: 2, child: Text(email, style: TextStyle(color: Colors.grey.shade600, fontSize: 12), overflow: TextOverflow.ellipsis)),
         // Phone
-        if (!isMobile) Expanded(flex: 2, child: Text(phone, style: const TextStyle(fontSize: 12))),
+        Expanded(flex: 2, child: Text(phone, style: const TextStyle(fontSize: 12))),
         // Actions
         Expanded(
           flex: 1,
           child: Row(children: [
             IconButton(
+              icon: const Icon(Icons.visibility_rounded, size: 18, color: Color(0xFF003087)),
+              onPressed: () => _showRefereeDetailsModal(r),
+              constraints: const BoxConstraints(), padding: const EdgeInsets.all(4),
+            ),
+            IconButton(
               icon: const Icon(Icons.edit_rounded, size: 18, color: Colors.blue),
               onPressed: () => _showRefereeEditDialog(r),
-              constraints: const BoxConstraints(), padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(), padding: const EdgeInsets.all(4),
             ),
-            const SizedBox(width: 8),
             IconButton(
               icon: Icon(Icons.delete_rounded, size: 18, color: Colors.red.shade400),
               onPressed: () => _confirmDeleteReferee(r),
-              constraints: const BoxConstraints(), padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(), padding: const EdgeInsets.all(4),
             ),
           ]),
         ),
       ]),
+    );
+  }
+
+  void _showRefereeDetailsModal(Map<String, dynamic> r) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Referee Details'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              radius: 30,
+              backgroundColor: const Color(0xFF003087).withOpacity(0.1),
+              backgroundImage: r['avatar_url'] != null ? NetworkImage(r['avatar_url']) : null,
+              child: r['avatar_url'] == null ? Text(r['full_name']?[0] ?? 'R') : null,
+            ),
+            const SizedBox(height: 16),
+            Text('Name: ${r['full_name'] ?? 'Unknown'}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text('Email: ${r['email'] ?? '—'}', style: const TextStyle(fontSize: 14)),
+            const SizedBox(height: 8),
+            Text('Phone: ${r['phone'] ?? '—'}', style: const TextStyle(fontSize: 14)),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+        ],
+      ),
     );
   }
 
