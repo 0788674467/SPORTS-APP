@@ -3627,24 +3627,35 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             _resultCount(players.length, _dynamicPlayers.length),
           ]),
           const SizedBox(height: 10),
-          // Sortable header
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-            decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
-            child: Row(children: [
-              const SizedBox(width: 40),
-              Expanded(flex: 3, child: _sortableColHeader('Player', 'name', _playersSortCol, _playersSortAsc, () => toggleSort('name'))),
-              Expanded(flex: 2, child: _sortableColHeader('Team', 'team', _playersSortCol, _playersSortAsc, () => toggleSort('team'))),
-              SizedBox(width: 70, child: _sortableColHeader('Position', 'position', _playersSortCol, _playersSortAsc, () => toggleSort('position'))),
-              SizedBox(width: 40, child: _sortableColHeader('#', 'number', _playersSortCol, _playersSortAsc, () => toggleSort('number'), align: TextAlign.center)),
-              const SizedBox(width: 80, child: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey), textAlign: TextAlign.center)),
-            ]),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 800),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Sortable header
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                    decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
+                    child: Row(children: [
+                      const SizedBox(width: 40),
+                      Expanded(flex: 3, child: _sortableColHeader('Player', 'name', _playersSortCol, _playersSortAsc, () => toggleSort('name'))),
+                      Expanded(flex: 2, child: _sortableColHeader('Team', 'team', _playersSortCol, _playersSortAsc, () => toggleSort('team'))),
+                      SizedBox(width: 70, child: _sortableColHeader('Position', 'position', _playersSortCol, _playersSortAsc, () => toggleSort('position'))),
+                      SizedBox(width: 40, child: _sortableColHeader('#', 'number', _playersSortCol, _playersSortAsc, () => toggleSort('number'), align: TextAlign.center)),
+                      const SizedBox(width: 80, child: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey), textAlign: TextAlign.center)),
+                    ]),
+                  ),
+                  const SizedBox(height: 8),
+                  if (players.isEmpty)
+                    Padding(padding: const EdgeInsets.all(24), child: Text(_searchQuery.isEmpty ? 'No players found.' : 'No players match "$_searchQuery".'))
+                  else
+                    ...players.map((p) => _buildPlayerRow(p)),
+                ],
+              ),
+            ),
           ),
-          const SizedBox(height: 8),
-          if (players.isEmpty)
-            Padding(padding: const EdgeInsets.all(24), child: Text(_searchQuery.isEmpty ? 'No players found.' : 'No players match "$_searchQuery".'))
-          else
-            ...players.map((p) => _buildPlayerRow(p)),
         ]),
       ),
     );
@@ -4305,7 +4316,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     });
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       child: _card(
         title: 'Registered Coaches',
         subtitle: '${_dynamicCoaches.length} coach accounts',
@@ -4315,10 +4326,34 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             _resultCount(coaches.length, _dynamicCoaches.length),
           ]),
           const SizedBox(height: 10),
-          if (coaches.isEmpty)
-            Padding(padding: const EdgeInsets.all(24), child: Center(child: Text(_searchQuery.isEmpty ? 'No approved coaches.' : 'No coaches match "$_searchQuery".')))
-          else
-            ...coaches.map((c) => _coachCard(c)),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 800),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Sortable header
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                    decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
+                    child: Row(children: [
+                      const Expanded(flex: 1, child: Text('Photo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
+                      Expanded(flex: 2, child: _sortableColHeader('Name', 'name', _coachesSortCol, _coachesSortAsc, () => toggleSort('name'))),
+                      Expanded(flex: 2, child: _sortableColHeader('Email', 'email', _coachesSortCol, _coachesSortAsc, () => toggleSort('email'))),
+                      Expanded(flex: 2, child: _sortableColHeader('Team', 'team', _coachesSortCol, _coachesSortAsc, () => toggleSort('team'))),
+                      const Expanded(flex: 1, child: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
+                    ]),
+                  ),
+                  const SizedBox(height: 8),
+                  if (coaches.isEmpty)
+                    Padding(padding: const EdgeInsets.all(24), child: Text(_searchQuery.isEmpty ? 'No approved coaches.' : 'No coaches match "$_searchQuery".'))
+                  else
+                    ...coaches.map((c) => _coachRow(c)),
+                ],
+              ),
+            ),
+          ),
         ]),
       ),
     );
@@ -4336,139 +4371,60 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     );
   }
 
-  Widget _coachCard(Map<String, dynamic> c) {
+  Widget _coachRow(Map<String, dynamic> c) {
+    final ap = Provider.of<auth.AuthProvider>(context, listen: false);
     final name = c['full_name'] ?? 'Unknown';
     final email = c['email'] ?? 'No Email';
     final team = c['team_name'] ?? '—';
-    final phone = c['phone'] ?? '—';
     final avatar = c['avatar_url'] as String?;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        color: Colors.grey.shade50.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6, offset: const Offset(0, 2))],
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        leading: CircleAvatar(
-          radius: 22,
-          backgroundColor: const Color(0xFF00A651).withOpacity(0.12),
-          backgroundImage: avatar != null && avatar.isNotEmpty ? NetworkImage('$avatar?v=${avatar.hashCode}') : null,
-          child: avatar == null || avatar.isEmpty
-              ? Text(name[0].toUpperCase(), style: const TextStyle(color: Color(0xFF00A651), fontWeight: FontWeight.bold, fontSize: 14))
-              : null,
-        ),
-        title: Text(name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 2),
-            Text(email, style: TextStyle(fontSize: 12, color: Colors.grey.shade600), overflow: TextOverflow.ellipsis),
-            if (team != '—') Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Row(children: [
-                const Icon(Icons.shield_rounded, size: 12, color: Color(0xFF00A651)),
-                const SizedBox(width: 4),
-                Flexible(child: Text(team, style: const TextStyle(fontSize: 11, color: Color(0xFF00A651), fontWeight: FontWeight.w600))),
-              ]),
-            ),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.info_outline_rounded, size: 20, color: Color(0xFF003087)),
-              tooltip: 'View Details',
-              onPressed: () => _showCoachDetailDialog(c),
-              constraints: const BoxConstraints(), padding: const EdgeInsets.all(6),
-            ),
-            IconButton(
-              icon: const Icon(Icons.edit_rounded, size: 20, color: Colors.blue),
-              tooltip: 'Edit',
-              onPressed: () => _showCoachEditDialog(c),
-              constraints: const BoxConstraints(), padding: const EdgeInsets.all(6),
-            ),
-            IconButton(
-              icon: Icon(Icons.delete_rounded, size: 20, color: Colors.red.shade400),
-              tooltip: 'Delete',
-              onPressed: () => _confirmDeleteCoach(c),
-              constraints: const BoxConstraints(), padding: const EdgeInsets.all(6),
-            ),
-          ],
-        ),
-        onTap: () => _showCoachDetailDialog(c),
-      ),
-    );
-  }
-
-  void _showCoachDetailDialog(Map<String, dynamic> c) {
-    final name = c['full_name'] ?? 'Unknown';
-    final email = c['email'] ?? '—';
-    final team = c['team_name'] ?? '—';
-    final phone = c['phone'] ?? '—';
-    final avatar = c['avatar_url'] as String?;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            CircleAvatar(
-              radius: 38,
-              backgroundColor: const Color(0xFF00A651).withOpacity(0.12),
-              backgroundImage: avatar != null && avatar.isNotEmpty ? NetworkImage('$avatar?v=${avatar.hashCode}') : null,
-              child: avatar == null || avatar.isEmpty
-                  ? Text(name[0].toUpperCase(), style: const TextStyle(color: Color(0xFF00A651), fontWeight: FontWeight.bold, fontSize: 28))
+      child: Row(children: [
+        // Photo
+        Expanded(
+          flex: 1,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: CircleAvatar(
+              radius: 18,
+              backgroundColor: const Color(0xFF00A651).withOpacity(0.1),
+              backgroundImage: avatar != null && avatar.isNotEmpty
+                  ? NetworkImage('$avatar?v=${avatar.hashCode}')
                   : null,
+              child: avatar == null || avatar.isEmpty ? Text(name[0].toUpperCase(), style: const TextStyle(color: Color(0xFF00A651), fontWeight: FontWeight.bold, fontSize: 12)) : null,
             ),
-            const SizedBox(height: 12),
-            Text(name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
-            const SizedBox(height: 4),
-            Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-              decoration: BoxDecoration(color: const Color(0xFF00A651).withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
-              child: const Text('Coach', style: TextStyle(fontSize: 11, color: Color(0xFF00A651), fontWeight: FontWeight.w600)),
+          ),
+        ),
+        // Name
+        Expanded(flex: 2, child: Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
+        // Email
+        Expanded(flex: 2, child: Text(email, style: TextStyle(color: Colors.grey.shade600, fontSize: 12), overflow: TextOverflow.ellipsis)),
+        // Team
+        Expanded(flex: 2, child: Text(team, style: const TextStyle(fontSize: 12))),
+        // Actions
+        Expanded(
+          flex: 1,
+          child: Row(children: [
+            IconButton(
+              icon: const Icon(Icons.edit_rounded, size: 18, color: Colors.blue),
+              onPressed: () => _showCoachEditDialog(c),
+              constraints: const BoxConstraints(), padding: EdgeInsets.zero,
             ),
-            const SizedBox(height: 20),
-            const Divider(),
-            const SizedBox(height: 8),
-            _detailRow(Icons.email_rounded, 'Email', email),
-            _detailRow(Icons.phone_rounded, 'Phone', phone),
-            _detailRow(Icons.shield_rounded, 'Team', team),
-            const SizedBox(height: 16),
-            Row(children: [
-              Expanded(child: OutlinedButton(
-                onPressed: () => Navigator.pop(ctx),
-                style: OutlinedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-                child: const Text('Close'),
-              )),
-              const SizedBox(width: 10),
-              Expanded(child: ElevatedButton.icon(
-                icon: const Icon(Icons.edit_rounded, size: 16),
-                label: const Text('Edit'),
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF003087), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-                onPressed: () { Navigator.pop(ctx); _showCoachEditDialog(c); },
-              )),
-            ]),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: Icon(Icons.delete_rounded, size: 18, color: Colors.red.shade400),
+              onPressed: () => _confirmDeleteCoach(c),
+              constraints: const BoxConstraints(), padding: EdgeInsets.zero,
+            ),
           ]),
         ),
-      ),
-    );
-  }
-
-  Widget _detailRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(children: [
-        Icon(icon, size: 18, color: Colors.grey.shade500),
-        const SizedBox(width: 10),
-        Text('$label: ', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-        Expanded(child: Text(value, style: TextStyle(fontSize: 13, color: Colors.grey.shade700), overflow: TextOverflow.ellipsis)),
       ]),
     );
   }
@@ -4579,7 +4535,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
     });
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       child: _card(
         title: 'League Referees',
         subtitle: '${_dynamicReferees.length} registered referees',
@@ -4589,134 +4545,93 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             _resultCount(referees.length, _dynamicReferees.length),
           ]),
           const SizedBox(height: 10),
-          if (referees.isEmpty)
-            Padding(padding: const EdgeInsets.all(24), child: Center(child: Text(_searchQuery.isEmpty ? 'No approved referees.' : 'No referees match "$_searchQuery".')))
-          else
-            ...referees.map((r) => _refereeCard(r)),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 800),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                    decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
+                    child: Row(children: [
+                      const Expanded(flex: 1, child: Text('Photo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
+                      Expanded(flex: 2, child: _sortableColHeader('Name', 'name', _refereesSortCol, _refereesSortAsc, () => toggleSort('name'))),
+                      Expanded(flex: 2, child: _sortableColHeader('Email', 'email', _refereesSortCol, _refereesSortAsc, () => toggleSort('email'))),
+                      Expanded(flex: 2, child: _sortableColHeader('Phone', 'phone', _refereesSortCol, _refereesSortAsc, () => toggleSort('phone'))),
+                      const Expanded(flex: 1, child: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
+                    ]),
+                  ),
+                  const SizedBox(height: 8),
+                  if (referees.isEmpty)
+                    Padding(padding: const EdgeInsets.all(24), child: Text(_searchQuery.isEmpty ? 'No approved referees.' : 'No referees match "$_searchQuery".'))
+                  else
+                    ...referees.map((r) => _refereeRow(r)),
+                ],
+              ),
+            ),
+          ),
         ]),
       ),
     );
   }
 
-  Widget _refereeCard(Map<String, dynamic> r) {
+  Widget _refereeRow(Map<String, dynamic> r) {
+    final ap = Provider.of<auth.AuthProvider>(context, listen: false);
     final name = r['full_name'] ?? 'Unknown';
     final email = r['email'] ?? 'No Email';
     final phone = r['phone'] ?? '—';
     final avatar = r['avatar_url'] as String?;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.blue.shade100.withOpacity(0.6)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6, offset: const Offset(0, 2))],
+        color: Colors.blue.shade50.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue.shade100.withOpacity(0.5)),
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        leading: CircleAvatar(
-          radius: 22,
-          backgroundColor: const Color(0xFF003087).withOpacity(0.12),
-          backgroundImage: avatar != null && avatar.isNotEmpty ? NetworkImage('$avatar?v=${avatar.hashCode}') : null,
-          child: avatar == null || avatar.isEmpty
-              ? Text(name[0].toUpperCase(), style: const TextStyle(color: Color(0xFF003087), fontWeight: FontWeight.bold, fontSize: 14))
-              : null,
-        ),
-        title: Text(name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 2),
-            Text(email, style: TextStyle(fontSize: 12, color: Colors.grey.shade600), overflow: TextOverflow.ellipsis),
-            if (phone != '—') Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Row(children: [
-                const Icon(Icons.phone_rounded, size: 12, color: Color(0xFF003087)),
-                const SizedBox(width: 4),
-                Flexible(child: Text(phone, style: const TextStyle(fontSize: 11, color: Color(0xFF003087), fontWeight: FontWeight.w600))),
-              ]),
-            ),
-          ],
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.info_outline_rounded, size: 20, color: Color(0xFF003087)),
-              tooltip: 'View Details',
-              onPressed: () => _showRefereeDetailDialog(r),
-              constraints: const BoxConstraints(), padding: const EdgeInsets.all(6),
-            ),
-            IconButton(
-              icon: const Icon(Icons.edit_rounded, size: 20, color: Colors.blue),
-              tooltip: 'Edit',
-              onPressed: () => _showRefereeEditDialog(r),
-              constraints: const BoxConstraints(), padding: const EdgeInsets.all(6),
-            ),
-            IconButton(
-              icon: Icon(Icons.delete_rounded, size: 20, color: Colors.red.shade400),
-              tooltip: 'Delete',
-              onPressed: () => _confirmDeleteReferee(r),
-              constraints: const BoxConstraints(), padding: const EdgeInsets.all(6),
-            ),
-          ],
-        ),
-        onTap: () => _showRefereeDetailDialog(r),
-      ),
-    );
-  }
-
-  void _showRefereeDetailDialog(Map<String, dynamic> r) {
-    final name = r['full_name'] ?? 'Unknown';
-    final email = r['email'] ?? '—';
-    final phone = r['phone'] ?? '—';
-    final avatar = r['avatar_url'] as String?;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            CircleAvatar(
-              radius: 38,
-              backgroundColor: const Color(0xFF003087).withOpacity(0.12),
-              backgroundImage: avatar != null && avatar.isNotEmpty ? NetworkImage('$avatar?v=${avatar.hashCode}') : null,
-              child: avatar == null || avatar.isEmpty
-                  ? Text(name[0].toUpperCase(), style: const TextStyle(color: Color(0xFF003087), fontWeight: FontWeight.bold, fontSize: 28))
+      child: Row(children: [
+        // Photo
+        Expanded(
+          flex: 1,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: CircleAvatar(
+              radius: 18,
+              backgroundColor: const Color(0xFF003087).withOpacity(0.1),
+              backgroundImage: avatar != null && avatar.isNotEmpty
+                  ? NetworkImage('$avatar?v=${avatar.hashCode}')
                   : null,
+              child: avatar == null || avatar.isEmpty ? Text(name[0].toUpperCase(), style: const TextStyle(color: Color(0xFF003087), fontWeight: FontWeight.bold, fontSize: 12)) : null,
             ),
-            const SizedBox(height: 12),
-            Text(name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
-            const SizedBox(height: 4),
-            Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-              decoration: BoxDecoration(color: const Color(0xFF003087).withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
-              child: const Text('Referee', style: TextStyle(fontSize: 11, color: Color(0xFF003087), fontWeight: FontWeight.w600)),
+          ),
+        ),
+        // Name
+        Expanded(flex: 2, child: Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
+        // Email
+        Expanded(flex: 2, child: Text(email, style: TextStyle(color: Colors.grey.shade600, fontSize: 12), overflow: TextOverflow.ellipsis)),
+        // Phone
+        Expanded(flex: 2, child: Text(phone, style: const TextStyle(fontSize: 12))),
+        // Actions
+        Expanded(
+          flex: 1,
+          child: Row(children: [
+            IconButton(
+              icon: const Icon(Icons.edit_rounded, size: 18, color: Colors.blue),
+              onPressed: () => _showRefereeEditDialog(r),
+              constraints: const BoxConstraints(), padding: EdgeInsets.zero,
             ),
-            const SizedBox(height: 20),
-            const Divider(),
-            const SizedBox(height: 8),
-            _detailRow(Icons.email_rounded, 'Email', email),
-            _detailRow(Icons.phone_rounded, 'Phone', phone),
-            const SizedBox(height: 16),
-            Row(children: [
-              Expanded(child: OutlinedButton(
-                onPressed: () => Navigator.pop(ctx),
-                style: OutlinedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-                child: const Text('Close'),
-              )),
-              const SizedBox(width: 10),
-              Expanded(child: ElevatedButton.icon(
-                icon: const Icon(Icons.edit_rounded, size: 16),
-                label: const Text('Edit'),
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF003087), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-                onPressed: () { Navigator.pop(ctx); _showRefereeEditDialog(r); },
-              )),
-            ]),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: Icon(Icons.delete_rounded, size: 18, color: Colors.red.shade400),
+              onPressed: () => _confirmDeleteReferee(r),
+              constraints: const BoxConstraints(), padding: EdgeInsets.zero,
+            ),
           ]),
         ),
-      ),
+      ]),
     );
   }
 
