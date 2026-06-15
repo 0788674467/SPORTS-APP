@@ -3584,6 +3584,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   // ─── Players ────────────────────────────────────────────────────────────────
   Widget _buildPlayers() {
     if (_isLoadingManagement) return const Center(child: CircularProgressIndicator(color: Color(0xFF00A651)));
+    final isMobile = ResponsiveWrapper.isMobile(context);
 
     // Position + search filter
     var players = _dynamicPlayers.where((p) {
@@ -3627,14 +3628,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             _resultCount(players.length, _dynamicPlayers.length),
           ]),
           const SizedBox(height: 10),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 800),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Sortable header
+          // Sortable header
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
                     decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
@@ -3648,20 +3642,17 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     ]),
                   ),
                   const SizedBox(height: 8),
-                  if (players.isEmpty)
-                    Padding(padding: const EdgeInsets.all(24), child: Text(_searchQuery.isEmpty ? 'No players found.' : 'No players match "$_searchQuery".'))
-                  else
-                    ...players.map((p) => _buildPlayerRow(p)),
-                ],
-              ),
-            ),
-          ),
+          if (players.isEmpty)
+            Padding(padding: const EdgeInsets.all(24), child: Text(_searchQuery.isEmpty ? 'No players found.' : 'No players match "$_searchQuery".'))
+          else
+            ...players.map((p) => _buildPlayerRow(p)),
         ]),
       ),
     );
   }
 
   Widget _buildPlayerRow(Map<String, dynamic> player) {
+    final isMobile = ResponsiveWrapper.isMobile(context);
     final name = player['full_name'] ?? 'Unknown';
     final teamName = player['teams']?['name'] ?? 'No Team';
     final position = player['position'] ?? 'FW';
@@ -3700,12 +3691,12 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
           ),
         ),
         // Team
-        Expanded(
+        if (!isMobile) Expanded(
           flex: 2,
           child: Text(teamName, style: const TextStyle(fontSize: 12, color: Colors.grey)),
         ),
         // Position badge
-        SizedBox(
+        if (!isMobile) SizedBox(
           width: 60,
           child: Center(child: _posBadge(position)),
         ),
@@ -4292,6 +4283,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   // ─── Coaches ────────────────────────────────────────────────────────────────
   Widget _buildCoaches() {
     if (_isLoadingManagement) return const Center(child: CircularProgressIndicator(color: Color(0xFF00A651)));
+    final isMobile = ResponsiveWrapper.isMobile(context);
 
     var coaches = _dynamicCoaches.where((c) {
       if (_searchQuery.isEmpty) return true;
@@ -4326,14 +4318,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             _resultCount(coaches.length, _dynamicCoaches.length),
           ]),
           const SizedBox(height: 10),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 800),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Sortable header
+          // Sortable header
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                     decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
@@ -4346,14 +4331,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     ]),
                   ),
                   const SizedBox(height: 8),
-                  if (coaches.isEmpty)
-                    Padding(padding: const EdgeInsets.all(24), child: Text(_searchQuery.isEmpty ? 'No approved coaches.' : 'No coaches match "$_searchQuery".'))
-                  else
-                    ...coaches.map((c) => _coachRow(c)),
-                ],
-              ),
-            ),
-          ),
+          if (coaches.isEmpty)
+            Padding(padding: const EdgeInsets.all(24), child: Text(_searchQuery.isEmpty ? 'No approved coaches.' : 'No coaches match "$_searchQuery".'))
+          else
+            ...coaches.map((c) => _coachRow(c)),
         ]),
       ),
     );
@@ -4373,6 +4354,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
 
   Widget _coachRow(Map<String, dynamic> c) {
     final ap = Provider.of<auth.AuthProvider>(context, listen: false);
+    final isMobile = ResponsiveWrapper.isMobile(context);
     final name = c['full_name'] ?? 'Unknown';
     final email = c['email'] ?? 'No Email';
     final team = c['team_name'] ?? '—';
@@ -4405,9 +4387,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         // Name
         Expanded(flex: 2, child: Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
         // Email
-        Expanded(flex: 2, child: Text(email, style: TextStyle(color: Colors.grey.shade600, fontSize: 12), overflow: TextOverflow.ellipsis)),
+        if (!isMobile) Expanded(flex: 2, child: Text(email, style: TextStyle(color: Colors.grey.shade600, fontSize: 12), overflow: TextOverflow.ellipsis)),
         // Team
-        Expanded(flex: 2, child: Text(team, style: const TextStyle(fontSize: 12))),
+        if (!isMobile) Expanded(flex: 2, child: Text(team, style: const TextStyle(fontSize: 12))),
         // Actions
         Expanded(
           flex: 1,
@@ -4511,6 +4493,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
   // ─── Referees ───────────────────────────────────────────────────────────────
   Widget _buildReferees() {
     if (_isLoadingManagement) return const Center(child: CircularProgressIndicator(color: Color(0xFF00A651)));
+    final isMobile = ResponsiveWrapper.isMobile(context);
 
     var referees = _dynamicReferees.where((r) {
       if (_searchQuery.isEmpty) return true;
@@ -4545,16 +4528,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
             _resultCount(referees.length, _dynamicReferees.length),
           ]),
           const SizedBox(height: 10),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 800),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                    decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+            decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
                     child: Row(children: [
                       const Expanded(flex: 1, child: Text('Photo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey))),
                       Expanded(flex: 2, child: _sortableColHeader('Name', 'name', _refereesSortCol, _refereesSortAsc, () => toggleSort('name'))),
@@ -4564,14 +4540,10 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
                     ]),
                   ),
                   const SizedBox(height: 8),
-                  if (referees.isEmpty)
-                    Padding(padding: const EdgeInsets.all(24), child: Text(_searchQuery.isEmpty ? 'No approved referees.' : 'No referees match "$_searchQuery".'))
-                  else
-                    ...referees.map((r) => _refereeRow(r)),
-                ],
-              ),
-            ),
-          ),
+          if (referees.isEmpty)
+            Padding(padding: const EdgeInsets.all(24), child: Text(_searchQuery.isEmpty ? 'No approved referees.' : 'No referees match "$_searchQuery".'))
+          else
+            ...referees.map((r) => _refereeRow(r)),
         ]),
       ),
     );
@@ -4579,6 +4551,7 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
 
   Widget _refereeRow(Map<String, dynamic> r) {
     final ap = Provider.of<auth.AuthProvider>(context, listen: false);
+    final isMobile = ResponsiveWrapper.isMobile(context);
     final name = r['full_name'] ?? 'Unknown';
     final email = r['email'] ?? 'No Email';
     final phone = r['phone'] ?? '—';
@@ -4611,9 +4584,9 @@ class _AdminDashboardState extends State<AdminDashboard> with SingleTickerProvid
         // Name
         Expanded(flex: 2, child: Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13))),
         // Email
-        Expanded(flex: 2, child: Text(email, style: TextStyle(color: Colors.grey.shade600, fontSize: 12), overflow: TextOverflow.ellipsis)),
+        if (!isMobile) Expanded(flex: 2, child: Text(email, style: TextStyle(color: Colors.grey.shade600, fontSize: 12), overflow: TextOverflow.ellipsis)),
         // Phone
-        Expanded(flex: 2, child: Text(phone, style: const TextStyle(fontSize: 12))),
+        if (!isMobile) Expanded(flex: 2, child: Text(phone, style: const TextStyle(fontSize: 12))),
         // Actions
         Expanded(
           flex: 1,
